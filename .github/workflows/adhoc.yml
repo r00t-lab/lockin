@@ -49,21 +49,25 @@ jobs:
           set -o pipefail
           bundle exec fastlane adhoc 2>&1 | tee adhoc.log
 
+      # Look for compiler/exporter diagnostics across the WHOLE log first. Taking a
+      # window before fastlane's "finished with errors" line does not reach far enough:
+      # fastlane echoes the Fastfile and prints its summary table after the failure, so
+      # sixty lines of context are all epilogue. GitHub also keeps only the first ten
+      # annotations, so emit few and emit the right ones.
       - name: Errors only
         if: failure()
         run: |
-          tail -n 150 adhoc.log
+          echo "───────── last 200 lines ─────────"
+          tail -n 200 adhoc.log
+
           strip() { perl -pe 's/\e\[[0-9;]*[mK]//g' | grep -v '^[[:space:]]*$' | awk '!seen[$0]++'; }
-          grep -a "\[altool\]" adhoc.log | strip | tail -n 9 > /tmp/errs.txt
+
+          cat adhoc.log ~/Library/Logs/gym/*.log 2>/dev/null             | grep -aE "(^|[[:space:]])error:|No signing certificate|No profiles for|doesn'"'"'t include|Provisioning profile|requires a provisioning|No account for team|no valid"             | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )"             | strip | tail -n 6 > /tmp/errs.txt
+
           if [ ! -s /tmp/errs.txt ]; then
-            n=$(grep -an "fastlane finished with errors" adhoc.log | head -1 | cut -d: -f1)
-            if [ -n "$n" ] && [ "$n" -gt 1 ]; then
-              start=$(( n > 60 ? n - 60 : 1 ))
-              sed -n "${start},${n}p" adhoc.log \
-                | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )" \
-                | strip | tail -n 9 > /tmp/errs.txt
-            fi
+            grep -a "\[!\]" adhoc.log | strip | tail -n 3 > /tmp/errs.txt
           fi
+
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Publish the IPA
