@@ -143,6 +143,11 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Nagg
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.r00tlab.lockin
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        # Required for a modern single-target watch app. Without it the embedded watch
+        # bundle is malformed, and iOS refuses to install the *phone* app because of it
+        # — while Apple's upload validation passes happily. The symptom is a TestFlight
+        # build that exists, says Testing, and will not install.
+        INFOPLIST_KEY_WKApplication: YES
         TARGETED_DEVICE_FAMILY: "4"
         # Its own catalog, not the phone's. A single appiconset declaring both ios and
         # watchos platforms does not satisfy either validator.
