@@ -98,9 +98,11 @@ final class PhoneSyncService: NSObject {
 
     // MARK: - Inbound
 
-    private func apply(_ context: [String: Any]) {
-        guard let data = context[WatchSyncPayload.transportKey] as? Data,
-              let incoming = try? JSONDecoder().decode(WatchSyncPayload.self, from: data),
+    /// Takes `Data`, not the raw dictionary. `[String: Any]` is not Sendable, so it
+    /// cannot cross onto the main actor — the extraction has to happen on the
+    /// delegate's own thread. See `payloadData(from:)` below.
+    private func apply(_ data: Data) {
+        guard let incoming = try? JSONDecoder().decode(WatchSyncPayload.self, from: data),
               incoming.generatedAt >= payload.generatedAt else { return }
 
         payload = incoming
@@ -118,6 +120,12 @@ final class PhoneSyncService: NSObject {
 
 /// Every callback lands on a background queue and hops to the main actor. watchOS has
 /// no `sessionDidBecomeInactive`/`sessionDidDeactivate` — those are iOS-only.
+///
+/// ## Sendability rule for this whole extension
+/// `WCSession` and `[String: Any]` are both non-Sendable, so neither may be captured
+/// by the `Task { @MainActor }` closure. Read what you need into a Sendable value —
+/// a `Bool`, a `Data` — on the delegate's own thread, then send only that across.
+/// Capturing the parameter directly compiles under Swift 5 and is an error under 6.
 extension PhoneSyncService: WCSessionDelegate {
 
     nonisolated func session(
@@ -125,29 +133,32 @@ extension PhoneSyncService: WCSessionDelegate {
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
+        let reachable = session.isReachable
+        let activated = activationState == .activated
         Task { @MainActor in
-            self.isReachable = session.isReachable
-            guard activationState == .activated else { return }
+            self.isReachable = reachable
+            guard activated else { return }
             self.requestSnapshot()
         }
     }
 
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
-        Task { @MainActor in self.isReachable = session.isReachable }
+        let reachable = session.isReachable
+        Task { @MainActor in self.isReachable = reachable }
     }
 
     nonisolated func session(
         _ session: WCSession,
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
-        Task { @MainActor in self.apply(applicationContext) }
+        deliver(applicationContext)
     }
 
     nonisolated func session(
         _ session: WCSession,
         didReceiveMessage message: [String: Any]
     ) {
-        Task { @MainActor in self.apply(message) }
+        deliver(message)
     }
 
     /// Complication-priority transfers arrive here too, which is what keeps the face
@@ -156,6 +167,12 @@ extension PhoneSyncService: WCSessionDelegate {
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any] = [:]
     ) {
-        Task { @MainActor in self.apply(userInfo) }
+        deliver(userInfo)
+    }
+
+    /// The one place the non-Sendable dictionary is unwrapped, on the caller's thread.
+    private nonisolated func deliver(_ context: [String: Any]) {
+        guard let data = context[WatchSyncPayload.transportKey] as? Data else { return }
+        Task { @MainActor in self.apply(data) }
     }
 }
