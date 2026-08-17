@@ -83,4 +83,41 @@ platform :ios do
     )
   end
 
+  desc "Build a signed ad-hoc IPA for direct install, bypassing TestFlight"
+  lane :adhoc do
+    key_id = ENV.fetch("ASC_KEY_ID")
+    issuer_id = ENV.fetch("ASC_ISSUER_ID")
+
+    app_store_connect_api_key(
+      key_id: key_id,
+      issuer_id: issuer_id,
+      key_content: ENV.fetch("ASC_KEY_CONTENT"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    key_dir = File.expand_path("~/private_keys")
+    FileUtils.mkdir_p(key_dir)
+    key_path = File.join(key_dir, "AuthKey_#{key_id}.p8")
+    File.write(key_path, Base64.decode64(ENV.fetch("ASC_KEY_CONTENT")))
+
+    # ad-hoc, not app-store: the profile embeds the registered device UDIDs, so the
+    # IPA installs straight onto those phones. TestFlight is not involved at any point,
+    # which is the entire reason this lane exists -- TestFlight's keychain on the target
+    # device is throwing -34018 and cannot authenticate a download.
+    build_app(
+      scheme: "Lockin",
+      export_method: "ad-hoc",
+      project: "Lockin.xcodeproj",
+      output_name: "Nagg.ipa",
+      xcargs: [
+        "-allowProvisioningUpdates",
+        "-authenticationKeyPath", key_path,
+        "-authenticationKeyID", key_id,
+        "-authenticationKeyIssuerID", issuer_id,
+        "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', Time.now.to_i.to_s)}"
+      ].join(" "),
+      export_options: { signingStyle: "automatic" }
+    )
+  end
 end
