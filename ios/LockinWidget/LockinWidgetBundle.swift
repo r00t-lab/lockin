@@ -30,18 +30,23 @@ struct LockinAlarmActivity: Widget {
                         .foregroundStyle(.tint)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    Text(context.attributes.metadata.title)
+                    Text(context.attributes.metadata?.title ?? fallbackTitle)
                         .font(.headline)
                         .lineLimit(2)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Button(intent: ProofIntent(
-                        commitmentID: context.attributes.metadata.commitmentID.uuidString
-                    )) {
-                        Label("I'm starting", systemImage: "arrow.right.circle.fill")
-                            .frame(maxWidth: .infinity)
+                    // No metadata means we cannot say which commitment this is, so
+                    // there is nothing honest to put behind the button. Show the ring
+                    // without it rather than a control that leads nowhere.
+                    if let metadata = context.attributes.metadata {
+                        Button(intent: ProofIntent(
+                            commitmentID: metadata.commitmentID.uuidString
+                        )) {
+                            Label("I'm starting", systemImage: "arrow.right.circle.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
                 }
             } compactLeading: {
                 Image(systemName: "lock.fill")
@@ -54,22 +59,30 @@ struct LockinAlarmActivity: Widget {
         }
     }
 
+    /// AlarmKit hands metadata across as an Optional — it can be absent if the alarm
+    /// was restored without ours, or created outside the app. Treat that as a real
+    /// state rather than force-unwrapping: the alarm still has to ring, it just
+    /// cannot name the commitment.
     @ViewBuilder
-    private func lockScreenView(_ metadata: LockinMetadata) -> some View {
+    private func lockScreenView(_ metadata: LockinMetadata?) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("YOU SAID YOU'D START")
                 .font(.caption2.weight(.heavy))
                 .foregroundStyle(.secondary)
 
-            Text(metadata.title)
+            Text(metadata?.title ?? fallbackTitle)
                 .font(.title3.weight(.bold))
                 .lineLimit(2)
 
-            Button(intent: ProofIntent(commitmentID: metadata.commitmentID.uuidString)) {
-                Label(metadata.proofKind.label, systemImage: metadata.proofKind.systemImageName)
-                    .frame(maxWidth: .infinity)
+            if let metadata {
+                Button(intent: ProofIntent(commitmentID: metadata.commitmentID.uuidString)) {
+                    Label(metadata.proofKind.label, systemImage: metadata.proofKind.systemImageName)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
     }
+
+    private var fallbackTitle: String { "Time to start" }
 }
