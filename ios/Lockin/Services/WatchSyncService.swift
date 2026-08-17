@@ -110,9 +110,10 @@ final class WatchSyncService: NSObject {
 
     /// One place for every verb the watch can send, so the reachable and unreachable
     /// paths cannot drift apart.
-    private func handle(_ message: [String: Any]) async {
-        guard let (action, commitmentID) = WatchMessage.decode(message) else { return }
-
+    /// Takes the decoded verb, not the raw dictionary. `[String: Any]` is not Sendable,
+    /// so decoding has to happen on the delegate's own thread — see `deliver(_:)`.
+    /// `Action` and `UUID?` both are, so only those cross onto the main actor.
+    private func handle(_ action: WatchMessage.Action, commitmentID: UUID?) async {
         switch action {
         case .proved:
             guard let commitmentID else { return }
@@ -164,7 +165,7 @@ extension WatchSyncService: WCSessionDelegate {
         _ session: WCSession,
         didReceiveMessage message: [String: Any]
     ) {
-        Task { @MainActor in await self.handle(message) }
+        deliver(message)
     }
 
     nonisolated func session(
@@ -172,10 +173,11 @@ extension WatchSyncService: WCSessionDelegate {
         didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
-        Task { @MainActor in
-            await self.handle(message)
-            replyHandler([:])
-        }
+        deliver(message)
+        // Acknowledge immediately rather than after the store has been updated. The
+        // watch only needs to know the phone heard it, and holding the reply until
+        // main-actor work finishes would mean capturing a non-Sendable handler.
+        replyHandler([:])
     }
 
     /// The guaranteed-delivery path. Proof taken while the phone was in a pocket in
@@ -184,7 +186,13 @@ extension WatchSyncService: WCSessionDelegate {
         _ session: WCSession,
         didReceiveUserInfo userInfo: [String: Any] = [:]
     ) {
-        Task { @MainActor in await self.handle(userInfo) }
+        deliver(userInfo)
+    }
+
+    /// The one place the non-Sendable dictionary is decoded, on the caller's thread.
+    private nonisolated func deliver(_ message: [String: Any]) {
+        guard let (action, commitmentID) = WatchMessage.decode(message) else { return }
+        Task { @MainActor in await self.handle(action, commitmentID: commitmentID) }
     }
 
     // iOS-only requirements. The watch can be unpaired and re-paired underneath us; the
