@@ -7,6 +7,7 @@ on:
     branches: [main]
     paths:
       - "android/**"
+      - "gradle/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
@@ -30,7 +31,13 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # gradle-version is required, not optional. Without it setup-gradle only caches
+      # and expects ./gradlew to exist — and the wrapper jar is a binary that could not
+      # be authored on Windows, so it is not in the repo. Pinning here supplies the
+      # `gradle` binary directly. Keep this in sync with gradle-wrapper.properties.
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
 
       # `gradle`, not `./gradlew`. The wrapper jar is a binary that cannot be authored
       # on Windows and is not in the repo; setup-gradle supplies Gradle itself. If you
