@@ -1,0 +1,22 @@
+<!--
+  Notification icons are flattened to a white silhouette by the system: only the alpha
+  channel survives. Anything with colour or gradient here becomes a white blob.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,10h12a1,1 0 0 1 1,1v8a1,1 0 0 1 -1,1H6a1,1 0 0 1 -1,-1v-8a1,1 0 0 1 1,-1z" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M8.5,10V7.5a3.5,3.5 0 0 1 7,0V10" />
+
+</vector>

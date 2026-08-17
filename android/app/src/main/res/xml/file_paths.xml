@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cache only. The proof photo is written here, validated, and deleted in the same
+  coroutine. Nothing about it is durable and nothing about it leaves the device.
+-->
+<paths>
+    <cache-path name="proof_capture" path="." />
+</paths>

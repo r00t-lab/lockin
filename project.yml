@@ -1,0 +1,154 @@
+# XcodeGen spec — the whole Xcode project, as text.
+#
+# Why this file exists: you do not own a Mac. An .xcodeproj is a fragile binary-ish
+# bundle that has to be authored in Xcode. This YAML replaces it. You edit it on
+# Windows, commit, and the macOS runner runs `xcodegen generate` to produce a real
+# .xcodeproj before building. Never commit the generated .xcodeproj.
+#
+# Before your first build, replace every `com.yourname` below with your own reverse
+# domain, and set DEVELOPMENT_TEAM to your 10-character Apple Team ID
+# (App Store Connect ▸ Membership ▸ Team ID).
+
+name: Lockin
+
+options:
+  bundleIdPrefix: com.yourname
+  deploymentTarget:
+    iOS: "26.0"
+    watchOS: "26.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: $(DEVELOPMENT_TEAM)
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    SWIFT_STRICT_CONCURRENCY: complete
+    # The watch app is the only iPad-shaped thing we ship. Phone only — see LAUNCH.md
+    # for why supporting iPad costs screenshots, review surface, and testing time.
+    TARGETED_DEVICE_FAMILY: "1"
+
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios
+    from: "5.0.0"
+
+targets:
+
+  # ── iPhone app ───────────────────────────────────────────────────────────────
+  Lockin:
+    type: application
+    platform: iOS
+    sources:
+      - path: ios/Lockin
+    dependencies:
+      - target: LockinWidget
+        embed: true
+      - target: LockinWatch
+        embed: true
+      - package: RevenueCat
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin
+        PRODUCT_NAME: Lockin
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Lockin
+        # Missing this key does not warn — it crashes the app the moment it asks for
+        # alarm permission. See SETUP.md section 5.
+        INFOPLIST_KEY_NSAlarmKitUsageDescription: "Lockin needs alarm access so your commitments ring through Silent and Focus."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Lockin uses the camera so you can prove you actually started."
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+    entitlements:
+      path: ios/Lockin/Lockin.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.yourname.lockin
+
+  # ── Live Activity / Dynamic Island ───────────────────────────────────────────
+  LockinWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ios/LockinWidget
+      # Shared with the app. XcodeGen handles multi-target membership by listing the
+      # same path twice — this is the thing SETUP.md warns you to get right by hand.
+      - path: ios/Lockin/Models/Commitment.swift
+      - path: ios/Lockin/Models/LockinMetadata.swift
+      - path: ios/Lockin/Intents/ProofIntent.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.widget
+        PRODUCT_NAME: LockinWidget
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Lockin
+        INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: ios/LockinWidget/LockinWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.yourname.lockin
+
+  # ── Apple Watch app ──────────────────────────────────────────────────────────
+  LockinWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: ios/LockinWatch
+        # Widget/ belongs to the complication target below. Without this exclude the
+        # same file lands in two targets and the build fails on duplicate symbols.
+        excludes:
+          - "Widget/**"
+      - path: ios/Lockin/Models/Commitment.swift
+      - path: ios/Lockin/Models/WatchSyncPayload.swift
+    dependencies:
+      - target: LockinWatchWidget
+        embed: true
+    settings:
+      base:
+        # Apple requires exactly this suffix for a companion watch app. Any other
+        # value and the watch app will not install alongside the phone app.
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.watchkitapp
+        PRODUCT_NAME: Lockin
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.yourname.lockin
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        TARGETED_DEVICE_FAMILY: "4"
+    entitlements:
+      path: ios/LockinWatch/LockinWatch.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.yourname.lockin
+
+  # ── Watch complication ───────────────────────────────────────────────────────
+  LockinWatchWidget:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: ios/LockinWatch/Widget
+      - path: ios/Lockin/Models/Commitment.swift
+      - path: ios/Lockin/Models/WatchSyncPayload.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.watchkitapp.widget
+        PRODUCT_NAME: LockinWatchWidget
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        TARGETED_DEVICE_FAMILY: "4"
+    entitlements:
+      path: ios/LockinWatch/Widget/LockinWatchWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.yourname.lockin
+
+schemes:
+  Lockin:
+    build:
+      targets:
+        Lockin: all
+    archive:
+      config: Release

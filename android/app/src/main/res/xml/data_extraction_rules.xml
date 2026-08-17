@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ equivalent of backup_rules.xml. Same policy, different schema. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="commitments.json" />
+        <include domain="sharedpref" path="lockin.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="commitments.json" />
+        <include domain="sharedpref" path="lockin.xml" />
+    </device-transfer>
+</data-extraction-rules>

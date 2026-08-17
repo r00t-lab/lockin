@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English only, deliberately. PRODUCT.md's v1 exclusion list names localisation
+  explicitly: no Turkish, no other language. The rest of the UI copy lives inline in the
+  Compose screens, exactly as it does in the SwiftUI views, so the two codebases can be
+  diffed line for line when the wording changes.
+-->
+<resources>
+    <string name="app_name">Lockin</string>
+</resources>

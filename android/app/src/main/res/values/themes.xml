@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compose draws everything; this theme exists only so the window has the right background
+  before the first frame. Without an explicit windowBackground the app flashes white on
+  cold start, which on a 7am alarm is a face full of light.
+
+  Parented to the platform Material theme rather than com.google.android.material's, to
+  avoid pulling in the whole Views material library for two attributes.
+-->
+<resources>
+
+    <style name="Theme.Lockin" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/ground</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- The ring screen is always dark-on-red, in both system themes. -->
+    <style name="Theme.Lockin.Alarm" parent="Theme.Lockin">
+        <item name="android:windowBackground">@color/alarm</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowShowWallpaper">false</item>
+    </style>
+
+</resources>

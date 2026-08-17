@@ -1,0 +1,376 @@
+<title>Lockin Launch Plan</title>
+<style>
+  :root {
+    --paper: #EFEEE9;
+    --card: #FBFAF7;
+    --sunk: #E5E4DC;
+    --ink: #17171A;
+    --ink-2: #56564F;
+    --ink-3: #8B8B83;
+    --line: #D6D5CC;
+    --signal: #B93117;
+    --signal-bg: #F7E3DD;
+    --go: #0F6E56;
+    --go-bg: #DEEDE6;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #121213; --card: #1B1B1E; --sunk: #242428;
+      --ink: #EBEBE6; --ink-2: #A2A29B; --ink-3: #6C6C67; --line: #2E2E33;
+      --signal: #F0684B; --signal-bg: #33130C;
+      --go: #63C9A6; --go-bg: #102E26;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #121213; --card: #1B1B1E; --sunk: #242428;
+    --ink: #EBEBE6; --ink-2: #A2A29B; --ink-3: #6C6C67; --line: #2E2E33;
+    --signal: #F0684B; --signal-bg: #33130C;
+    --go: #63C9A6; --go-bg: #102E26;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--signal);
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 52px); line-height: 1.05; font-weight: 600;
+    letter-spacing: -0.035em; margin: 14px 0 0; text-wrap: balance;
+  }
+  .deck {
+    font-size: 19px; color: var(--ink-2); margin: 18px 0 0;
+    max-width: 62ch; text-wrap: pretty;
+  }
+  h2 {
+    font-size: 13px; font-family: var(--mono); letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-3);
+    margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+  h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; }
+  section { margin-top: 60px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--sunk); padding: 2px 5px; border-radius: 4px;
+  }
+
+  .gate {
+    background: var(--signal-bg); border-left: 3px solid var(--signal);
+    border-radius: 0; padding: 22px 24px; margin: 0 0 8px;
+  }
+  .gate p:last-child { margin-bottom: 0; }
+
+  .cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .card .n {
+    font-family: var(--mono); font-size: 26px; font-weight: 600;
+    letter-spacing: -0.04em; display: block; font-variant-numeric: tabular-nums;
+  }
+  .card .l { font-size: 13px; color: var(--ink-3); }
+
+  .scroll { overflow-x: auto; margin: 0 0 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 480px; }
+  th {
+    text-align: left; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+    font-weight: 400; padding: 0 14px 8px 0; border-bottom: 1px solid var(--line);
+  }
+  td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  .phase {
+    display: grid; grid-template-columns: 62px 1fr; gap: 22px;
+    padding: 26px 0; border-top: 1px solid var(--line);
+  }
+  .phase:last-child { border-bottom: 1px solid var(--line); }
+  .phase .tag {
+    font-family: var(--mono); font-size: 12px; color: var(--signal);
+    letter-spacing: .08em; padding-top: 4px;
+  }
+  .phase .out {
+    font-family: var(--mono); font-size: 12px; color: var(--go);
+    background: var(--go-bg); display: inline-block;
+    padding: 3px 9px; border-radius: 5px; margin-top: 10px;
+  }
+
+  ul { margin: 0 0 14px; padding-left: 20px; max-width: 68ch; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--ink-3); }
+
+  .todo { list-style: none; padding: 0; }
+  .todo li {
+    display: grid; grid-template-columns: 22px 1fr; gap: 12px;
+    padding: 13px 0; border-bottom: 1px solid var(--line); margin: 0;
+    max-width: none;
+  }
+  .todo .box {
+    width: 17px; height: 17px; border: 1.5px solid var(--ink-3);
+    border-radius: 4px; margin-top: 4px;
+  }
+  .todo .why { display: block; font-size: 13.5px; color: var(--ink-2); margin-top: 3px; }
+
+  .tree {
+    font-family: var(--mono); font-size: 13px; line-height: 1.85;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px 22px; overflow-x: auto;
+    white-space: pre; margin: 0 0 14px;
+  }
+  .tree b { color: var(--signal); font-weight: 600; }
+  .tree i { color: var(--ink-3); font-style: normal; }
+
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin-bottom: 16px; }
+  .step {
+    flex: 1 1 130px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 13px 15px; font-size: 13.5px;
+  }
+  .step b { display: block; font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: .1em; margin-bottom: 4px; }
+
+  footer { margin-top: 72px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-3); }
+</style>
+
+<div class="wrap">
+
+<div class="eyebrow">Lockin · v1 · 16 Ağustos 2026</div>
+<h1>Windows'tan iki mağazaya</h1>
+<p class="deck">Mac yok. Bulut Mac'inde derlenip TestFlight'tan telefonuna düşecek.
+Aşağıda üç şey var: nasıl çalıştığı, kodun şeması, ve senin yapacakların listesi.</p>
+
+<section>
+<h2>Önce tek gerçek</h2>
+<div class="gate">
+<p><strong>Bu kod hiç çalıştırılmadı.</strong> Yazıldı, derlenmedi. AlarmKit iOS 26 ile
+geldi ve imzaları beta'lar arasında oynadı.</p>
+<p>Bu yüzden takvimdeki her tarih tek bir olaya bağlı: <strong>telefonu sessize alıp
+Focus açtığında alarm çalıyor mu?</strong> O gün gelene kadar ekran güzelleştirme,
+özellik ekleme, Android'e geçme. Sadece bunu kovala.</p>
+</div>
+</section>
+
+<section>
+<h2>Mac olmadan iOS nasıl çıkar</h2>
+<div class="flow">
+<div class="step"><b>1 · Windows</b>Swift yazarsın, git push edersin</div>
+<div class="step"><b>2 · GitHub</b><code>macos-26</code> runner uyanır</div>
+<div class="step"><b>3 · XcodeGen</b><code>project.yml</code> → gerçek .xcodeproj</div>
+<div class="step"><b>4 · Xcode 26</b>Derler, arşivler, imzalar</div>
+<div class="step"><b>5 · TestFlight</b>Telefonuna düşer</div>
+</div>
+<p>Kilit parça <code>project.yml</code>. Xcode projesi normalde elle Xcode'da kurulan
+kırılgan bir paket — o dosya onu metne çeviriyor. Sen YAML'ı Windows'ta düzenliyorsun,
+runner <code>xcodegen generate</code> ile gerçeğini üretiyor.</p>
+<p>İmzalama <code>match</code> ile değil, App Store Connect API anahtarıyla. Xcode
+profilleri kendisi üretiyor. Göremediğin bir makinede hata ayıklayacağın üç parça
+yerine bir parça.</p>
+
+<h3 style="margin-top:32px">Kaybettiğin şeyler — dürüstçe</h3>
+<ul>
+<li><strong>Derleme hatasını 8 dakika sonra görürsün</strong>, 3 saniye sonra değil.
+Bu en büyük bedel. Küçük ve sık commit at.</li>
+<li><strong>Simülatör yok, debugger yok, SwiftUI preview yok.</strong> Hata ayıklama
+<code>print</code> ve TestFlight ile.</li>
+<li><strong>Aylık ~$15-25 CI faturası.</strong> macOS dakikası $0.062. Ücretsiz katman
+private repo'da ayda ~13 build'e yetiyor, ki yetmez.</li>
+</ul>
+<p>Buna karşılık: Mac mini almıyorsun, ve aynı boru hattı Android'i de taşıyor.</p>
+</section>
+
+<section>
+<h2>Kod şeması</h2>
+<p>Tek domain nesnesi var: <code>Commitment</code>. Diğer her şey onun etrafında.
+Üç platform aynı isimleri kullanıyor, yan yana okunabiliyor.</p>
+
+<div class="tree">lockin/
+├─ <b>project.yml</b>              <i>Xcode projesinin tamamı, metin olarak</i>
+├─ .github/workflows/
+│  ├─ ios.yml                <i>macos-26 · XcodeGen · fastlane · TestFlight</i>
+│  └─ android.yml            <i>ubuntu · gradle · Play internal</i>
+├─ fastlane/Fastfile         <i>beta = ship · check = derleme kontrolü</i>
+│
+├─ ios/Lockin/
+│  ├─ Models/Commitment.swift        <i>tek domain nesnesi</i>
+│  ├─ Services/
+│  │  ├─ <b>AlarmService.swift</b>          <i>AlarmKit + nag zinciri ← ürünün kalbi</i>
+│  │  ├─ CommitmentStore.swift       <i>App Group'ta JSON. Veritabanı yok.</i>
+│  │  ├─ SubscriptionService.swift   <i>RevenueCat · entitlement "pro"</i>
+│  │  └─ WatchSyncService.swift      <i>WatchConnectivity</i>
+│  ├─ Intents/ProofIntent.swift      <i>"I'm starting" → uygulamayı aç</i>
+│  └─ Views/                          <i>6 ekran, hepsi bu kadar</i>
+│
+├─ ios/LockinWidget/          <i>Live Activity + Dynamic Island</i>
+├─ ios/LockinWatch/           <i>bilekten kanıt + complication</i>
+├─ android/                   <i>Kotlin + Compose, aynı isimler</i>
+└─ prototype/index.html       <i>çalışan tarayıcı prototipi</i></div>
+
+<h3 style="margin-top:34px">Değiştirmeyeceğin üç karar</h3>
+<ul>
+<li><strong>Backend yok, hesap yok, veritabanı yok.</strong> Her şey cihazda. Sunucu
+eklediğin gün maliyet, gizlilik beyanı ve bir bakım yükü satın alırsın — hiçbiri ilk
+1.000 kullanıcıyı getirmez.</li>
+<li><strong>Nag zinciri yumuşamaz.</strong> Dismiss → 2 dakika sonra tekrar, 5 kez.
+Kibar olursa ürünün var olma sebebi kalmaz.</li>
+<li><strong>Fotoğraf doğrulaması cihazda.</strong> Ağ çağrısı yok. Gecikme bütçesi,
+API faturası ve veri beyanı — üçü birden.</li>
+</ul>
+</section>
+
+<section>
+<h2>Altı faz</h2>
+
+<div class="phase">
+<div class="tag">FAZ 1</div>
+<div>
+<h3>Boru hattını canlandır</h3>
+<p>Kod değil, altyapı. GitHub repo, secret'lar, ilk yeşil build. Uygulamanın
+çalışması gerekmiyor — <em>derlenmesi</em> yeterli.</p>
+<span class="out">Çıktı: telefonunda TestFlight'tan açılan bir uygulama</span>
+</div>
+</div>
+
+<div class="phase">
+<div class="tag">FAZ 2</div>
+<div>
+<h3>Alarmı kanıtla</h3>
+<p>Tek hedef: sessiz mod + Focus açıkken tam ekran alarm. Sonra dismiss → 2 dakika →
+geri geliyor. Bu ikisi çalıştığı an ürün var demektir.</p>
+<p>AlarmKit imzaları tutmazsa <code>AlarmService.swift</code> içindeki
+<code>makeConfiguration</code> ve <code>makeSchedule</code> — hata orada, başka yerde değil.</p>
+<span class="out">Çıktı: sessizdeyken çalan alarmın ekran kaydı</span>
+</div>
+</div>
+
+<div class="phase">
+<div class="tag">FAZ 3</div>
+<div>
+<h3>Android'i saate sok</h3>
+<p>Play hesabın personal ve Kasım 2023 sonrasıysa 12 testçi × 14 gün zorunlu. APK'nın
+mükemmel olması gerekmiyor, <em>çalışması</em> yeterli — saat testçiler opt-in edince
+başlıyor, sen bitirince değil.</p>
+<span class="out">Çıktı: closed testing canlı, 14 günlük saat işliyor</span>
+</div>
+</div>
+
+<div class="phase">
+<div class="tag">FAZ 4</div>
+<div>
+<h3>Para akışını bağla</h3>
+<p>App Store Connect'te abonelik ürünleri, RevenueCat entitlement <code>pro</code>,
+sandbox testi. Ürünleri <em>önce</em> store'da oluştur, sonra RevenueCat'e al —
+tersi eşleşmiyor.</p>
+<span class="out">Çıktı: sandbox'ta satın alma → isPro true → restore çalışıyor</span>
+</div>
+</div>
+
+<div class="phase">
+<div class="tag">FAZ 5</div>
+<div>
+<h3>Mağaza vitrini</h3>
+<p>5 ekran görüntüsü (sadece 6.9" iPhone, 1320×2868 — Apple gerisini ölçekliyor),
+metinler, review notu. iOS'u gönder, <strong>manual release</strong> seç.</p>
+<span class="out">Çıktı: iki store da onaylı, yayınlanmayı bekliyor</span>
+</div>
+</div>
+
+<div class="phase">
+<div class="tag">FAZ 6</div>
+<div>
+<h3>Aynı gün, 20 video</h3>
+<p>Onay geldiği gün değil, 20 videon hazır olduğu gün yayınla. Wayk'in 30 günde
+100K indirmesinin sebebi ilk günden içerik makinesinin hazır olmasıydı.</p>
+<span class="out">Çıktı: iki platform canlı, günde 9 video akıyor</span>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Senin listen</h2>
+<p>Kodu ben yazıyorum. Aşağıdakiler <strong>sadece senin yapabileceğin</strong> şeyler —
+hesap, kimlik, fiziksel dünya. Sırayla.</p>
+
+<ul class="todo">
+<li><span class="box"></span><span><strong>GitHub'da private repo aç, klasörü push et</strong>
+<span class="why">Boru hattının tamamı repoda duruyor. Bu olmadan hiçbir şey derlenmez.</span></span></li>
+
+<li><span class="box"></span><span><strong>Apple Team ID'ni bul</strong>
+<span class="why">App Store Connect ▸ Membership ▸ Team ID. 10 karakter. <code>project.yml</code>'a ve GitHub secret'a girecek.</span></span></li>
+
+<li><span class="box"></span><span><strong>App Store Connect API anahtarı üret (.p8)</strong>
+<span class="why">Users and Access ▸ Integrations ▸ App Store Connect API ▸ + · Rol: App Manager. <strong>Dosya bir kez indiriliyor, kaybedersen yenisini üretmen gerekiyor.</strong></span></span></li>
+
+<li><span class="box"></span><span><strong>4 GitHub secret gir</strong>
+<span class="why"><code>DEVELOPMENT_TEAM</code>, <code>ASC_KEY_ID</code>, <code>ASC_ISSUER_ID</code>, <code>ASC_KEY_CONTENT</code> (.p8 dosyasının base64'ü).</span></span></li>
+
+<li><span class="box"></span><span><strong>Ters domainini seç ve her yerde değiştir</strong>
+<span class="why"><code>com.yourname</code> geçen her yer: <code>project.yml</code>, <code>Appfile</code>, <code>ProofIntent.swift</code>, android manifest. Bundle ID sonradan değişmiyor.</span></span></li>
+
+<li><span class="box"></span><span><strong>App Store Connect'te uygulamayı oluştur, adı rezerve et</strong>
+<span class="why">İsim ilk kaydedene gidiyor. "Lockin" doluysa: Onset, Startline, Nudged, No Excuse.</span></span></li>
+
+<li><span class="box"></span><span><strong>Play Console'da hesap tipini kontrol et</strong>
+<span class="why">Setup ▸ Developer account. Personal + Kasım 2023 sonrası mı? Cevap tüm takvimi belirliyor.</span></span></li>
+
+<li><span class="box"></span><span><strong>12 testçi bul</strong>
+<span class="why">Sınıf, yurt, Discord. Muaf değilsen bu tek geri alınamaz gecikme — 14 gün onlar opt-in edince başlıyor.</span></span></li>
+
+<li><span class="box"></span><span><strong>Domain al, terms + privacy sayfalarını koy</strong>
+<span class="why">Paywall'daki linkler çalışmak zorunda, yoksa red. İki statik HTML yeter.</span></span></li>
+
+<li><span class="box"></span><span><strong>Abonelik ürünlerini oluştur</strong>
+<span class="why">Tek grup, aylık $7.99 + yıllık $44.99, 3 gün deneme. Her ürün için localization + inceleme görseli zorunlu, yoksa sandbox'ta görünmez.</span></span></li>
+
+<li><span class="box"></span><span><strong>RevenueCat'te entitlement <code>pro</code>, ürünleri attach et</strong>
+<span class="why">Attach etmezsen satın alma başarılı olur ama <code>isPro</code> false kalır. Sessiz hata, saatler yer.</span></span></li>
+
+<li><span class="box"></span><span><strong>TikTok'ta 3 hesap aç, bugün ilk videoyu at</strong>
+<span class="why">Bu listedeki tek şey ki kodla hiç ilgisi yok ve en çok o belirleyecek. Prototipin var — göstererek başla.</span></span></li>
+</ul>
+</section>
+
+<section>
+<h2>2 milyon indirme gerçekten neye benziyor</h2>
+<p>Hedefi küçültmüyorum ama matematiği göstereyim, çünkü yol üç aşamalı ve
+çoğu kişi birincide takılıp bırakıyor.</p>
+
+<div class="scroll">
+<table>
+<tr><th>Aşama</th><th>Ne yapıyorsun</th><th>Gerçekçi çıktı</th></tr>
+<tr><td>1 · Organik</td><td>Günde 9 video, tek başına. 0-6. ay</td><td class="num">20K – 100K indirme</td></tr>
+<tr><td>2 · Creator ağı</td><td>50-250 mikro creator, ürünü gerçekten kullanan. 6-12. ay</td><td class="num">300K – 800K</td></tr>
+<tr><td>3 · Ücretli</td><td>Kâr geri yatırımı, Meta + TikTok Ads. 12. ay+</td><td class="num">2M+</td></tr>
+</table>
+</div>
+
+<p>Cal AI tam bu merdiveni çıktı: organik → 250 creator'lık ağ ($2M/ay'da tıkandı) →
+aylık $1M+ reklam harcaması → $5.7M/ay. Wayk 30 günde 100K'yı ilk günden hazır bir
+UGC ekibiyle yaptı.</p>
+<p><strong>Aşama 3'ü senin kârın finanse ediyor, cebin değil.</strong> Yani asıl soru
+2M değil: <em>ilk 1.000 abone.</em> Oraya varırsan merdivenin geri kalanı para
+problemine dönüşür, ki o çözülebilir bir problemdir.</p>
+
+<div class="cards" style="margin-top:24px">
+<div class="card"><span class="n">$150</span><span class="l">ilk yıl sabit maliyet</span></div>
+<div class="card"><span class="n">~$20</span><span class="l">aylık CI faturası</span></div>
+<div class="card"><span class="n">1.000</span><span class="l">gerçek hedef: ilk abone</span></div>
+</div>
+</section>
+
+<footer>
+Kaynaklar: RevenueCat State of Subscription Apps 2026 · Apple AlarmKit · GitHub Actions
+macos-26 (GA Şubat 2026) · Google Play kapalı test politikası · Wayk ve Catchr vaka
+çalışmaları. Ayrıntılar repodaki <code>docs/</code> klasöründe.
+</footer>
+
+</div>
