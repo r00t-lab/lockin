@@ -58,7 +58,12 @@ struct QRScannerView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: ScannerViewController, context: Context) {}
 
-    final class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+    /// `@preconcurrency` on the conformance, not a shortcut: `UIViewController` is
+    /// `@MainActor` while `AVCaptureMetadataOutputObjectsDelegate` predates isolation,
+    /// so Swift 6 cannot prove the callback arrives on the main actor. We prove it by
+    /// construction — `setMetadataObjectsDelegate(self, queue: .main)` below. If that
+    /// queue ever changes, this attribute becomes a lie and has to go with it.
+    final class ScannerViewController: UIViewController, @preconcurrency AVCaptureMetadataOutputObjectsDelegate {
 
         var onScan: ((String) -> Void)?
 
