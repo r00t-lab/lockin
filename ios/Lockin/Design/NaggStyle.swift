@@ -95,14 +95,18 @@ extension View {
     }
 
     /// A hairline that reads as drawn rather than as a system separator.
-    func naggCard(done: Bool = false) -> some View {
+    ///
+    /// `alert` is for a commitment that is ringing right now. It wins over `done` because
+    /// the two cannot both be true, and if they somehow are, the alarm is the fact the
+    /// user needs.
+    func naggCard(done: Bool = false, alert: Bool = false) -> some View {
         padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(done ? Nagg.goBg : Nagg.surface)
+            .background(alert ? Nagg.surface : (done ? Nagg.goBg : Nagg.surface))
             .clipShape(.rect(cornerRadius: Nagg.radius))
             .overlay {
                 RoundedRectangle(cornerRadius: Nagg.radius)
-                    .stroke(done ? .clear : Nagg.line, lineWidth: 1)
+                    .stroke(alert ? Nagg.alarm : (done ? .clear : Nagg.line), lineWidth: 1)
             }
     }
 

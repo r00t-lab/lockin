@@ -12,6 +12,10 @@ import SwiftUI
 /// size literal in this file, it belongs in `NaggStyle.swift` instead.
 struct CommitmentListView: View {
 
+    /// Shared with `LockinApp` so both routes to the proof screen — the alarm's
+    /// "I'm starting" intent and the card below — land on the same sheet.
+    @Binding var proofTarget: Commitment?
+
     @Environment(CommitmentStore.self) private var store
     @Environment(SubscriptionService.self) private var subscriptions
 
@@ -27,18 +31,24 @@ struct CommitmentListView: View {
             ScrollView {
                 LazyVStack(spacing: 10) {
                     if let rehearsal = store.rehearsal {
-                        RehearsalCard(commitment: rehearsal) {
-                            Task { await store.endRehearsal() }
-                        }
+                        RehearsalCard(
+                            commitment: rehearsal,
+                            needsProof: store.needsProof(rehearsal),
+                            onProve: { proofTarget = rehearsal },
+                            onStop: { Task { await store.endRehearsal() } }
+                        )
                     }
 
                     if store.visibleCommitments.isEmpty {
                         emptyState
                     } else {
                         ForEach(store.visibleCommitments) { commitment in
-                            CommitmentCard(commitment: commitment) {
-                                Task { await store.delete(commitment) }
-                            }
+                            CommitmentCard(
+                                commitment: commitment,
+                                needsProof: store.needsProof(commitment),
+                                onProve: { proofTarget = commitment },
+                                onDelete: { Task { await store.delete(commitment) } }
+                            )
                         }
                     }
                 }
@@ -112,12 +122,28 @@ struct CommitmentListView: View {
         .background(Nagg.ground)
     }
 
+    /// A menu rather than a button, because which proof you rehearse decides which screen
+    /// you get. Picking one silently is how someone rehearses the timer, waits for a
+    /// camera, and concludes the camera is broken.
     private var rail: some View {
         VStack(spacing: 9) {
-            Button("Rehearse the alarm") {
-                Task { await armRehearsal() }
+            Menu {
+                ForEach(Commitment.ProofKind.allCases, id: \.self) { kind in
+                    Button {
+                        Task { await armRehearsal(kind) }
+                    } label: {
+                        Label(kind.label, systemImage: kind.systemImageName)
+                    }
+                }
+            } label: {
+                Text("Rehearse the alarm")
+                    .font(Nagg.sans(15, .medium))
+                    .foregroundStyle(Nagg.ground)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background(Nagg.ink)
+                    .clipShape(.rect(cornerRadius: 11))
             }
-            .buttonStyle(NaggPrimaryButton())
             .disabled(store.rehearsal != nil)
             .opacity(store.rehearsal == nil ? 1 : 0.4)
 
@@ -131,14 +157,14 @@ struct CommitmentListView: View {
         .padding(.bottom, 26)
     }
 
-    private func armRehearsal() async {
+    private func armRehearsal(_ proofKind: Commitment.ProofKind) async {
         guard await AlarmService.shared.ensureAuthorized() else {
             rehearsalError = "Nagg needs alarm permission before it can ring. Allow it in Settings."
             return
         }
         do {
             rehearsalError = nil
-            try await store.startRehearsal()
+            try await store.startRehearsal(proofKind: proofKind)
         } catch {
             rehearsalError = "Couldn't schedule the rehearsal: \(error.localizedDescription)"
         }
@@ -167,41 +193,55 @@ struct CommitmentListView: View {
 
 private struct CommitmentCard: View {
     let commitment: Commitment
+    let needsProof: Bool
+    let onProve: () -> Void
     let onDelete: () -> Void
 
     private var isDone: Bool { commitment.isDoneToday }
 
     var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(commitment.title)
-                    .font(Nagg.sans(15, .medium))
-                    .strikethrough(isDone, pattern: .solid)
-                    .foregroundStyle(isDone ? Nagg.go : Nagg.ink)
+        VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(commitment.title)
+                        .font(Nagg.sans(15, .medium))
+                        .strikethrough(isDone, pattern: .solid)
+                        .foregroundStyle(isDone ? Nagg.go : Nagg.ink)
 
-                Text(meta)
-                    .font(Nagg.mono(12, .regular))
-                    .monospacedDigit()
-                    .foregroundStyle(isDone ? Nagg.go : Nagg.ink2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(needsProof ? "Ringing — you haven't proved it" : meta)
+                        .font(Nagg.mono(12, .regular))
+                        .monospacedDigit()
+                        .foregroundStyle(statusColor)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            if commitment.currentStreak > 0 {
-                Text("\(commitment.currentStreak)")
-                    .naggFigure(15)
-                    .foregroundStyle(isDone ? Nagg.go : Nagg.ink)
+                if commitment.currentStreak > 0 {
+                    Text("\(commitment.currentStreak)")
+                        .naggFigure(15)
+                        .foregroundStyle(isDone ? Nagg.go : Nagg.ink)
+                }
+
+                Button(action: onDelete) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Nagg.ink3)
+                        .padding(4)
+                }
+                .accessibilityLabel("Delete \(commitment.title)")
             }
 
-            Button(action: onDelete) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Nagg.ink3)
-                    .padding(4)
+            if needsProof {
+                Button("Prove you started", action: onProve)
+                    .buttonStyle(NaggPrimaryButton(tint: Nagg.alarm, label: .white))
             }
-            .accessibilityLabel("Delete \(commitment.title)")
         }
-        .naggCard(done: isDone)
+        .naggCard(done: isDone, alert: needsProof)
         .opacity(commitment.isEnabled ? 1 : 0.4)
+    }
+
+    private var statusColor: Color {
+        if needsProof { return Nagg.alarm }
+        return isDone ? Nagg.go : Nagg.ink2
     }
 
     /// "07:00 · Mon–Fri · photo". Mono, because the user scans it rather than reads it.
@@ -217,21 +257,32 @@ private struct CommitmentCard: View {
 /// user forgets they started is an alarm going off in a lecture.
 private struct RehearsalCard: View {
     let commitment: Commitment
+    let needsProof: Bool
+    let onProve: () -> Void
     let onStop: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Rehearsal armed").naggLabel(Nagg.alarm)
-                Text("Lock the phone. It rings through Silent.")
-                    .font(Nagg.sans(14))
-                    .foregroundStyle(Nagg.ink)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 12) {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Rehearsal armed").naggLabel(Nagg.alarm)
+                    Text(needsProof
+                         ? "It's ringing. \(commitment.proofKind.label) — nothing else stops it."
+                         : "Lock the phone. It rings through Silent.")
+                        .font(Nagg.sans(14))
+                        .foregroundStyle(Nagg.ink)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button("Stop", action: onStop)
-                .font(Nagg.sans(13, .medium))
-                .foregroundStyle(Nagg.alarm)
+                Button("Stop", action: onStop)
+                    .font(Nagg.sans(13, .medium))
+                    .foregroundStyle(Nagg.alarm)
+            }
+
+            if needsProof {
+                Button("Prove you started", action: onProve)
+                    .buttonStyle(NaggPrimaryButton(tint: Nagg.alarm, label: .white))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)

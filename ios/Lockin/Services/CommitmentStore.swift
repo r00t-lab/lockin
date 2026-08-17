@@ -90,8 +90,20 @@ final class CommitmentStore {
 
     // MARK: - Rehearsal
 
+    /// True while this commitment is being nagged and has not been proved. Drives the
+    /// "Prove you started" card, which is the route to the proof screen that does not
+    /// depend on the alarm's own button having worked.
+    func needsProof(_ commitment: Commitment) -> Bool {
+        !commitment.isDoneToday && AlarmService.shared.isMidChain(commitment.id)
+    }
+
     /// Arm a compressed run of the whole mechanic. See `Commitment.rehearsal`.
-    func startRehearsal(proofKind: Commitment.ProofKind = .focusTimer) async throws {
+    ///
+    /// The proof kind is the caller's choice and there is no sensible default: a timer
+    /// rehearsal and a photo rehearsal exercise completely different screens, and picking
+    /// one silently means whoever is testing gets the other one and concludes the camera
+    /// is broken.
+    func startRehearsal(proofKind: Commitment.ProofKind) async throws {
         await endRehearsal()
 
         let commitment = Commitment.rehearsal(

@@ -55,11 +55,15 @@ struct LockinAlarmActivity: Widget {
                                 .font(Nagg.sans(15, .semibold))
                                 .foregroundStyle(Nagg.alarmDeep)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 11)
-                                .background(.white)
-                                .clipShape(.rect(cornerRadius: 11))
+                                .padding(.vertical, 3)
                         }
-                        .buttonStyle(.plain)
+                        // A system button style, not `.plain` with a hand-drawn
+                        // background. In a Live Activity the tap target comes from the
+                        // style, and a plain button whose look is entirely in its label
+                        // is the classic way to end up with a control that renders
+                        // perfectly and does nothing.
+                        .buttonStyle(.borderedProminent)
+                        .tint(.white)
                     }
                 }
             } compactLeading: {
@@ -99,11 +103,10 @@ struct LockinAlarmActivity: Widget {
                         .font(Nagg.sans(15, .semibold))
                         .foregroundStyle(Nagg.alarmDeep)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(.white)
-                        .clipShape(.rect(cornerRadius: 11))
+                        .padding(.vertical, 4)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .tint(.white)
                 .padding(.top, 4)
             }
         }

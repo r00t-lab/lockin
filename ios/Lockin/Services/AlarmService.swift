@@ -222,6 +222,21 @@ final class AlarmService {
         return chain.expiresAt < .now
     }
 
+    /// The ring has happened and the chain has not run out: this commitment is being
+    /// nagged *right now*, whether or not an alarm is making noise this second.
+    ///
+    /// The list screen uses this to offer proof directly. That matters more than it
+    /// looks: until now the only route to the proof screen was the alarm's "I'm starting"
+    /// button firing an App Intent, so anything that swallowed that tap — the user
+    /// opening the app themselves, a banner rather than the full-screen alert, an intent
+    /// that simply did not run — left them with no way to prove anything and no way to
+    /// stop the nagging. One system button on someone else's surface is too thin a thread
+    /// to hang the whole product on.
+    func isMidChain(_ commitmentID: UUID) -> Bool {
+        guard let chain = chains[commitmentID] else { return false }
+        return chain.firstFire <= .now && .now <= chain.expiresAt
+    }
+
     /// Re-arm any commitment whose chain has been spent or has drifted into the past.
     ///
     /// Call on foreground. A repeating commitment's nags are fixed dates covering exactly
