@@ -135,18 +135,31 @@ Sırayla şunları doğrula. Herhangi biri geçmiyorsa devam etme:
 **Rehearse the alarm** aynı zinciri 20 saniye + 30 saniye aralıklarla oynatır; tüm test
 üç dakikadan kısa. Prova streak'e dokunmaz, listede görünmez, paywall'a sayılmaz.
 
+Buton bir menü: **hangi kanıtı prova ettiğini seçiyorsun.** Fotoğraf, sayaç ve masa kodu
+tamamen farklı ekranlar açar — sayacı prova edip kamera beklemek testin kendisini
+yanıltır. Videolar için fotoğraf akışını prova et.
+
+Alarmın kendi butonu tek yol değil: zincir dönerken uygulamayı açtığında o taahhüdün
+kartı kırmızı çerçeveyle "Ringing — you haven't proved it" der ve doğrudan kanıt
+ekranına götüren bir butonu olur. "I'm starting" herhangi bir sebeple çalışmazsa
+kullanıcının çıkışsız kalmaması için.
+
 Telefon **sessizde ve Focus açıkken**, ekran kilitli, uygulama arka planda değil
 **tamamen kapalı** olsun — bütün mesele uygulama çalışmadan da zincirin dönmesi.
 
 | # | Yap | Görmen gereken |
 |---|---|---|
-| 1 | Rehearse'e bas, uygulamayı kapat, telefonu masaya koy | 20 sn sonra tam ekran alarm |
+| 1 | Rehearse → **fotoğraf**, uygulamayı kapat, ekranı kilitle, telefonu masaya koy | 20 sn sonra tam ekran alarm |
 | 2 | **Dismiss** | 30 sn sonra alarm geri geliyor, buton artık "Still not started" |
 | 3 | Yine Dismiss | Yine geliyor |
 | 4 | Alarma **hiç dokunma**, kendi kendine sussun | Yine geliyor ← eski kodun kaçırdığı satır |
 | 5 | 5. tekrardan sonra Dismiss | **Bir daha gelmiyor.** Gelirse bu 1 yıldız demek |
 | 6 | Tekrar Rehearse → 1. alarmda "I'm starting" → kanıt verme, uygulamayı kapat | 30 sn sonra alarm geri geliyor |
-| 7 | Tekrar Rehearse → "I'm starting" → "Start 25 minutes" | Zincir tamamen susuyor, streak **artmıyor** |
+| 7 | Zincir dönerken uygulamayı aç, **kartın kendi** "Prove you started" butonuna bas | Kamera açılıyor |
+| 8 | Masanın fotoğrafını çek | Zincir tamamen susuyor, streak **artmıyor** (prova sayılmaz) |
+
+Ekran kilitliyken tam ekran alarm gelir; telefonu kullanırken sadece üstte şerit gelir.
+İkincisi iOS'un normali, hata değil.
 
 4. adım iOS'a özel ve en kolay atlanan yer: AlarmKit çalan alarmı kendisi susturur ve
 bunu bize söylemez. Zincir önceden kurulmuş olmasaydı orada sessizce biterdi.
