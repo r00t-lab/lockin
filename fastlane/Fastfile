@@ -6,6 +6,9 @@
 # key and let it create and renew profiles itself via -allowProvisioningUpdates.
 # Fewer secrets, and nothing to rotate by hand.
 
+require "base64"
+require "fileutils"
+
 default_platform(:ios)
 
 platform :ios do
@@ -16,13 +19,25 @@ platform :ios do
 
   desc "Build and ship a build to TestFlight"
   lane :beta do
+    key_id = ENV.fetch("ASC_KEY_ID")
+    issuer_id = ENV.fetch("ASC_ISSUER_ID")
+
     api_key = app_store_connect_api_key(
-      key_id: ENV.fetch("ASC_KEY_ID"),
-      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_id: key_id,
+      issuer_id: issuer_id,
       key_content: ENV.fetch("ASC_KEY_CONTENT"),
       is_key_content_base64: true,
       in_house: false
     )
+
+    # The key above is for fastlane's own API calls. xcodebuild cannot see it, and
+    # without it -allowProvisioningUpdates has no account to work with — it reports
+    # "No Accounts: Add a new account in Accounts settings" and then fails to find a
+    # profile for every target. Write the key to disk and pass the flags explicitly.
+    key_dir = File.expand_path("~/private_keys")
+    FileUtils.mkdir_p(key_dir)
+    key_path = File.join(key_dir, "AuthKey_#{key_id}.p8")
+    File.write(key_path, Base64.decode64(ENV.fetch("ASC_KEY_CONTENT")))
 
     # Build number must be unique per upload, forever. The GitHub run number is
     # monotonic and free.
@@ -39,11 +54,16 @@ platform :ios do
       # `project:`, not `xcodeproj:` — build_app and increment_build_number spell this
       # parameter differently, and fastlane only says so at runtime.
       project: "Lockin.xcodeproj",
-      # No api_key here — build_app does not take one. The app_store_connect_api_key
-      # call above puts it in fastlane's lane context, and gym reads it from there and
-      # forwards the authentication flags to xcodebuild itself. That is what lets
-      # -allowProvisioningUpdates create the four provisioning profiles.
-      xcargs: "-allowProvisioningUpdates CURRENT_PROJECT_VERSION=#{build_number}",
+      # build_app takes no api_key. The authentication reaches xcodebuild through these
+      # three flags instead, which is what lets it create the four provisioning
+      # profiles on the fly.
+      xcargs: [
+        "-allowProvisioningUpdates",
+        "-authenticationKeyPath", key_path,
+        "-authenticationKeyID", key_id,
+        "-authenticationKeyIssuerID", issuer_id,
+        "CURRENT_PROJECT_VERSION=#{build_number}"
+      ].join(" "),
       export_options: {
         signingStyle: "automatic"
       }
