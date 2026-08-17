@@ -34,3 +34,5 @@ ios/**/*.entitlements
 
 # Türetilmiş çıktı — docs/CONTENT.md kaynak, PDF ondan üretiliyor.
 docs/*.pdf
+
+ios/Lockin/Info.plist

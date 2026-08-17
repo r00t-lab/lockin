@@ -40,7 +40,7 @@ struct CommitmentListView: View {
                     emptyState
                 }
             }
-            .navigationTitle("Lockin")
+            .navigationTitle("Nagg")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -87,7 +87,7 @@ struct CommitmentListView: View {
         ContentUnavailableView {
             Label("Nothing holding you accountable", systemImage: "lock.open")
         } description: {
-            Text("Add the thing you keep putting off. Lockin will make sure you can't ignore it.")
+            Text("Add the thing you keep putting off. Nagg will make sure you can't ignore it.")
         } actions: {
             Button("Add a commitment") { showNewCommitment = true }
                 .buttonStyle(.borderedProminent)
