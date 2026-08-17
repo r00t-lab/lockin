@@ -66,6 +66,11 @@ targets:
         INFOPLIST_KEY_NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
         INFOPLIST_KEY_NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        # App Store upload is rejected outright without an icon — the failure arrives
+        # from Transporter after a successful archive, which makes it look like an
+        # upload problem rather than a missing asset. Placeholder for now; replace the
+        # 1024px PNG before the store listing goes live.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     entitlements:
       path: ios/Lockin/Lockin.entitlements
       properties:

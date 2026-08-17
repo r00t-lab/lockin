@@ -82,7 +82,7 @@ jobs:
           #    one diagnostic line, so they are filtered out explicitly.
           cat release.log ~/Library/Logs/gym/*.log 2>/dev/null \
             | sed 's/\x1b\[[0-9;]*m//g' \
-            | grep -aE "error:|doesn't include|No profiles for|No signing certificate|Provisioning profile|requires a provisioning|Failed to register|not supported|is not valid|\[!\]" \
+            | grep -aE "error:|doesn't include|No profiles for|No signing certificate|Provisioning profile|requires a provisioning|Failed to register|not supported|is not valid|ITMS-|Asset validation|delivery service|Invalid |missing|\[!\]" \
             | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )" \
             | awk '!seen[$0]++' \
             | grep -v '^[[:space:]]*$' \
