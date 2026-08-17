@@ -46,6 +46,16 @@ struct CameraPicker: UIViewControllerRepresentable {
 /// The sticker is just the commitment's UUID rendered as a QR code — generate it in
 /// settings, let the user print or screenshot it. Cheap to build, and physically
 /// getting to the desk is the entire point.
+/// Carries an `AVCaptureSession` into a detached task.
+///
+/// The session is thread-safe by contract but Apple has not marked it `Sendable`, so a
+/// closure that captures one cannot be passed where `sending` is required. Boxing states
+/// the guarantee in one place instead of scattering `nonisolated(unsafe)` around, and
+/// gives the next person somewhere to read why it is safe.
+private final class SessionBox: @unchecked Sendable {
+    let session = AVCaptureSession()
+}
+
 struct QRScannerView: UIViewControllerRepresentable {
 
     let onScan: (String) -> Void
@@ -71,7 +81,8 @@ struct QRScannerView: UIViewControllerRepresentable {
         /// controller but `startRunning()` must not run on the main thread — it blocks.
         /// AVCaptureSession is documented as safe to drive from another thread, and we
         /// touch it in exactly three places: configure, start, stop.
-        nonisolated(unsafe) private let session = AVCaptureSession()
+        private let box = SessionBox()
+        private var session: AVCaptureSession { box.session }
         private var previewLayer: AVCaptureVideoPreviewLayer?
         /// One scan per presentation. Without this the delegate fires every frame and
         /// the proof gets recorded dozens of times.
@@ -90,7 +101,9 @@ struct QRScannerView: UIViewControllerRepresentable {
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
             guard !session.isRunning else { return }
-            Task.detached { [session] in session.startRunning() }
+            // startRunning() blocks for a few hundred milliseconds, so it must not run
+            // on the main thread. The box is what makes that legal — see SessionBox.
+            Task.detached { [box] in box.session.startRunning() }
         }
 
         override func viewWillDisappear(_ animated: Bool) {
