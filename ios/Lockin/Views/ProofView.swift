@@ -6,6 +6,10 @@ import Vision
 ///
 /// Design rule — this screen must be finishable in under 8 seconds. Every extra tap is
 /// a person going back to bed. No settings, no explanations, one action.
+///
+/// Visually it is the calm after the red: same paper ground as the rest of the app, one
+/// filled button, and the way out kept deliberately quiet at the bottom. The alarm screen
+/// shouts; this one must not, or the user is still being shouted at while trying to comply.
 struct ProofView: View {
 
     let commitment: Commitment
@@ -21,82 +25,92 @@ struct ProofView: View {
     @State private var showCamera = false
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                header
+        VStack(spacing: 0) {
+            header
 
-                switch commitment.proofKind {
-                case .photo:      photoProof
-                case .focusTimer: timerProof
-                case .deskCode:   deskCodeProof
-                }
-
-                Spacer()
-
-                if let rejection {
-                    Text(rejection)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                }
-
-                Button("I'm not doing it", role: .destructive) {
-                    Task {
-                        await store.recordDismissal(for: commitment.id)
-                        dismiss()
-                    }
-                }
-                .font(.footnote)
+            switch commitment.proofKind {
+            case .photo:      photoProof
+            case .focusTimer: timerProof
+            case .deskCode:   deskCodeProof
             }
-            .padding()
-            .navigationBarBackButtonHidden()
-            .interactiveDismissDisabled()
+
+            Spacer(minLength: 16)
+
+            if let rejection {
+                Text(rejection)
+                    .font(Nagg.sans(13))
+                    .lineSpacing(3)
+                    .foregroundStyle(Nagg.alarm)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 6)
+            }
+
+            Button("I'm not doing it") {
+                Task {
+                    await store.recordDismissal(for: commitment.id)
+                    dismiss()
+                }
+            }
+            .buttonStyle(NaggBailButton())
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 30)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .naggGround()
+        .interactiveDismissDisabled()
     }
 
     private var header: some View {
-        VStack(spacing: 8) {
-            Text("YOU SAID YOU'D START")
-                .font(.caption.weight(.heavy))
-                .foregroundStyle(.secondary)
+        VStack(spacing: 10) {
+            Text("You said you'd start").naggLabel()
+
             Text(commitment.title)
-                .font(.largeTitle.weight(.bold))
+                .font(Nagg.sans(28, .medium))
+                .foregroundStyle(Nagg.ink)
                 .multilineTextAlignment(.center)
+                .lineSpacing(2)
+
             if commitment.currentStreak > 0 {
-                Text("\(commitment.currentStreak) day streak on the line")
-                    .font(.subheadline)
-                    .foregroundStyle(.orange)
+                // The one number on this screen. It is the whole reason someone gets up.
+                (Text("\(commitment.currentStreak)").font(Nagg.mono(13))
+                    + Text(" day streak on the line").font(Nagg.sans(13)))
+                    .foregroundStyle(Nagg.alarm)
             }
         }
+        .padding(.bottom, 22)
     }
 
     // MARK: - Photo
 
     private var photoProof: some View {
         VStack(spacing: 16) {
-            if let capturedImage {
-                Image(uiImage: capturedImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 260)
-                    .clipShape(.rect(cornerRadius: 16))
+            ZStack {
+                if let capturedImage {
+                    Image(uiImage: capturedImage)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Text("Point it at what you're about to work on")
+                        .font(Nagg.sans(13))
+                        .foregroundStyle(Nagg.ink3)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
+                }
             }
+            .frame(height: 210)
+            .frame(maxWidth: .infinity)
+            .background(Nagg.sunk)
+            .clipShape(.rect(cornerRadius: Nagg.radius))
 
-            Button {
+            Button(capturedImage == nil ? "Photograph your setup" : "Retake") {
                 showCamera = true
-            } label: {
-                Label(
-                    capturedImage == nil ? "Photograph your setup" : "Retake",
-                    systemImage: "camera.fill"
-                )
-                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(NaggPrimaryButton())
             .disabled(isCheckingPhoto)
 
             if isCheckingPhoto {
-                ProgressView("Checking…")
+                Text("Checking…").naggLabel()
             }
         }
         .sheet(isPresented: $showCamera) {
@@ -140,11 +154,13 @@ struct ProofView: View {
     // MARK: - Focus timer
 
     private var timerProof: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 22) {
             Text(timerRemaining.formattedClock)
-                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .font(Nagg.mono(58))
                 .monospacedDigit()
+                .tracking(-2)
                 .contentTransition(.numericText())
+                .foregroundStyle(timerRunning ? Nagg.go : Nagg.ink)
 
             Button(timerRunning ? "Running" : "Start 25 minutes") {
                 timerRunning = true
@@ -153,10 +169,10 @@ struct ProofView: View {
                     await store.recordProof(for: commitment.id)
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(NaggPrimaryButton(tint: timerRunning ? Nagg.go : Nagg.ink))
             .disabled(timerRunning)
         }
+        .padding(.top, 12)
         .task(id: timerRunning) {
             guard timerRunning else { return }
             while timerRemaining > 0, !Task.isCancelled {
@@ -170,9 +186,8 @@ struct ProofView: View {
     // MARK: - Desk code
 
     private var deskCodeProof: some View {
-        VStack(spacing: 16) {
-            Text("Scan the sticker on your desk")
-                .font(.headline)
+        VStack(spacing: 14) {
+            Text("Scan the sticker on your desk").naggLabel()
             QRScannerView { payload in
                 guard payload == commitment.id.uuidString else {
                     rejection = "Wrong code. That's not your desk."
@@ -184,7 +199,7 @@ struct ProofView: View {
                 }
             }
             .frame(height: 300)
-            .clipShape(.rect(cornerRadius: 16))
+            .clipShape(.rect(cornerRadius: Nagg.radius))
         }
     }
 }

@@ -355,7 +355,10 @@ final class AlarmService {
         let attributes = AlarmAttributes<LockinMetadata>(
             presentation: AlarmPresentation(alert: alert),
             metadata: LockinMetadata(commitment: commitment),
-            tintColor: Color.accentColor
+            // Not `Color.accentColor`. There is no AccentColor in the asset catalog, so
+            // that resolved to system blue — the alarm, the one surface people photograph,
+            // was wearing another app's colour.
+            tintColor: Nagg.alarm
         )
 
         return AlarmManager.AlarmConfiguration(

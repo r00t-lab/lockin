@@ -106,6 +106,9 @@ targets:
       - path: ios/Lockin/Models/Commitment.swift
       - path: ios/Lockin/Models/LockinMetadata.swift
       - path: ios/Lockin/Intents/ProofIntent.swift
+      # The Live Activity is the alarm as far as the Lock Screen is concerned, and it is
+      # what ends up in every screen recording. It has to be the same red as the app.
+      - path: ios/Lockin/Design/NaggStyle.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.widget

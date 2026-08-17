@@ -9,56 +9,75 @@ import SwiftUI
 /// punished twice, once on price and once on conversion. Do not discount your way in.
 /// Productivity revenue is ~77% monthly, so lead with monthly and offer annual as the
 /// saving, rather than the reverse.
+///
+/// Visually: no padlock, no gradient, no "PRO" badge. The user hit this wall because
+/// they were using the app, so the screen leads with what they already did — their
+/// streak and their excuse count — and the price is set in the same mono as those
+/// numbers, because it is another fact and not a pitch.
 struct PaywallView: View {
 
     @Environment(SubscriptionService.self) private var subscriptions
+    @Environment(CommitmentStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
     @State private var selected: Package?
 
     var body: some View {
-        VStack(spacing: 28) {
-            VStack(spacing: 10) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 44))
-                    .foregroundStyle(.tint)
-                Text("You've used your two free commitments")
-                    .font(.title2.weight(.bold))
-                    .multilineTextAlignment(.center)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Nagg Pro").naggLabel(Nagg.alarm).padding(.bottom, 10)
+
+                Text("Two commitments is where free ends.")
+                    .font(Nagg.sans(26, .medium))
+                    .lineSpacing(2)
+                    .foregroundStyle(Nagg.ink)
+
                 Text("Unlimited commitments, syllabus import, and the weekly report on every excuse you made.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
+                    .font(Nagg.sans(15))
+                    .lineSpacing(4)
+                    .foregroundStyle(Nagg.ink2)
+                    .padding(.top, 10)
 
-            VStack(spacing: 12) {
-                ForEach(subscriptions.offering?.availablePackages ?? [], id: \.identifier) { package in
-                    packageRow(package)
+                receipts.padding(.top, 22)
+
+                VStack(spacing: 8) {
+                    ForEach(subscriptions.offering?.availablePackages ?? [], id: \.identifier) { package in
+                        packageRow(package)
+                    }
                 }
-            }
+                .padding(.top, 22)
 
-            Button {
-                guard let package = selected ?? subscriptions.offering?.availablePackages.first else { return }
-                Task {
-                    if await subscriptions.purchase(package) { dismiss() }
+                Button {
+                    guard let package = selected ?? subscriptions.offering?.availablePackages.first else { return }
+                    Task {
+                        if await subscriptions.purchase(package) { dismiss() }
+                    }
+                } label: {
+                    Text(subscriptions.isPurchasing ? "…" : "Start free trial")
                 }
-            } label: {
-                Text(subscriptions.isPurchasing ? "…" : "Start free trial")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(subscriptions.isPurchasing)
+                .buttonStyle(NaggPrimaryButton())
+                .disabled(subscriptions.isPurchasing)
+                .padding(.top, 20)
 
-            HStack(spacing: 20) {
-                Button("Restore") { Task { await subscriptions.restore() } }
-                Link("Terms", destination: URL(string: "https://lockin.app/terms")!)
-                Link("Privacy", destination: URL(string: "https://lockin.app/privacy")!)
+                HStack(spacing: 18) {
+                    Button("Restore") { Task { await subscriptions.restore() } }
+                    Link("Terms", destination: URL(string: "https://lockin.app/terms")!)
+                    Link("Privacy", destination: URL(string: "https://lockin.app/privacy")!)
+                }
+                .font(Nagg.sans(12))
+                .foregroundStyle(Nagg.ink3)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 18)
+
+                Button("Not now") { dismiss() }
+                    .buttonStyle(NaggBailButton())
+                    .padding(.top, 4)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .padding(.horizontal, 20)
+            .padding(.top, 26)
+            .padding(.bottom, 20)
         }
-        .padding()
+        .naggGround()
         .presentationDragIndicator(.visible)
         .task {
             await subscriptions.refresh()
@@ -66,27 +85,59 @@ struct PaywallView: View {
         }
     }
 
+    /// What the user has already got out of the app, in their own numbers. Far more
+    /// persuasive than any feature list, and it costs nothing to show.
+    private var receipts: some View {
+        let stats = store.weeklyStats
+        return HStack(spacing: 1) {
+            receipt("\(stats.bestStreak)", "best streak")
+            receipt("\(stats.missed)", "excuses")
+        }
+        .background(Nagg.line)
+        .clipShape(.rect(cornerRadius: Nagg.radius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Nagg.radius).stroke(Nagg.line, lineWidth: 1)
+        }
+    }
+
+    private func receipt(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value).naggFigure(24).foregroundStyle(Nagg.ink)
+            Text(label).naggLabel()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Nagg.surface)
+    }
+
     private func packageRow(_ package: Package) -> some View {
         let isSelected = selected?.identifier == package.identifier
         return Button {
             selected = package
         } label: {
-            HStack {
-                VStack(alignment: .leading) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(package.storeProduct.localizedTitle)
-                        .font(.headline)
+                        .font(Nagg.sans(15, .medium))
                     Text(package.storeProduct.localizedPriceString)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(Nagg.mono(13, .regular))
+                        .monospacedDigit()
+                        .foregroundStyle(isSelected ? Nagg.ground.opacity(0.75) : Nagg.ink2)
                 }
                 Spacer()
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                Image(systemName: isSelected ? "checkmark" : "circle")
+                    .font(.system(size: 13, weight: .semibold))
             }
-            .padding()
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
-            .clipShape(.rect(cornerRadius: 14))
+            .foregroundStyle(isSelected ? Nagg.ground : Nagg.ink)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(isSelected ? Nagg.ink : Nagg.surface)
+            .clipShape(.rect(cornerRadius: 11))
+            .overlay {
+                RoundedRectangle(cornerRadius: 11).stroke(isSelected ? .clear : Nagg.line, lineWidth: 1)
+            }
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

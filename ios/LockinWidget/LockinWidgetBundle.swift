@@ -16,22 +16,31 @@ struct LockinWidgetBundle: WidgetBundle {
 /// you just describe what it looks like for your metadata type. The generic parameter
 /// must match the one used in `AlarmAttributes<LockinMetadata>` in the app target, and
 /// `LockinMetadata.swift` must be a member of BOTH targets or this will not compile.
+///
+/// ## This is the screenshot
+/// For most people the first and only Nagg surface they ever see is this one, on a locked
+/// phone at 7am — and it is what a screen recording captures. So it gets the alarm red
+/// full bleed and the app's own type, not the default dark Live Activity chrome with a
+/// tinted padlock. `activityBackgroundTint` is what makes the whole card red; without it
+/// the system picks its own material and the brand disappears.
 struct LockinAlarmActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: AlarmAttributes<LockinMetadata>.self) { context in
             lockScreenView(context.attributes.metadata)
-                .padding()
-                .activityBackgroundTint(.black.opacity(0.85))
+                .padding(16)
+                .activityBackgroundTint(Nagg.alarm)
+                .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: "lock.fill")
-                        .font(.title2)
-                        .foregroundStyle(.tint)
+                    Text("NAGG")
+                        .font(Nagg.mono(11))
+                        .tracking(1.4)
+                        .foregroundStyle(Nagg.alarm)
                 }
                 DynamicIslandExpandedRegion(.center) {
                     Text(context.attributes.metadata?.title ?? fallbackTitle)
-                        .font(.headline)
+                        .font(Nagg.sans(16, .medium))
                         .lineLimit(2)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -42,19 +51,26 @@ struct LockinAlarmActivity: Widget {
                         Button(intent: ProofIntent(
                             commitmentID: metadata.commitmentID.uuidString
                         )) {
-                            Label("I'm starting", systemImage: "arrow.right.circle.fill")
+                            Text("I'm starting")
+                                .font(Nagg.sans(15, .semibold))
+                                .foregroundStyle(Nagg.alarmDeep)
                                 .frame(maxWidth: .infinity)
+                                .padding(.vertical, 11)
+                                .background(.white)
+                                .clipShape(.rect(cornerRadius: 11))
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.plain)
                     }
                 }
             } compactLeading: {
-                Image(systemName: "lock.fill")
+                Circle().fill(Nagg.alarm).frame(width: 8, height: 8)
             } compactTrailing: {
                 Text("NOW")
-                    .font(.caption2.weight(.bold))
+                    .font(Nagg.mono(11))
+                    .tracking(0.6)
+                    .foregroundStyle(Nagg.alarm)
             } minimal: {
-                Image(systemName: "lock.fill")
+                Circle().fill(Nagg.alarm).frame(width: 8, height: 8)
             }
         }
     }
@@ -65,23 +81,33 @@ struct LockinAlarmActivity: Widget {
     /// cannot name the commitment.
     @ViewBuilder
     private func lockScreenView(_ metadata: LockinMetadata?) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("YOU SAID YOU'D START")
-                .font(.caption2.weight(.heavy))
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("You said you'd start")
+                .font(Nagg.mono(11))
+                .tracking(1.4)
+                .textCase(.uppercase)
+                .foregroundStyle(Nagg.alarmPale)
 
             Text(metadata?.title ?? fallbackTitle)
-                .font(.title3.weight(.bold))
-                .lineLimit(2)
+                .font(Nagg.sans(22, .medium))
+                .foregroundStyle(.white)
+                .lineLimit(3)
 
             if let metadata {
                 Button(intent: ProofIntent(commitmentID: metadata.commitmentID.uuidString)) {
-                    Label(metadata.proofKind.label, systemImage: metadata.proofKind.systemImageName)
+                    Text("I'm starting")
+                        .font(Nagg.sans(15, .semibold))
+                        .foregroundStyle(Nagg.alarmDeep)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(.white)
+                        .clipShape(.rect(cornerRadius: 11))
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.plain)
+                .padding(.top, 4)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var fallbackTitle: String { "Time to start" }

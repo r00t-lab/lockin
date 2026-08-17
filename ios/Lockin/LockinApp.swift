@@ -23,7 +23,7 @@ struct LockinApp: App {
         WindowGroup {
             Group {
                 if hasOnboarded {
-                    CommitmentListView(proofTarget: $proofTarget)
+                    CommitmentListView()
                 } else {
                     OnboardingView(hasOnboarded: $hasOnboarded)
                 }
