@@ -47,6 +47,18 @@ Catchr'ın 17M / 8.6M / 5M izlenen üç videosunun ortak yapısı:
 **Yasak:** özellik listesi anlatmak. "Bu uygulama şunu yapıyor" ölür. "Bunu kendime
 kurdum ve pişman oldum" patlar.
 
+## Çekim aracı: Rehearse
+
+Ana ekrandaki **Rehearse the alarm** zinciri 20 sn + 30 sn aralıklarla oynatır. Gerçek
+zincir 10 dakika sürer ve 11 saniyelik bir videoya sığmaz — üstelik her deneme için
+alarmı yeniden kurman gerekir. Prova ile 3 numaralı video ("dismiss bir tuzak") tek
+çekimde, kesmeden, gerçek zamanda çekilebilir. Zincir tek şeyi göstermek zorunda:
+alarmın **geri geldiğini**. Kesme yaparsan o kanıt kaybolur, izleyici montaj sanır.
+
+Prova streak'e ve bahane sayacına dokunmaz, yani aynı videoyu 20 kez çekebilirsin ve
+ekrandaki sayılar hikâyeyi bozmaz. Ama son kareye streak koyacaksan gerçek bir
+taahhütten çek — 0 streak kutlama anını öldürür.
+
 ## Hashtag / topluluk
 
 `#studytok` `#studywithme` `#collegelife` `#procrastination` `#finalsweek` `#lockin`

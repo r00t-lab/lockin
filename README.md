@@ -32,9 +32,11 @@ ios/Lockin/
     SubscriptionService.swift  RevenueCat sarmalayıcı
   Intents/
     ProofIntent.swift          "I'm starting" butonu → uygulamayı aç
+  Design/
+    NaggStyle.swift            ⭐ tüm görsel kimlik — renk, tip, buton, kart
   Views/
     OnboardingView.swift       3 ekran, izin isteme yok
-    CommitmentListView.swift   ana ekran
+    CommitmentListView.swift   ana ekran + prova rayı
     NewCommitmentView.swift    izin tam burada isteniyor
     ProofView.swift            ⭐ foto / sayaç / QR — 8 saniyede bitmeli
     PaywallView.swift          aylık öne, yıllık tasarruf olarak
