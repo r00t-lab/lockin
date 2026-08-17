@@ -58,14 +58,23 @@ jobs:
       # vocabulary is nothing like a compiler's, and a pattern that misses leaves the
       # run unreadable from outside. The tail is short whenever this step fails early,
       # so just publish it.
+      # GitHub renders at most 10 annotations per step, and it keeps the FIRST ten. A
+      # naive tail therefore publishes fastlane's startup banner and drops the actual
+      # error. Send few lines, chosen: fastlane marks errors with [!], and whatever
+      # killed the run is in the last handful. Strip ANSI colour too — the escape
+      # sequences survive into the annotation and make it unreadable.
       - name: Errors only
         if: failure()
         run: |
-          echo "───────── last 60 lines ─────────"
-          tail -n 60 release.log | tee /tmp/errs.txt
-          while IFS= read -r line; do
-            [ -n "$(echo "$line" | tr -d '[:space:]')" ] && echo "::error::${line}"
-          done < /tmp/errs.txt
+          echo "───────── last 80 lines ─────────"
+          tail -n 80 release.log
+          {
+            grep -a "\[!\]" release.log | tail -n 4
+            tail -n 6 release.log
+          } | sed 's/\x1b\[[0-9;]*m//g' \
+            | grep -v '^[[:space:]]*$' \
+            | tail -n 9 > /tmp/errs.txt
+          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Upload logs
         if: failure()
