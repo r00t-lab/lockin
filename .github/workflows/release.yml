@@ -52,53 +52,32 @@ jobs:
           set -o pipefail
           bundle exec fastlane beta 2>&1 | tee release.log
 
-      # Same public-annotations trick as the other workflows: signing failures are the
-      # hardest to read from outside, and this is the step most likely to fail first.
-      # Grepping for known error shapes was the wrong instinct here — fastlane's failure
-      # vocabulary is nothing like a compiler's, and a pattern that misses leaves the
-      # run unreadable from outside. The tail is short whenever this step fails early,
-      # so just publish it.
-      # GitHub renders at most 10 annotations per step, and it keeps the FIRST ten. A
-      # naive tail therefore publishes fastlane's startup banner and drops the actual
-      # error. Send few lines, chosen: fastlane marks errors with [!], and whatever
-      # killed the run is in the last handful. Strip ANSI colour too — the escape
-      # sequences survive into the annotation and make it unreadable.
+      # Publish why Apple said no, in a form readable without a GitHub session.
+      #
+      # Anchoring on fastlane's own markers does not work: it prints its summary table
+      # BEFORE the error, so any window ending at a [!] is just table. altool is the
+      # only thing here that knows the actual reason, and it prefixes every line it
+      # writes — so go straight to that.
       - name: Errors only
         if: failure()
         run: |
-          echo "───────── last 120 lines ─────────"
-          tail -n 120 release.log
+          echo "───────── last 150 lines ─────────"
+          tail -n 150 release.log
 
-          # "Error building the application - see the log above" is all fastlane says;
-          # the real diagnostic is xcodebuild's, and gym also writes its own fuller log
-          # elsewhere. Search both, and prefer signing and compiler lines over
-          # fastlane's summary table — the last matches are the ones that killed it.
-          # Two things that bit earlier attempts, both worth stating:
-          #  - `sort -u` reorders alphabetically, so `head` afterwards keeps whichever
-          #    line happens to sort first, not the one that failed. Dedupe with awk
-          #    instead, which preserves order.
-          #  - xcodebuild echoes every command it runs (codesign, builtin-*,
-          #    ProcessProductPackaging). Those match any keyword grep and crowd out the
-          #    one diagnostic line, so they are filtered out explicitly.
-          # Keyword matching keeps missing the line that matters, because each tool in
-          # the chain has its own vocabulary. So: find where fastlane gave up, and take
-          # the window just before it. Whatever explains the failure is in there,
-          # whatever phrasing it used.
-          # The FIRST [!], not the last. fastlane repeats the error after its summary
-          # table, so anchoring on the last one means the window is forty lines of
-          # timing table — which is exactly what the previous attempt published.
-          n=$(grep -an "\[!\]" release.log | head -1 | cut -d: -f1)
-          if [ -n "$n" ] && [ "$n" -gt 1 ]; then
-            start=$(( n > 40 ? n - 40 : 1 ))
-            sed -n "${start},${n}p" release.log \
-              | sed 's/\x1b\[[0-9;]*m//g' \
-              | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )" \
-              | grep -v '^[[:space:]]*$' \
-              | awk '!seen[$0]++' \
-              | tail -n 9 > /tmp/errs.txt
-          else
-            tail -n 9 release.log | sed 's/\x1b\[[0-9;]*m//g' > /tmp/errs.txt
+          strip() { sed 's/\[[0-9;]*m//g' | grep -v '^[[:space:]]*$' | awk '!seen[$0]++'; }
+
+          grep -a "\[altool\]" release.log | strip | tail -n 9 > /tmp/errs.txt
+
+          if [ ! -s /tmp/errs.txt ]; then
+            n=$(grep -an "fastlane finished with errors" release.log | head -1 | cut -d: -f1)
+            if [ -n "$n" ] && [ "$n" -gt 1 ]; then
+              start=$(( n > 60 ? n - 60 : 1 ))
+              sed -n "${start},${n}p" release.log                 | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )"                 | strip | tail -n 9 > /tmp/errs.txt
+            else
+              tail -n 9 release.log | strip > /tmp/errs.txt
+            fi
           fi
+
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Upload logs
