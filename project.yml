@@ -54,14 +54,17 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin
+        # Internal target/bundle names stay "Lockin" — the App Store name was taken and
+        # renaming internals would invalidate the registered identifiers for nothing.
+        # Only CFBundleDisplayName reaches the user's home screen.
         PRODUCT_NAME: Lockin
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Lockin
+        INFOPLIST_KEY_CFBundleDisplayName: Unsnooze
         # Missing this key does not warn — it crashes the app the moment it asks for
         # alarm permission. See SETUP.md section 5.
-        INFOPLIST_KEY_NSAlarmKitUsageDescription: "Lockin needs alarm access so your commitments ring through Silent and Focus."
-        INFOPLIST_KEY_NSCameraUsageDescription: "Lockin uses the camera so you can prove you actually started."
+        INFOPLIST_KEY_NSAlarmKitUsageDescription: "Unsnooze needs alarm access so your commitments ring through Silent and Focus."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Unsnooze uses the camera so you can prove you actually started."
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
     entitlements:
       path: ios/Lockin/Lockin.entitlements
@@ -85,7 +88,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.widget
         PRODUCT_NAME: LockinWidget
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Lockin
+        INFOPLIST_KEY_CFBundleDisplayName: Unsnooze
         INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: ios/LockinWidget/LockinWidget.entitlements
@@ -115,6 +118,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.watchkitapp
         PRODUCT_NAME: Lockin
         GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Unsnooze
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.yourname.lockin
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
         TARGETED_DEVICE_FAMILY: "4"

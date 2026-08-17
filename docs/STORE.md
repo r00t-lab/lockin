@@ -1,12 +1,15 @@
 # App Store metinleri
 
-İsim müsaitliğini App Store Connect'te kontrol et. "Lockin" alınmışsa yedekler:
-**Onset**, **Startline**, **Nudged**, **No Excuse**.
+**İsim: Unsnooze.** "Lockin" App Store'da alınmıştı. Uydurma bir kelime seçtik —
+hem müsait hem tescil edilebilir, ve mekaniği tek kelimede söylüyor.
+
+İç isimler (`Lockin` target'ları, `com.r00tlab.lockin` bundle ID) bilerek değişmedi.
+Kullanıcı görmüyor, ve kayıtlı identifier'ları geçersiz kılmak boşuna risk olurdu.
 
 ## İsim ve alt başlık
 
 ```
-Name:     Lockin
+Name:     Unsnooze
 Subtitle: The alarm you can't ignore
 ```
 
@@ -27,10 +30,10 @@ karakter israfı olur.
 ```
 You don't have a motivation problem. You have a starting problem.
 
-Every focus app waits for you to open it. Lockin comes to find you.
+Every focus app waits for you to open it. Unsnooze comes to find you.
 
 Set a commitment — "start the essay at 7pm", "leave for class at 8:20", "gym at 5".
-When the time comes, Lockin rings through Silent mode, through Focus, through Do Not
+When the time comes, Unsnooze rings through Silent mode, through Focus, through Do Not
 Disturb. It takes over your Lock Screen. And it does not go away because you tapped
 dismiss.
 
@@ -39,7 +42,7 @@ Photograph your desk. Scan the code you taped to it. Start a 25-minute timer.
 Until you do one of those, the alarm returns every two minutes.
 
 BUILT ON APPLE'S ALARM ENGINE
-Lockin uses AlarmKit, the same system that powers the Clock app. That's why it rings
+Unsnooze uses AlarmKit, the same system that powers the Clock app. That's why it rings
 when everything else stays quiet.
 
 IT KEEPS SCORE
@@ -47,7 +50,7 @@ Streaks for the days you started. And a weekly report of every excuse you made,
 whether you want it or not.
 
 FREE
-Two commitments, free forever. Lockin Pro unlocks unlimited commitments and the
+Two commitments, free forever. Unsnooze Pro unlocks unlimited commitments and the
 weekly report.
 ```
 
@@ -67,7 +70,7 @@ App Store'da küçük görünüyorlar.
 ## Değerlendirme notu (App Review'a)
 
 ```
-Lockin schedules alarms with AlarmKit. To test:
+Unsnooze schedules alarms with AlarmKit. To test:
 1. Create a commitment set 2 minutes from now
 2. Put the device in Silent mode and enable a Focus
 3. The alarm will fire full screen
