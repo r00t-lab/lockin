@@ -35,6 +35,10 @@ platform :ios do
       scheme: "Lockin",
       export_method: "app-store",
       xcodeproj: "Lockin.xcodeproj",
+      # The key has to reach xcodebuild too, not just the upload. Automatic signing
+      # creates the provisioning profiles for all four targets on the fly, and it can
+      # only do that if it can authenticate with App Store Connect.
+      api_key: api_key,
       xcargs: "-allowProvisioningUpdates",
       export_options: {
         signingStyle: "automatic"
