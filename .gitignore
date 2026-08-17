@@ -31,3 +31,6 @@ service-account*.json
 ios/LockinWidget/Info.plist
 ios/LockinWatch/Widget/Info.plist
 ios/**/*.entitlements
+
+# Türetilmiş çıktı — docs/CONTENT.md kaynak, PDF ondan üretiliyor.
+docs/*.pdf

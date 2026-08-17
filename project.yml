@@ -65,6 +65,11 @@ targets:
         # alarm permission. See SETUP.md section 5.
         INFOPLIST_KEY_NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
         INFOPLIST_KEY_NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
+        # Answers the export-compliance question once, in the build, instead of by hand
+        # in App Store Connect on every single upload. False is the truthful answer:
+        # Nagg ships no cryptography of its own, and RevenueCat's HTTPS goes through
+        # URLSession — that is Apple's own OS encryption, which is exempt.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         # Portrait for iPhone, all four for iPad. Apple validates the iPad set even on
         # an iPhone-only app and rejects the bundle if it is not complete — declaring
         # both is cheaper than arguing with the validator.
