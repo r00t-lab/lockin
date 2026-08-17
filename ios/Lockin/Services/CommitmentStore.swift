@@ -124,9 +124,26 @@ final class CommitmentStore {
         await AlarmService.shared.cancel(existing.id)
     }
 
+    /// Count the occurrences that came and went while nobody was watching.
+    ///
+    /// This is the only thing that ever breaks a streak on iOS. Nothing reports a
+    /// dismissed or ignored alarm to us, so a miss has to be derived from the schedule —
+    /// see the occurrence section of `Commitment`. Idempotent: each commitment remembers
+    /// how far it has been counted.
+    func reconcile() {
+        for index in commitments.indices where !commitments[index].isRehearsal {
+            commitments[index].reconcile()
+        }
+        // Save unconditionally. `reconcile` moves each commitment's watermark whether or
+        // not anything was missed, and dropping that write means walking the same window
+        // again on the next launch. `save` pushes to the watch on its way out.
+        save()
+    }
+
     /// Repair chains that have been spent or aged out. Cheap and idempotent — call on
     /// every foreground.
     func refreshChains() async {
+        reconcile()
         await AlarmService.shared.refreshChains(for: commitments)
 
         // A rehearsal is over the moment its chain runs out, whether it was proved,

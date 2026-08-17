@@ -57,6 +57,12 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
     var missCount: Int
     var isEnabled: Bool
     var createdAt: Date
+    /// How far `reconcile` has already counted misses.
+    ///
+    /// Optional so that saved data written before this field existed still decodes —
+    /// Swift's synthesised `Codable` only tolerates a missing key on an Optional, a
+    /// default value on a non-Optional does not help.
+    var reconciledUpTo: Date?
 
     init(
         id: UUID = UUID(),
@@ -69,7 +75,8 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         bestStreak: Int = 0,
         missCount: Int = 0,
         isEnabled: Bool = true,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        reconciledUpTo: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -82,6 +89,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         self.missCount = missCount
         self.isEnabled = isEnabled
         self.createdAt = createdAt
+        self.reconciledUpTo = reconciledUpTo
     }
 
     var hour: Int { Calendar.current.component(.hour, from: fireDate) }
@@ -120,14 +128,136 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         return Calendar.current.isDateInToday(lastCompletedAt)
     }
 
-    mutating func recordProof(at date: Date = .now) {
-        lastCompletedAt = date
-        currentStreak += 1
-        bestStreak = max(bestStreak, currentStreak)
+    // MARK: - Occurrences
+    //
+    // Everything below exists because iOS never tells us the user ignored an alarm.
+    // AlarmKit's Stop button does not reach our process and neither does a ring that
+    // times out untouched (the same wall that forced the nag chain to be scheduled up
+    // front — see `AlarmService`). A miss therefore cannot be *reported*; it has to be
+    // *derived*, by comparing the schedule against the last time proof landed.
+    //
+    // Without this the streak only ever goes up. It counts proofs, not consecutive days:
+    // skip a fortnight, prove once, and it climbs to 12. A streak that cannot break is
+    // not a streak, it is a tally, and the number on the paywall would be a lie.
+
+    /// Scheduled fire times strictly after `start` and no later than `end`, oldest first.
+    ///
+    /// Capped, because a phone left in a drawer for a year should not make the app walk
+    /// three hundred and sixty-five days on the next launch — and once someone has missed
+    /// thirty occurrences, the exact number has stopped meaning anything.
+    func occurrences(after start: Date, upTo end: Date, limit: Int = 30) -> [Date] {
+        guard start < end else { return [] }
+
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+
+        guard repeats.isRecurring else {
+            return (fireDate > start && fireDate <= end) ? [fireDate] : []
+        }
+
+        var found: [Date] = []
+        var cursor = start
+        while found.count < limit,
+              let next = calendar.nextDate(after: cursor, matching: components, matchingPolicy: .nextTime),
+              next <= end {
+            if repeats.weekdays.contains(calendar.component(.weekday, from: next)) {
+                found.append(next)
+            }
+            cursor = next
+        }
+        return found
     }
 
-    mutating func recordMiss() {
+    /// The scheduled time before the one happening today. This is the link the streak
+    /// hangs on: prove today and the run continues only if the previous occurrence was
+    /// also proved.
+    func previousOccurrence(before date: Date) -> Date? {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: date)
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+
+        guard repeats.isRecurring else {
+            return fireDate < startOfToday ? fireDate : nil
+        }
+
+        var cursor = startOfToday
+        // Eight days back covers any weekday pattern, including one that fires once a week.
+        for _ in 0..<8 {
+            guard let previous = calendar.nextDate(
+                after: cursor,
+                matching: components,
+                matchingPolicy: .nextTime,
+                direction: .backward
+            ) else { return nil }
+
+            if repeats.weekdays.contains(calendar.component(.weekday, from: previous)) {
+                return previous
+            }
+            cursor = previous
+        }
+        return nil
+    }
+
+    // MARK: - Outcomes
+
+    /// Proof landed.
+    ///
+    /// Proving twice in one day does not count twice — a repeating commitment that gets
+    /// re-proved after the row is already ticked would otherwise inflate the streak by
+    /// one per tap.
+    mutating func recordProof(at date: Date = .now) {
+        defer {
+            lastCompletedAt = date
+            reconciledUpTo = date
+            bestStreak = max(bestStreak, currentStreak)
+        }
+
+        if let last = lastCompletedAt, Calendar.current.isDate(last, inSameDayAs: date) {
+            return
+        }
+
+        guard let previous = previousOccurrence(before: date) else {
+            // Nothing came before this — first ever, or a one-off. Either way it is day 1.
+            currentStreak = 1
+            return
+        }
+
+        if let last = lastCompletedAt, last >= previous {
+            currentStreak += 1
+        } else {
+            // The run was broken at some point. This proof starts a new one at 1, not 0:
+            // the user did the thing today and the number has to say so.
+            currentStreak = 1
+        }
+    }
+
+    /// The user said out loud they were not doing it.
+    mutating func recordMiss(at date: Date = .now) {
         currentStreak = 0
         missCount += 1
+        // Claim the window so `reconcile` does not count this same occurrence again.
+        reconciledUpTo = date
+    }
+
+    /// Count occurrences that came and went without proof. Call on every foreground.
+    ///
+    /// `grace` keeps an alarm that is ringing *right now* out of the count — the user
+    /// still has the length of the nag chain to answer it, and marking it missed while
+    /// it is audible would be both wrong and insulting.
+    @discardableResult
+    mutating func reconcile(now: Date = .now, grace: TimeInterval = 15 * 60) -> Int {
+        let floor = [reconciledUpTo, lastCompletedAt, createdAt].compactMap { $0 }.max() ?? createdAt
+        let missed = occurrences(after: floor, upTo: now.addingTimeInterval(-grace))
+
+        reconciledUpTo = now.addingTimeInterval(-grace)
+        guard !missed.isEmpty else { return 0 }
+
+        missCount += missed.count
+        currentStreak = 0
+        return missed.count
     }
 }
