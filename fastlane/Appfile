@@ -1,3 +1,2 @@
-# Replace both values before the first run.
-app_identifier("com.yourname.lockin")
-team_id(ENV["DEVELOPMENT_TEAM"])
+app_identifier("com.r00tlab.lockin")
+team_id("VFYZFK5NL3")

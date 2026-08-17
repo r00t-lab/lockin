@@ -54,5 +54,5 @@ struct PendingProof {
 enum AppGroup {
     /// Must match the App Group capability on BOTH the app and the widget target.
     /// Change this to your own team's group before the first build.
-    static let identifier = "group.com.yourname.lockin"
+    static let identifier = "group.com.r00tlab.lockin"
 }
