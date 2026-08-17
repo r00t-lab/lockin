@@ -1,8 +1,7 @@
 name: iOS
 
-# Two triggers on purpose:
-#   push  → cheap compile check, catches AlarmKit signature drift
-#   tag   → full archive + TestFlight, so shipping is deliberate and never accidental
+# Compile check only. Shipping lives in release.yml, triggered by tags — a tag is not
+# a branch, so it would never have matched the filter below.
 on:
   push:
     branches: [main]
@@ -72,24 +71,6 @@ jobs:
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
           echo "───────── warnings ─────────"
           grep -E "warning:" build.log | sort -u | head -15 || true
-
-      # Ruby only enters on a tag, where signing and upload genuinely need fastlane.
-      - uses: ruby/setup-ruby@v1
-        if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          ruby-version: "3.3"
-
-      - name: Install fastlane
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: bundle install
-
-      - name: Ship to TestFlight
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
-        run: bundle exec fastlane beta
 
       - name: Upload logs on failure
         if: failure()

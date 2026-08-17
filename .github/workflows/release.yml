@@ -1,0 +1,73 @@
+name: Release
+
+# Tags only. This is deliberately a separate file from ios.yml: a tag is not a branch,
+# so `on.push.branches` never matches one, and bolting a tag filter onto a workflow that
+# also has a `paths` filter is a reliable way to get a job that silently never runs.
+#
+# ios.yml answers "does it compile" on every push. This answers "ship it", and nothing
+# else triggers it.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          latest=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest/Contents/Developer"; fi
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Lockin.xcodeproj
+        run: xcodegen generate --spec project.yml
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install fastlane
+        run: bundle install
+
+      - name: Archive and upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+        run: |
+          set -o pipefail
+          bundle exec fastlane beta 2>&1 | tee release.log
+
+      # Same public-annotations trick as the other workflows: signing failures are the
+      # hardest to read from outside, and this is the step most likely to fail first.
+      - name: Errors only
+        if: failure()
+        run: |
+          echo "───────── errors ─────────"
+          grep -E "error:|ERROR|Provisioning|provisioning profile|No signing certificate|Code Signing|exit status" release.log \
+            | sort -u | head -40 | tee /tmp/errs.txt
+          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-logs
+          path: |
+            release.log
+            ~/Library/Logs/gym
+          if-no-files-found: ignore
