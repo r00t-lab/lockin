@@ -65,7 +65,12 @@ targets:
         # alarm permission. See SETUP.md section 5.
         INFOPLIST_KEY_NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
         INFOPLIST_KEY_NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
+        # Portrait for iPhone, all four for iPad. Apple validates the iPad set even on
+        # an iPhone-only app and rejects the bundle if it is not complete — declaring
+        # both is cheaper than arguing with the validator.
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        TARGETED_DEVICE_FAMILY: "1"
         # App Store upload is rejected outright without an icon — the failure arrives
         # from Transporter after a successful archive, which makes it look like an
         # upload problem rather than a missing asset. Placeholder for now; replace the
@@ -127,6 +132,9 @@ targets:
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.r00tlab.lockin
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
         TARGETED_DEVICE_FAMILY: "4"
+        # Its own catalog, not the phone's. A single appiconset declaring both ios and
+        # watchos platforms does not satisfy either validator.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     entitlements:
       path: ios/LockinWatch/LockinWatch.entitlements
       properties:
