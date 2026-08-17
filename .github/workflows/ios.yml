@@ -1,7 +1,7 @@
 name: iOS
 
 # Two triggers on purpose:
-#   push  → cheap compile check, catches the AlarmKit signature drift in ~6 minutes
+#   push  → cheap compile check, catches AlarmKit signature drift
 #   tag   → full archive + TestFlight, so shipping is deliberate and never accidental
 on:
   push:
@@ -24,17 +24,21 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 40
 
-    env:
-      DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.app
-
-      - name: Show toolchain
-        run: xcodebuild -version && swift --version
+      # Never hardcode an Xcode path. The runner ships point releases
+      # (Xcode_26.1.app, Xcode_26.6.app…) and a missing exact path kills the job in
+      # seconds with an error that looks nothing like a build failure. Pick the newest
+      # 26.x if one exists, otherwise trust the image default — and print the list
+      # either way so the log tells us what is actually installed.
+      - name: Select Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          latest=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -n "$latest" ]; then sudo xcode-select -s "$latest/Contents/Developer"; fi
+          xcodebuild -version
+          swift --version
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -42,13 +46,27 @@ jobs:
       - name: Generate Lockin.xcodeproj
         run: xcodegen generate --spec project.yml
 
+      # Raw xcodebuild, no Ruby, no fastlane. This step exists to answer one question —
+      # does the Swift compile? — so it holds nothing that can fail for another reason.
+      - name: Compile check
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Lockin.xcodeproj \
+            -scheme Lockin \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      # Ruby only enters on a tag, where signing and upload genuinely need fastlane.
       - uses: ruby/setup-ruby@v1
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
           ruby-version: "3.3"
-          bundler-cache: true
 
-      - name: Compile check
-        run: bundle exec fastlane check
+      - name: Install fastlane
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: bundle install
 
       - name: Ship to TestFlight
         if: startsWith(github.ref, 'refs/tags/v')
@@ -58,12 +76,12 @@ jobs:
           ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
         run: bundle exec fastlane beta
 
-      - name: Upload build log on failure
+      - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
           path: |
             ~/Library/Logs/gym
-            fastlane/report.xml
+            ~/Library/Developer/Xcode/DerivedData/**/Logs/Build
           if-no-files-found: ignore
