@@ -25,11 +25,13 @@ platform :ios do
     )
 
     # Build number must be unique per upload, forever. The GitHub run number is
-    # monotonic and free — never hand-edit this.
-    increment_build_number(
-      build_number: ENV.fetch("GITHUB_RUN_NUMBER", Time.now.to_i.to_s),
-      xcodeproj: "Lockin.xcodeproj"
-    )
+    # monotonic and free.
+    #
+    # Passed as a build setting rather than via increment_build_number: that action
+    # shells out to agvtool, which requires VERSIONING_SYSTEM = apple-generic in the
+    # project. This project is generated fresh by XcodeGen on every run, so setting it
+    # at build time is both simpler and impossible to leave stale.
+    build_number = ENV.fetch("GITHUB_RUN_NUMBER", Time.now.to_i.to_s)
 
     build_app(
       scheme: "Lockin",
@@ -39,7 +41,7 @@ platform :ios do
       # creates the provisioning profiles for all four targets on the fly, and it can
       # only do that if it can authenticate with App Store Connect.
       api_key: api_key,
-      xcargs: "-allowProvisioningUpdates",
+      xcargs: "-allowProvisioningUpdates CURRENT_PROJECT_VERSION=#{build_number}",
       export_options: {
         signingStyle: "automatic"
       }

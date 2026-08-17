@@ -54,13 +54,18 @@ jobs:
 
       # Same public-annotations trick as the other workflows: signing failures are the
       # hardest to read from outside, and this is the step most likely to fail first.
+      # Grepping for known error shapes was the wrong instinct here — fastlane's failure
+      # vocabulary is nothing like a compiler's, and a pattern that misses leaves the
+      # run unreadable from outside. The tail is short whenever this step fails early,
+      # so just publish it.
       - name: Errors only
         if: failure()
         run: |
-          echo "───────── errors ─────────"
-          grep -E "error:|ERROR|Provisioning|provisioning profile|No signing certificate|Code Signing|exit status" release.log \
-            | sort -u | head -40 | tee /tmp/errs.txt
-          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
+          echo "───────── last 60 lines ─────────"
+          tail -n 60 release.log | tee /tmp/errs.txt
+          while IFS= read -r line; do
+            [ -n "$(echo "$line" | tr -d '[:space:]')" ] && echo "::error::${line}"
+          done < /tmp/errs.txt
 
       - name: Upload logs
         if: failure()
