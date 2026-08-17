@@ -9,11 +9,14 @@ import Foundation
 /// slow makes the button feel broken at the exact moment the user is least patient.
 struct ProofIntent: LiveActivityIntent {
 
-    static var title: LocalizedStringResource = "Start now"
-    static var description = IntentDescription("Opens Lockin so you can prove you started.")
+    // `let`, not `var`. AppIntent declares these as get-only requirements, and under
+    // Swift 6 strict concurrency a mutable static is nonisolated shared state — an
+    // error, not a warning. Every App Intent in the project must follow this.
+    static let title: LocalizedStringResource = "Start now"
+    static let description = IntentDescription("Opens Nagg so you can prove you started.")
 
     /// Live Activity intents must opt in to foregrounding the app.
-    static var openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = true
 
     @Parameter(title: "Commitment")
     var commitmentID: String
