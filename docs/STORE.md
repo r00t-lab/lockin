@@ -1,7 +1,10 @@
 # App Store metinleri
 
-**İsim: Unsnooze.** "Lockin" App Store'da alınmıştı. Uydurma bir kelime seçtik —
-hem müsait hem tescil edilebilir, ve mekaniği tek kelimede söylüyor.
+**İsim: Nagg Alarm.** Lockin, Unsnooze ve Nagg üçü de doluydu — tek kelimelik kısa
+isimler App Store'da pratikte tükenmiş durumda. İkinci kelime eklemek çakışmayı
+bitiriyor ve `alarm` en değerli arama kelimemiz olduğu için bedava ASO kazancı.
+
+Ana ekranda yine tek kelime görünüyor: `CFBundleDisplayName` = **Nagg**.
 
 İç isimler (`Lockin` target'ları, `com.r00tlab.lockin` bundle ID) bilerek değişmedi.
 Kullanıcı görmüyor, ve kayıtlı identifier'ları geçersiz kılmak boşuna risk olurdu.
@@ -9,17 +12,17 @@ Kullanıcı görmüyor, ve kayıtlı identifier'ları geçersiz kılmak boşuna 
 ## İsim ve alt başlık
 
 ```
-Name:     Unsnooze
-Subtitle: The alarm you can't ignore
+Name:     Nagg Alarm
+Subtitle: Prove you started, or it returns
 ```
 
-Alt başlık 30 karakter sınırında ve ASO için ismin kadar önemli. "alarm" kelimesi
-mutlaka içinde olsun — aradıkları kelime o.
+Alt başlık 30 karakter sınırında ve ASO için ismin kadar önemli. `alarm` artık isimde
+geçtiği için alt başlığı mekaniği anlatmaya ayırdık — asıl merak uyandıran şey o.
 
 ## Anahtar kelimeler (100 karakter, virgülle, boşluksuz)
 
 ```
-alarm,focus,study,procrastination,accountability,deadline,streak,homework,motivation,timer
+snooze,focus,study,procrastination,accountability,deadline,streak,homework,motivation,timer
 ```
 
 İsimde ve alt başlıkta geçen kelimeleri buraya tekrar yazma — Apple zaten indeksliyor,
@@ -30,10 +33,10 @@ karakter israfı olur.
 ```
 You don't have a motivation problem. You have a starting problem.
 
-Every focus app waits for you to open it. Unsnooze comes to find you.
+Every focus app waits for you to open it. Nagg comes to find you.
 
 Set a commitment — "start the essay at 7pm", "leave for class at 8:20", "gym at 5".
-When the time comes, Unsnooze rings through Silent mode, through Focus, through Do Not
+When the time comes, Nagg rings through Silent mode, through Focus, through Do Not
 Disturb. It takes over your Lock Screen. And it does not go away because you tapped
 dismiss.
 
@@ -42,7 +45,7 @@ Photograph your desk. Scan the code you taped to it. Start a 25-minute timer.
 Until you do one of those, the alarm returns every two minutes.
 
 BUILT ON APPLE'S ALARM ENGINE
-Unsnooze uses AlarmKit, the same system that powers the Clock app. That's why it rings
+Nagg uses AlarmKit, the same system that powers the Clock app. That's why it rings
 when everything else stays quiet.
 
 IT KEEPS SCORE
@@ -50,7 +53,7 @@ Streaks for the days you started. And a weekly report of every excuse you made,
 whether you want it or not.
 
 FREE
-Two commitments, free forever. Unsnooze Pro unlocks unlimited commitments and the
+Two commitments, free forever. Nagg Pro unlocks unlimited commitments and the
 weekly report.
 ```
 
@@ -70,7 +73,7 @@ App Store'da küçük görünüyorlar.
 ## Değerlendirme notu (App Review'a)
 
 ```
-Unsnooze schedules alarms with AlarmKit. To test:
+Nagg schedules alarms with AlarmKit. To test:
 1. Create a commitment set 2 minutes from now
 2. Put the device in Silent mode and enable a Focus
 3. The alarm will fire full screen

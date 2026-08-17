@@ -60,11 +60,11 @@ targets:
         PRODUCT_NAME: Lockin
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Unsnooze
+        INFOPLIST_KEY_CFBundleDisplayName: Nagg
         # Missing this key does not warn — it crashes the app the moment it asks for
         # alarm permission. See SETUP.md section 5.
-        INFOPLIST_KEY_NSAlarmKitUsageDescription: "Unsnooze needs alarm access so your commitments ring through Silent and Focus."
-        INFOPLIST_KEY_NSCameraUsageDescription: "Unsnooze uses the camera so you can prove you actually started."
+        INFOPLIST_KEY_NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
     entitlements:
       path: ios/Lockin/Lockin.entitlements
@@ -88,7 +88,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.widget
         PRODUCT_NAME: LockinWidget
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Unsnooze
+        INFOPLIST_KEY_CFBundleDisplayName: Nagg
         INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: ios/LockinWidget/LockinWidget.entitlements
@@ -118,7 +118,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.yourname.lockin.watchkitapp
         PRODUCT_NAME: Lockin
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Unsnooze
+        INFOPLIST_KEY_CFBundleDisplayName: Nagg
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.yourname.lockin
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
         TARGETED_DEVICE_FAMILY: "4"
