@@ -73,14 +73,20 @@ jobs:
           # the real diagnostic is xcodebuild's, and gym also writes its own fuller log
           # elsewhere. Search both, and prefer signing and compiler lines over
           # fastlane's summary table — the last matches are the ones that killed it.
-          {
-            cat release.log ~/Library/Logs/gym/*.log 2>/dev/null \
-              | grep -aE "error:|Provisioning profile|No profiles for|doesn't include|No signing certificate|Signing for|requires a provisioning|Failed to register|Cannot create a|entitlement" \
-              | tail -n 7
-            grep -a "\[!\]" release.log | tail -n 2
-          } | sed 's/\x1b\[[0-9;]*m//g' \
+          # Two things that bit earlier attempts, both worth stating:
+          #  - `sort -u` reorders alphabetically, so `head` afterwards keeps whichever
+          #    line happens to sort first, not the one that failed. Dedupe with awk
+          #    instead, which preserves order.
+          #  - xcodebuild echoes every command it runs (codesign, builtin-*,
+          #    ProcessProductPackaging). Those match any keyword grep and crowd out the
+          #    one diagnostic line, so they are filtered out explicitly.
+          cat release.log ~/Library/Logs/gym/*.log 2>/dev/null \
+            | sed 's/\x1b\[[0-9;]*m//g' \
+            | grep -aE "error:|doesn't include|No profiles for|No signing certificate|Provisioning profile|requires a provisioning|Failed to register|not supported|is not valid|\[!\]" \
+            | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )" \
+            | awk '!seen[$0]++' \
             | grep -v '^[[:space:]]*$' \
-            | sort -u | head -9 > /tmp/errs.txt
+            | tail -n 9 > /tmp/errs.txt
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Upload logs
