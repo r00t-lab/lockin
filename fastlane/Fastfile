@@ -5,6 +5,11 @@
 # blind on a machine you cannot see. Instead we hand Xcode an App Store Connect API
 # key and let it create and renew profiles itself via -allowProvisioningUpdates.
 # Fewer secrets, and nothing to rotate by hand.
+#
+# The API key must have the **Admin** role. App Manager is enough for uploading but
+# not for cloud-managed distribution certificates, and the failure surfaces late and
+# obscurely: the archive succeeds, then exportArchive reports "No profiles were found"
+# for every target followed by "Cloud signing permission error".
 
 require "base64"
 require "fileutils"
