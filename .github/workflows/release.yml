@@ -84,7 +84,10 @@ jobs:
           # the chain has its own vocabulary. So: find where fastlane gave up, and take
           # the window just before it. Whatever explains the failure is in there,
           # whatever phrasing it used.
-          n=$(grep -an "\[!\]" release.log | tail -1 | cut -d: -f1)
+          # The FIRST [!], not the last. fastlane repeats the error after its summary
+          # table, so anchoring on the last one means the window is forty lines of
+          # timing table — which is exactly what the previous attempt published.
+          n=$(grep -an "\[!\]" release.log | head -1 | cut -d: -f1)
           if [ -n "$n" ] && [ "$n" -gt 1 ]; then
             start=$(( n > 40 ? n - 40 : 1 ))
             sed -n "${start},${n}p" release.log \
