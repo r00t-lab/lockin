@@ -9,6 +9,10 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+// Required by `val currentOnScan by rememberUpdatedState(...)`. Compose's delegate
+// operators are plain extension functions, so `by` on a State does not compile
+// without this import — and the error names the delegate, never the missing import.
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
