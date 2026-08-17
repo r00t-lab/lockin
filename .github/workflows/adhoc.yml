@@ -1,13 +1,11 @@
 name: Ad hoc IPA
 
-# Produces a signed IPA you can install straight onto a registered device, with no
-# TestFlight involved. That is the point: TestFlight on the target phone is failing
-# with keychain error -34018 and cannot authenticate a download, so the build is fine
-# and the delivery channel is not. This routes around it.
+# Produces a signed IPA that installs straight onto a registered device over USB, with
+# no TestFlight in the path. That is the whole point: TestFlight on the target phone
+# fails with keychain error -34018 and cannot authenticate a download, so the build is
+# fine and the delivery channel is not.
 #
-# Install the artifact with 3uTools on Windows (Apps -> Install -> pick the .ipa).
-# The device UDID must be registered in the Apple Developer portal first, otherwise
-# the ad-hoc profile will not include it and the install is refused.
+# Install the artifact with 3uTools on Windows: Apps -> Install -> pick the .ipa.
 on:
   push:
     tags: ["ipa-*"]
@@ -49,26 +47,32 @@ jobs:
           set -o pipefail
           bundle exec fastlane adhoc 2>&1 | tee adhoc.log
 
-      # Look for compiler/exporter diagnostics across the WHOLE log first. Taking a
-      # window before fastlane's "finished with errors" line does not reach far enough:
-      # fastlane echoes the Fastfile and prints its summary table after the failure, so
-      # sixty lines of context are all epilogue. GitHub also keeps only the first ten
-      # annotations, so emit few and emit the right ones.
+      # Keep this step free of quoting tricks. The previous version put an apostrophe
+      # inside a double-quoted grep pattern, which broke the shell and made the step
+      # itself exit 2 — hiding the very error it existed to report.
+      #
+      # Search the whole log: a window at the end never reaches the diagnostic, because
+      # everything fastlane prints after a failure is longer than the window. GitHub
+      # keeps only the first ten annotations, so emit few.
       - name: Errors only
         if: failure()
         run: |
-          echo "───────── last 200 lines ─────────"
-          tail -n 200 adhoc.log
+          echo "----- last 200 lines -----"
+          tail -n 200 adhoc.log || true
 
-          strip() { perl -pe 's/\e\[[0-9;]*[mK]//g' | grep -v '^[[:space:]]*$' | awk '!seen[$0]++'; }
+          cat adhoc.log ~/Library/Logs/gym/*.log 2>/dev/null > /tmp/all.log || true
+          perl -pe 's/\e\[[0-9;]*[mK]//g' /tmp/all.log > /tmp/clean.log || true
 
-          cat adhoc.log ~/Library/Logs/gym/*.log 2>/dev/null             | grep -aE "(^|[[:space:]])error:|No signing certificate|No profiles for|doesn'"'"'t include|Provisioning profile|requires a provisioning|No account for team|no valid"             | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )"             | strip | tail -n 6 > /tmp/errs.txt
+          grep -aE "error:|No signing certificate|No profiles for|Provisioning profile|requires a provisioning|No account for team|Code Signing Error" /tmp/clean.log \
+            | grep -avE "^[[:space:]]*(builtin-|/usr/bin/|cd |export |ProcessProductPackaging|CodeSign )" \
+            | awk '!seen[$0]++' | tail -n 6 > /tmp/errs.txt || true
 
           if [ ! -s /tmp/errs.txt ]; then
-            grep -a "\[!\]" adhoc.log | strip | tail -n 3 > /tmp/errs.txt
+            grep -aF "[!]" /tmp/clean.log | awk '!seen[$0]++' | tail -n 3 > /tmp/errs.txt || true
           fi
 
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
+          exit 0
 
       - name: Publish the IPA
         uses: actions/upload-artifact@v4
