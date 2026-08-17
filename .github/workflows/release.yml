@@ -66,14 +66,21 @@ jobs:
       - name: Errors only
         if: failure()
         run: |
-          echo "───────── last 80 lines ─────────"
-          tail -n 80 release.log
+          echo "───────── last 120 lines ─────────"
+          tail -n 120 release.log
+
+          # "Error building the application - see the log above" is all fastlane says;
+          # the real diagnostic is xcodebuild's, and gym also writes its own fuller log
+          # elsewhere. Search both, and prefer signing and compiler lines over
+          # fastlane's summary table — the last matches are the ones that killed it.
           {
-            grep -a "\[!\]" release.log | tail -n 4
-            tail -n 6 release.log
+            cat release.log ~/Library/Logs/gym/*.log 2>/dev/null \
+              | grep -aE "error:|Provisioning profile|No profiles for|doesn't include|No signing certificate|Signing for|requires a provisioning|Failed to register|Cannot create a|entitlement" \
+              | tail -n 7
+            grep -a "\[!\]" release.log | tail -n 2
           } | sed 's/\x1b\[[0-9;]*m//g' \
             | grep -v '^[[:space:]]*$' \
-            | tail -n 9 > /tmp/errs.txt
+            | sort -u | head -9 > /tmp/errs.txt
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Upload logs
