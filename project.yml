@@ -136,6 +136,9 @@ targets:
       - path: ios/LockinWatch/Widget
       - path: ios/Lockin/Models/Commitment.swift
       - path: ios/Lockin/Models/WatchSyncPayload.swift
+      # The complication reads its data straight from the App Group cache rather than
+      # waking the watch app, so it needs the cache type compiled into its own target.
+      - path: ios/LockinWatch/Services/WatchSnapshotCache.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.watchkitapp.widget
