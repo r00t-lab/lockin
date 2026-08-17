@@ -28,8 +28,8 @@ settings:
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
-    # The watch app is the only iPad-shaped thing we ship. Phone only — see LAUNCH.md
-    # for why supporting iPad costs screenshots, review surface, and testing time.
+    # iPhone only — see LAUNCH.md for why supporting iPad costs screenshots, review
+    # surface, and testing time.
     TARGETED_DEVICE_FAMILY: "1"
 
 packages:
@@ -39,6 +39,15 @@ packages:
 
 targets:
 
+  # The watch targets are deliberately absent. Builds 17 and 18 uploaded, validated,
+  # showed as Testing, and would not install on a device — and every candidate cause in
+  # the watch bundle was a guess costing a ten-minute round trip. Apple Watch was never
+  # in the v1 scope (see PRODUCT.md); it is not worth blocking the one question that
+  # matters, which is whether the alarm rings through Silent mode.
+  #
+  # ios/LockinWatch/ is still in the repo. Re-add these targets once the alarm is proven
+  # on a real phone, and debug the install failure with something to lose.
+
   # ── iPhone app ───────────────────────────────────────────────────────────────
   Lockin:
     type: application
@@ -47,8 +56,6 @@ targets:
       - path: ios/Lockin
     dependencies:
       - target: LockinWidget
-        embed: true
-      - target: LockinWatch
         embed: true
       - package: RevenueCat
     settings:
@@ -114,75 +121,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: ios/LockinWidget/LockinWidget.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.r00tlab.lockin
-
-  # ── Apple Watch app ──────────────────────────────────────────────────────────
-  LockinWatch:
-    type: application
-    platform: watchOS
-    sources:
-      - path: ios/LockinWatch
-        # Widget/ belongs to the complication target below. Without this exclude the
-        # same file lands in two targets and the build fails on duplicate symbols.
-        excludes:
-          - "Widget/**"
-      - path: ios/Lockin/Models/Commitment.swift
-      - path: ios/Lockin/Models/WatchSyncPayload.swift
-    dependencies:
-      - target: LockinWatchWidget
-        embed: true
-    settings:
-      base:
-        # Apple requires exactly this suffix for a companion watch app. Any other
-        # value and the watch app will not install alongside the phone app.
-        PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.watchkitapp
-        PRODUCT_NAME: Lockin
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Nagg
-        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.r00tlab.lockin
-        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
-        # Required for a modern single-target watch app. Without it the embedded watch
-        # bundle is malformed, and iOS refuses to install the *phone* app because of it
-        # — while Apple's upload validation passes happily. The symptom is a TestFlight
-        # build that exists, says Testing, and will not install.
-        INFOPLIST_KEY_WKApplication: YES
-        TARGETED_DEVICE_FAMILY: "4"
-        # Its own catalog, not the phone's. A single appiconset declaring both ios and
-        # watchos platforms does not satisfy either validator.
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-    entitlements:
-      path: ios/LockinWatch/LockinWatch.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.r00tlab.lockin
-
-  # ── Watch complication ───────────────────────────────────────────────────────
-  LockinWatchWidget:
-    type: app-extension
-    platform: watchOS
-    sources:
-      - path: ios/LockinWatch/Widget
-      - path: ios/Lockin/Models/Commitment.swift
-      - path: ios/Lockin/Models/WatchSyncPayload.swift
-      # The complication reads its data straight from the App Group cache rather than
-      # waking the watch app, so it needs the cache type compiled into its own target.
-      - path: ios/LockinWatch/Services/WatchSnapshotCache.swift
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.watchkitapp.widget
-        PRODUCT_NAME: LockinWatchWidget
-        TARGETED_DEVICE_FAMILY: "4"
-    # Same nesting requirement as the phone widget above.
-    info:
-      path: ios/LockinWatch/Widget/Info.plist
-      properties:
-        CFBundleDisplayName: Nagg
-        NSExtension:
-          NSExtensionPointIdentifier: com.apple.widgetkit-extension
-    entitlements:
-      path: ios/LockinWatch/Widget/LockinWatchWidget.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.r00tlab.lockin
