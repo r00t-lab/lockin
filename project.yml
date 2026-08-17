@@ -55,8 +55,6 @@ targets:
     sources:
       - path: ios/Lockin
     dependencies:
-      - target: LockinWidget
-        embed: true
       - package: RevenueCat
     settings:
       base:
@@ -98,31 +96,16 @@ targets:
     # still be tested. Restore this once the install is proven, with the App ID's
     # App Groups capability confirmed as assigned in the portal, not merely ticked.
 
-  # ── Live Activity / Dynamic Island ───────────────────────────────────────────
-  LockinWidget:
-    type: app-extension
-    platform: iOS
-    sources:
-      - path: ios/LockinWidget
-      # Shared with the app. XcodeGen handles multi-target membership by listing the
-      # same path twice — this is the thing SETUP.md warns you to get right by hand.
-      - path: ios/Lockin/Models/Commitment.swift
-      - path: ios/Lockin/Models/LockinMetadata.swift
-      - path: ios/Lockin/Intents/ProofIntent.swift
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.widget
-        PRODUCT_NAME: LockinWidget
-    # A real Info.plist, not GENERATE_INFOPLIST_FILE. Apple requires
-    # NSExtensionPointIdentifier *inside* the NSExtension dictionary, and
-    # INFOPLIST_KEY_* settings can only write flat top-level keys — the build succeeds
-    # and the upload is rejected with error 90348.
-    info:
-      path: ios/LockinWidget/Info.plist
-      properties:
-        CFBundleDisplayName: Nagg
-        NSExtension:
-          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  # The widget extension is cut too, for the same bisection.
+  #
+  # Everything embedded in the app has now been removed: watch app, complication,
+  # widget, App Group entitlement. If THIS installs, the cause is one of those and we
+  # add them back one at a time. If it does not, the problem is in signing or the base
+  # app, and no amount of removing parts will find it.
+  #
+  # Caveat worth stating: AlarmKit presents its alarm through ActivityKit, so without
+  # the widget the alarm may not display properly even if it fires. This build answers
+  # "does it install", nothing else.
 
 schemes:
   Lockin:
