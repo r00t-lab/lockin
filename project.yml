@@ -97,9 +97,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.widget
         PRODUCT_NAME: LockinWidget
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Nagg
-        INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    # A real Info.plist, not GENERATE_INFOPLIST_FILE. Apple requires
+    # NSExtensionPointIdentifier *inside* the NSExtension dictionary, and
+    # INFOPLIST_KEY_* settings can only write flat top-level keys — the build succeeds
+    # and the upload is rejected with error 90348.
+    info:
+      path: ios/LockinWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Nagg
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: ios/LockinWidget/LockinWidget.entitlements
       properties:
@@ -156,9 +163,14 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.watchkitapp.widget
         PRODUCT_NAME: LockinWatchWidget
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
         TARGETED_DEVICE_FAMILY: "4"
+    # Same nesting requirement as the phone widget above.
+    info:
+      path: ios/LockinWatch/Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Nagg
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: ios/LockinWatch/Widget/LockinWatchWidget.entitlements
       properties:
