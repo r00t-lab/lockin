@@ -39,10 +39,10 @@ platform :ios do
       # `project:`, not `xcodeproj:` — build_app and increment_build_number spell this
       # parameter differently, and fastlane only says so at runtime.
       project: "Lockin.xcodeproj",
-      # The key has to reach xcodebuild too, not just the upload. Automatic signing
-      # creates the provisioning profiles for all four targets on the fly, and it can
-      # only do that if it can authenticate with App Store Connect.
-      api_key: api_key,
+      # No api_key here — build_app does not take one. The app_store_connect_api_key
+      # call above puts it in fastlane's lane context, and gym reads it from there and
+      # forwards the authentication flags to xcodebuild itself. That is what lets
+      # -allowProvisioningUpdates create the four provisioning profiles.
       xcargs: "-allowProvisioningUpdates CURRENT_PROJECT_VERSION=#{build_number}",
       export_options: {
         signingStyle: "automatic"
