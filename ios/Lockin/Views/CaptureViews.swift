@@ -67,7 +67,11 @@ struct QRScannerView: UIViewControllerRepresentable {
 
         var onScan: ((String) -> Void)?
 
-        private let session = AVCaptureSession()
+        /// `nonisolated(unsafe)` because this is a property of a `@MainActor` view
+        /// controller but `startRunning()` must not run on the main thread — it blocks.
+        /// AVCaptureSession is documented as safe to drive from another thread, and we
+        /// touch it in exactly three places: configure, start, stop.
+        nonisolated(unsafe) private let session = AVCaptureSession()
         private var previewLayer: AVCaptureVideoPreviewLayer?
         /// One scan per presentation. Without this the delegate fires every frame and
         /// the proof gets recorded dozens of times.

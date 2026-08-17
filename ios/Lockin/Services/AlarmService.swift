@@ -62,9 +62,35 @@ final class AlarmService {
         UserDefaults(suiteName: AppGroup.identifier) ?? .standard
     }
 
-    private let manager = AlarmManager.shared
-
     private init() {}
+
+    // MARK: - The isolation boundary
+    //
+    // AlarmManager and AlarmConfiguration are not Sendable. Holding the manager as a
+    // property of this @MainActor class, or building a configuration here and then
+    // awaiting a call with it, means sending non-Sendable state across an isolation
+    // boundary — an error under Swift 6, and a real data race under Swift 5.
+    //
+    // So every call that actually touches AlarmKit lives in a `nonisolated` helper
+    // that builds what it needs locally. Only `Commitment` crosses the boundary, and
+    // `Commitment` is Sendable. Do not move these back inline "to simplify".
+
+    private nonisolated func performSchedule(
+        alarmID: UUID,
+        commitment: Commitment,
+        isNag: Bool
+    ) async throws {
+        let configuration = try makeConfiguration(for: commitment, isNag: isNag)
+        _ = try await AlarmManager.shared.schedule(id: alarmID, configuration: configuration)
+    }
+
+    private nonisolated func performCancel(alarmID: UUID) async {
+        try? await AlarmManager.shared.cancel(id: alarmID)
+    }
+
+    private nonisolated func performAuthorizationRequest() async throws -> AlarmManager.AuthorizationState {
+        try await AlarmManager.shared.requestAuthorization()
+    }
 
     // MARK: - Authorization
 
@@ -73,7 +99,7 @@ final class AlarmService {
     /// category; the user has to want the alarm before they are asked to allow it.
     @discardableResult
     func ensureAuthorized() async -> Bool {
-        authorizationState = manager.authorizationState
+        authorizationState = AlarmManager.shared.authorizationState
         switch authorizationState {
         case .authorized:
             return true
@@ -81,7 +107,7 @@ final class AlarmService {
             return false
         case .notDetermined:
             do {
-                let state = try await manager.requestAuthorization()
+                let state = try await performAuthorizationRequest()
                 authorizationState = state
                 return state == .authorized
             } catch {
@@ -100,8 +126,7 @@ final class AlarmService {
         guard commitment.isEnabled else { return }
 
         let alarmID = UUID()
-        let configuration = try makeConfiguration(for: commitment, isNag: false)
-        _ = try await manager.schedule(id: alarmID, configuration: configuration)
+        try await performSchedule(alarmID: alarmID, commitment: commitment, isNag: false)
 
         scheduledAlarmIDs[commitment.id] = alarmID
         nagCounts[commitment.id] = 0
@@ -115,8 +140,7 @@ final class AlarmService {
         guard count < maxNags else { return false }
 
         let alarmID = UUID()
-        let configuration = try makeConfiguration(for: commitment, isNag: true)
-        _ = try await manager.schedule(id: alarmID, configuration: configuration)
+        try await performSchedule(alarmID: alarmID, commitment: commitment, isNag: true)
 
         scheduledAlarmIDs[commitment.id] = alarmID
         nagCounts[commitment.id] = count + 1
@@ -131,7 +155,7 @@ final class AlarmService {
 
     func cancel(_ commitmentID: UUID) async {
         guard let alarmID = scheduledAlarmIDs[commitmentID] else { return }
-        try? await manager.cancel(id: alarmID)
+        await performCancel(alarmID: alarmID)
         scheduledAlarmIDs[commitmentID] = nil
     }
 
@@ -146,7 +170,7 @@ final class AlarmService {
     /// (user deleted from the system UI, device restored), and a stale id means a
     /// commitment silently stops firing — the worst possible bug for this app.
     func observeAlarmUpdates() async {
-        for await alarms in manager.alarmUpdates {
+        for await alarms in AlarmManager.shared.alarmUpdates {
             let live = Set(alarms.map(\.id))
             for (commitmentID, alarmID) in scheduledAlarmIDs where !live.contains(alarmID) {
                 scheduledAlarmIDs[commitmentID] = nil
@@ -163,7 +187,7 @@ final class AlarmService {
 
     // MARK: - AlarmKit plumbing (the only API-drift-prone part)
 
-    private func makeConfiguration(
+    private nonisolated func makeConfiguration(
         for commitment: Commitment,
         isNag: Bool
     ) throws -> AlarmManager.AlarmConfiguration<LockinMetadata> {
@@ -201,7 +225,7 @@ final class AlarmService {
         )
     }
 
-    private func makeSchedule(
+    private nonisolated func makeSchedule(
         for commitment: Commitment,
         isNag: Bool
     ) throws -> Alarm.Schedule {
@@ -234,7 +258,7 @@ final class AlarmService {
         )
     }
 
-    private func nextOccurrence(hour: Int, minute: Int) -> Date {
+    private nonisolated func nextOccurrence(hour: Int, minute: Int) -> Date {
         let calendar = Calendar.current
         var components = DateComponents()
         components.hour = hour
