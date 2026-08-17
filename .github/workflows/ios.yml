@@ -56,7 +56,17 @@ jobs:
             -scheme Lockin \
             -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO 2>&1 | tee build.log
+
+      # xcodebuild prints thousands of lines and exits 65 with no summary, which is
+      # useless when you cannot open the machine. Pull just the diagnostics out.
+      - name: Errors only
+        if: failure()
+        run: |
+          echo "───────── errors ─────────"
+          grep -E "error:|fatal error:" build.log | sort -u | head -60 || echo "(no error: lines — see full log)"
+          echo "───────── warnings ─────────"
+          grep -E "warning:" build.log | sort -u | head -20 || true
 
       # Ruby only enters on a tag, where signing and upload genuinely need fastlane.
       - uses: ruby/setup-ruby@v1
