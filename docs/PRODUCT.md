@@ -53,7 +53,8 @@ Lockin kullanıcıyı buluyor.
 - Taahhüt oluştur / sil / tekrarlı gün seçimi
 - AlarmKit alarmı + Live Activity + Dynamic Island
 - Üç kanıt tipi
-- Nag zinciri (dismiss → 2 dk sonra tekrar, max 5)
+- Nag zinciri (alarmdan sonra 2 dk arayla 5 tekrar, kanıt gelince iptal)
+- Prova — aynı zinciri 20 sn + 30 sn arayla oynatır
 - Streak ve kaçırma sayacı
 - Paywall (2 ücretsiz taahhüt sınırı)
 
@@ -97,5 +98,11 @@ kaydı 8 saniye sürer, bu da onu doğrudan TikTok formatına sokar.
   Apple'ın sağlık kategorisi incelemesi demek.
 - **Stop butonu kaldırılamaz.** Apple izin vermez. Sertlik nag zincirinden gelir.
 - **Nag'in bir sonu olmalı.** 5'te durur. Durmazsa 1 yıldız yağar.
+- **iOS'ta zincir önceden kurulur, tepkiyle değil.** AlarmKit'in Stop'u sistemin:
+  uygulamayı uyandırmaz, intent çalıştırmaz, callback vermez. Alarma hiç dokunmamak
+  da öyle. "Dismiss'e basınca sıradakini kur" yazarsan zincir hiç çalışmaz ve bunu
+  fark etmezsin — alarm çalıyor, ürün çalışmıyor. Alarmı kurarken 5 nag'i de yaz,
+  kanıt gelince hepsini iptal et. Android'de tersi doğru: orada çalan servis bizim
+  process'imiz, tepkisel yapı doğru olan. İki platform bilerek farklı.
 - **Kanıt kontrolü hoşgörülü olsun.** Yanlış reddedilen bir fotoğraf, kabul edilen
   sahte bir fotoğraftan çok daha kötü. Sahtekârlık yapan zaten parayı ödemiş.

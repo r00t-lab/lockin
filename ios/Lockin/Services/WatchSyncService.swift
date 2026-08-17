@@ -63,9 +63,14 @@ final class WatchSyncService: NSObject {
 
         self.ringingCommitmentID = ringingCommitmentID
 
+        // `visibleCommitments`, not `commitments` — a rehearsal is a demo of the phone
+        // app and has no business showing up as a habit on someone's wrist.
+        let visible = CommitmentStore.shared.visibleCommitments
+        let ringing = visible.contains { $0.id == ringingCommitmentID } ? ringingCommitmentID : nil
+
         let payload = WatchSyncPayload(
-            commitments: CommitmentStore.shared.commitments,
-            ringingCommitmentID: ringingCommitmentID,
+            commitments: visible,
+            ringingCommitmentID: ringing,
             generatedAt: .now
         )
 
@@ -89,8 +94,9 @@ final class WatchSyncService: NSObject {
     /// Called from `AlarmService.observeAlarmUpdates` with whatever AlarmKit currently
     /// holds. Maps the alerting alarm back to its commitment and tells the wrist.
     ///
-    /// The mapping goes through `AlarmService.scheduledAlarmIDs` rather than a second
-    /// consumer of `alarmUpdates` — that sequence is not safe to iterate twice.
+    /// The mapping goes through `AlarmService.chains` rather than a second consumer of
+    /// `alarmUpdates` — that sequence is not safe to iterate twice. Any rung of the chain
+    /// maps back to the same commitment: to the wrist, a nag is just the alarm again.
     func announceRinging(_ alarms: [Alarm]) {
         // ⚠️ Unverified signature: `Alarm.state` and the `.alerting` case are AlarmKit
         // iOS 26 API that moved between betas, exactly like the two functions flagged in
@@ -98,8 +104,8 @@ final class WatchSyncService: NSObject {
         // of the mapping is ours and is correct.
         let alertingIDs = Set(alarms.filter { $0.state == .alerting }.map(\.id))
 
-        let ringing = AlarmService.shared.scheduledAlarmIDs
-            .first { alertingIDs.contains($0.value) }?
+        let ringing = AlarmService.shared.chains
+            .first { $0.value.alarmIDs.contains(where: alertingIDs.contains) }?
             .key
 
         guard ringing != ringingCommitmentID else { return }

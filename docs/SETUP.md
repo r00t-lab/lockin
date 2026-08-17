@@ -129,6 +129,31 @@ Sırayla şunları doğrula. Herhangi biri geçmiyorsa devam etme:
 6. "Dismiss" → 2 dakika sonra alarm **geri geliyor** ← ürünün tüm değeri bu satırda
 7. Fotoğraf çek → alarm zinciri susuyor, streak 1 oluyor
 
+### 7.1 Nag zinciri testi — "Rehearse the alarm"
+
+6. adım gerçek sürelerle 10 dakika sürer ve her denemede baştan alınır. Ana ekrandaki
+**Rehearse the alarm** aynı zinciri 20 saniye + 30 saniye aralıklarla oynatır; tüm test
+üç dakikadan kısa. Prova streak'e dokunmaz, listede görünmez, paywall'a sayılmaz.
+
+Telefon **sessizde ve Focus açıkken**, ekran kilitli, uygulama arka planda değil
+**tamamen kapalı** olsun — bütün mesele uygulama çalışmadan da zincirin dönmesi.
+
+| # | Yap | Görmen gereken |
+|---|---|---|
+| 1 | Rehearse'e bas, uygulamayı kapat, telefonu masaya koy | 20 sn sonra tam ekran alarm |
+| 2 | **Dismiss** | 30 sn sonra alarm geri geliyor, buton artık "Still not started" |
+| 3 | Yine Dismiss | Yine geliyor |
+| 4 | Alarma **hiç dokunma**, kendi kendine sussun | Yine geliyor ← eski kodun kaçırdığı satır |
+| 5 | 5. tekrardan sonra Dismiss | **Bir daha gelmiyor.** Gelirse bu 1 yıldız demek |
+| 6 | Tekrar Rehearse → 1. alarmda "I'm starting" → kanıt verme, uygulamayı kapat | 30 sn sonra alarm geri geliyor |
+| 7 | Tekrar Rehearse → "I'm starting" → "Start 25 minutes" | Zincir tamamen susuyor, streak **artmıyor** |
+
+4. adım iOS'a özel ve en kolay atlanan yer: AlarmKit çalan alarmı kendisi susturur ve
+bunu bize söylemez. Zincir önceden kurulmuş olmasaydı orada sessizce biterdi.
+
+7. adımda streak artıyorsa prova gerçek taahhüt gibi kaydediliyor demektir — sayaç
+yalancı olur, düzelt.
+
 ## 8. Derlenmezse
 
 AlarmKit iOS 26 ile geldi ve imzalar beta'lar arasında değişti. Riskli her şey tek bir

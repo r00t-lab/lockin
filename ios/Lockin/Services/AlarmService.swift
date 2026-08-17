@@ -2,21 +2,78 @@ import AlarmKit
 import Foundation
 import SwiftUI
 
+// Tuning lives at file scope, not as properties. The `nonisolated` helpers in
+// `AlarmService` read these, and a stored constant on a `@MainActor` type is one
+// Swift-version argument away from needing an `await` to look at. File-scope constants
+// end that argument.
+
+/// How long after a ring the next nag lands.
+private let nagInterval: TimeInterval = 120
+/// Stop nagging eventually. Being unstoppable is a feature; being a bug report is not.
+private let maxNags = 5
+
+/// A rehearsal replays the whole chain in under three minutes instead of ten. Same code
+/// path, compressed clock — see `Commitment.rehearsal`.
+private let rehearsalLeadIn: TimeInterval = 20
+private let rehearsalNagInterval: TimeInterval = 30
+
+/// What we scheduled for one commitment.
+///
+/// Persisted, and not only as a convenience: proof has to cancel a chain that was written
+/// before the process was last killed, and `refreshChains` has to know when a chain has
+/// aged out without having been able to watch it fire.
+///
+/// Top level rather than nested in `AlarmService` — a type nested inside a `@MainActor`
+/// class is a standing question about whether it picks up that isolation, and this one
+/// crosses to `nonisolated` code.
+struct AlarmChain: Codable, Sendable {
+    /// Index 0 is the ring; the rest is the nag chain in order.
+    var alarmIDs: [UUID]
+    /// When the ring goes off. The nags hang off this.
+    var firstFire: Date
+    /// The moment the last nag has fired and the chain is spent.
+    var expiresAt: Date
+}
+
+/// One rung of a chain.
+private struct AlarmLink: Sendable {
+    let alarmID: UUID
+    /// 0 is the ring itself; 1...maxNags are the nags that follow it.
+    let step: Int
+    /// An exact time, or nil to use the commitment's own repeating rule.
+    let fireDate: Date?
+
+    var isNag: Bool { step > 0 }
+}
+
 /// Owns every interaction with AlarmKit.
 ///
 /// ## The one mechanic that matters
 /// AlarmKit always renders a Stop button and Apple will not let you remove it — an alarm
 /// the user physically cannot silence would never pass review. So "you can't dismiss it
-/// without proof" is not enforced by hiding Stop. It is enforced by the **nag loop**:
+/// without proof" is not enforced by hiding Stop. It is enforced by the **nag chain**:
+/// the ring comes back, and back, until the user proves they started.
 ///
-///   1. The commitment alarm fires (through Silent + Focus, that is the AlarmKit gift).
-///   2. Secondary button = "I'm starting" → opens the app straight to the proof screen.
-///   3. Stop button = silences *this* ring, then `scheduleNag` puts another alarm
-///      `nagInterval` later. Up to `maxNags` times.
-///   4. Proof recorded → `clearNags` cancels the whole chain.
+/// ## Why the chain is scheduled up front
+/// The obvious implementation is reactive: user taps Stop → we schedule the next nag.
+/// **That cannot work on iOS.** AlarmKit's Stop button belongs to the system. It does not
+/// launch us, does not run an App Intent, and does not deliver a callback. Neither does
+/// letting the ring time out untouched. The one and only path that wakes this process is
+/// the *secondary* button ("I'm starting"), which is precisely the path where we do not
+/// want to nag. So a reactive chain is a chain that never fires — the product's entire
+/// thesis, quietly absent. (Android is reactive and correct, because there the ringing
+/// service is our own process. Do not port that shape back here.)
 ///
-/// This is the same shape as Alarmy's anti-cheat, which is the moat on a $500K/mo app.
-/// Do not water it down: if the nag loop is polite, the product has no reason to exist.
+/// Instead `schedule(_:)` writes the whole chain at once: the ring, then `maxNags` fixed
+/// alarms spaced `nagInterval` apart. They fire whether or not we are alive to see it.
+/// `clearNags` tears the rest down the moment proof lands. Escaping still costs the user
+/// six deliberate taps spread over ten minutes, which is the point.
+///
+/// The cost is that the chain for a *repeating* commitment only covers the next
+/// occurrence — the nags are fixed dates, the ring is a weekly rule. Proof reschedules
+/// it, and so does `refreshChains()` on foreground. A user who never opens the app again
+/// still gets the ring; they just stop getting nagged. That degradation is acceptable and
+/// deliberate; do not "fix" it by scheduling a week of chains, which blows the alarm budget.
 ///
 /// ## API drift warning
 /// AlarmKit shipped in iOS 26 and the signatures moved between betas. Everything Apple
@@ -29,40 +86,20 @@ final class AlarmService {
 
     static let shared = AlarmService()
 
-    /// How long after a dismissed-without-proof ring we come back.
-    private let nagInterval: TimeInterval = 120
-    /// Stop nagging eventually. Being unstoppable is a feature; being a bug report is not.
-    private let maxNags = 5
-
     private(set) var authorizationState: AlarmManager.AuthorizationState = .notDetermined
-    /// Alarm ids currently live, keyed by the commitment they belong to.
-    private(set) var scheduledAlarmIDs: [UUID: UUID] = [:]
 
-    /// Nag counts have to survive process death. Two rings are two minutes apart and iOS
-    /// will happily terminate us in between — an in-memory counter resets every time,
-    /// which quietly turns "at most 5 nags" into "forever". Found by the Android port,
-    /// where the process is killed far more aggressively.
-    private var nagCounts: [UUID: Int] {
-        get {
-            let raw = defaults.dictionary(forKey: nagCountsKey) as? [String: Int] ?? [:]
-            return raw.reduce(into: [:]) { out, pair in
-                if let id = UUID(uuidString: pair.key) { out[id] = pair.value }
-            }
-        }
-        set {
-            let raw = newValue.reduce(into: [String: Int]()) { out, pair in
-                out[pair.key.uuidString] = pair.value
-            }
-            defaults.set(raw, forKey: nagCountsKey)
-        }
+    private(set) var chains: [UUID: AlarmChain] = [:] {
+        didSet { persistChains() }
     }
 
-    private let nagCountsKey = "lockin.nagCounts"
+    private let chainsKey = "lockin.alarmChains"
     private var defaults: UserDefaults {
         UserDefaults(suiteName: AppGroup.identifier) ?? .standard
     }
 
-    private init() {}
+    private init() {
+        loadChains()
+    }
 
     // MARK: - The isolation boundary
     //
@@ -72,16 +109,12 @@ final class AlarmService {
     // boundary — an error under Swift 6, and a real data race under Swift 5.
     //
     // So every call that actually touches AlarmKit lives in a `nonisolated` helper
-    // that builds what it needs locally. Only `Commitment` crosses the boundary, and
-    // `Commitment` is Sendable. Do not move these back inline "to simplify".
+    // that builds what it needs locally. Only `Commitment` and `AlarmLink` cross the
+    // boundary, and both are Sendable. Do not move these back inline "to simplify".
 
-    private nonisolated func performSchedule(
-        alarmID: UUID,
-        commitment: Commitment,
-        isNag: Bool
-    ) async throws {
-        let configuration = try makeConfiguration(for: commitment, isNag: isNag)
-        _ = try await AlarmManager.shared.schedule(id: alarmID, configuration: configuration)
+    private nonisolated func performSchedule(_ link: AlarmLink, commitment: Commitment) async throws {
+        let configuration = try makeConfiguration(for: commitment, link: link)
+        _ = try await AlarmManager.shared.schedule(id: link.alarmID, configuration: configuration)
     }
 
     private nonisolated func performCancel(alarmID: UUID) async {
@@ -120,60 +153,109 @@ final class AlarmService {
 
     // MARK: - Scheduling
 
-    /// Schedule (or reschedule) the alarm chain for a commitment.
+    /// Schedule (or reschedule) the ring **and its whole nag chain** for a commitment.
+    ///
+    /// The ring is scheduled with `try`: if it fails the caller must hear about it, an
+    /// alarm that silently did not arm is the worst bug this app can ship. The nags are
+    /// best-effort — a device at its alarm limit should still get the ring rather than
+    /// have the whole commitment fail because rung four would not fit.
     func schedule(_ commitment: Commitment) async throws {
         await cancel(commitment.id)
         guard commitment.isEnabled else { return }
 
-        let alarmID = UUID()
-        try await performSchedule(alarmID: alarmID, commitment: commitment, isNag: false)
+        let firstFire = nextFire(for: commitment)
+        let spacing = nagSpacing(for: commitment)
+        var ids: [UUID] = []
 
-        scheduledAlarmIDs[commitment.id] = alarmID
-        nagCounts[commitment.id] = 0
-    }
+        let ring = AlarmLink(
+            alarmID: UUID(),
+            step: 0,
+            fireDate: commitment.repeats.isRecurring ? nil : firstFire
+        )
+        try await performSchedule(ring, commitment: commitment)
+        ids.append(ring.alarmID)
 
-    /// Called when the user hit Stop but has not proved they started.
-    /// Returns false once we have run out of patience so the UI can stop promising more.
-    @discardableResult
-    func scheduleNag(for commitment: Commitment) async throws -> Bool {
-        let count = nagCounts[commitment.id, default: 0]
-        guard count < maxNags else { return false }
+        for step in 1...maxNags {
+            let link = AlarmLink(
+                alarmID: UUID(),
+                step: step,
+                fireDate: firstFire.addingTimeInterval(spacing * Double(step))
+            )
+            do {
+                try await performSchedule(link, commitment: commitment)
+                ids.append(link.alarmID)
+            } catch {
+                break
+            }
+        }
 
-        let alarmID = UUID()
-        try await performSchedule(alarmID: alarmID, commitment: commitment, isNag: true)
-
-        scheduledAlarmIDs[commitment.id] = alarmID
-        nagCounts[commitment.id] = count + 1
-        return true
+        chains[commitment.id] = AlarmChain(
+            alarmIDs: ids,
+            firstFire: firstFire,
+            expiresAt: firstFire.addingTimeInterval(spacing * Double(maxNags))
+        )
     }
 
     /// Proof accepted. Tear the chain down.
     func clearNags(for commitmentID: UUID) async {
         await cancel(commitmentID)
-        nagCounts[commitmentID] = 0
     }
 
     func cancel(_ commitmentID: UUID) async {
-        guard let alarmID = scheduledAlarmIDs[commitmentID] else { return }
-        await performCancel(alarmID: alarmID)
-        scheduledAlarmIDs[commitmentID] = nil
+        guard let chain = chains[commitmentID] else { return }
+        for alarmID in chain.alarmIDs {
+            await performCancel(alarmID: alarmID)
+        }
+        chains[commitmentID] = nil
     }
 
     func cancelAll() async {
-        for commitmentID in scheduledAlarmIDs.keys {
+        for commitmentID in chains.keys {
             await cancel(commitmentID)
         }
-        nagCounts.removeAll()
+    }
+
+    /// No chain left, or one whose last nag is behind us. A missing chain counts as
+    /// spent: `observeAlarmUpdates` drops the entry once every alarm in it has gone.
+    func isSpent(_ commitmentID: UUID) -> Bool {
+        guard let chain = chains[commitmentID] else { return true }
+        return chain.expiresAt < .now
+    }
+
+    /// Re-arm any commitment whose chain has been spent or has drifted into the past.
+    ///
+    /// Call on foreground. A repeating commitment's nags are fixed dates covering exactly
+    /// one occurrence, so without this the second morning rings but never nags. The check
+    /// is on the clock rather than on how many ids survive, because `observeAlarmUpdates`
+    /// only prunes while we are running — a chain consumed with the app closed still looks
+    /// complete on the next launch.
+    ///
+    /// Repeating commitments only. A one-off that has already fired is finished, and
+    /// re-arming it here would quietly turn "once" into "every day at this time".
+    func refreshChains(for commitments: [Commitment]) async {
+        for commitment in commitments
+        where commitment.isEnabled && commitment.repeats.isRecurring && !commitment.isRehearsal {
+            // Only the clock decides. A chain that came up short because the device was
+            // at its alarm limit is not worth retrying on every single foreground.
+            if let expiry = chains[commitment.id]?.expiresAt, expiry >= .now { continue }
+            try? await schedule(commitment)
+        }
     }
 
     /// Mirror AlarmKit's own state back into ours. Alarms can disappear underneath us
-    /// (user deleted from the system UI, device restored), and a stale id means a
-    /// commitment silently stops firing — the worst possible bug for this app.
+    /// (fired and stopped, user deleted from the system UI, device restored), and a stale
+    /// id means we would try to cancel something that no longer exists.
     func observeAlarmUpdates() async {
         for await alarms in AlarmManager.shared.alarmUpdates {
             let live = Set(alarms.map(\.id))
-            for (commitmentID, alarmID) in scheduledAlarmIDs where !live.contains(alarmID) {
-                scheduledAlarmIDs[commitmentID] = nil
+            for (commitmentID, chain) in chains {
+                let survivors = chain.alarmIDs.filter(live.contains)
+                guard survivors.count != chain.alarmIDs.count else { continue }
+                if survivors.isEmpty {
+                    chains[commitmentID] = nil
+                } else {
+                    chains[commitmentID]?.alarmIDs = survivors
+                }
             }
 
             // Forward the same batch to the wrist. This is the only signal the watch app
@@ -185,15 +267,74 @@ final class AlarmService {
         }
     }
 
+    // MARK: - Timing
+
+    private nonisolated func nagSpacing(for commitment: Commitment) -> TimeInterval {
+        commitment.isRehearsal ? rehearsalNagInterval : nagInterval
+    }
+
+    /// When the ring will actually go off. Anchors the nag chain.
+    private nonisolated func nextFire(for commitment: Commitment) -> Date {
+        let calendar = Calendar.current
+        var components = DateComponents()
+        components.hour = commitment.hour
+        components.minute = commitment.minute
+
+        guard commitment.repeats.isRecurring else {
+            // A one-off keeps the exact date it was given, seconds included. Matching on
+            // hour/minute here would push an alarm set for 90 seconds from now to the
+            // same clock minute *tomorrow* — which is how a rehearsal silently never rings.
+            if commitment.fireDate > Date().addingTimeInterval(1) {
+                return commitment.fireDate
+            }
+            return calendar.nextDate(
+                after: .now,
+                matching: components,
+                matchingPolicy: .nextTime
+            ) ?? Date().addingTimeInterval(60)
+        }
+
+        // Walk forward to the first day the commitment actually repeats on. Re-matching
+        // each step rather than adding 24h keeps the wall-clock time correct across a
+        // daylight-saving change.
+        var candidate = calendar.nextDate(after: .now, matching: components, matchingPolicy: .nextTime)
+        for _ in 0..<7 {
+            guard let date = candidate else { break }
+            if commitment.repeats.weekdays.contains(calendar.component(.weekday, from: date)) {
+                return date
+            }
+            candidate = calendar.nextDate(after: date, matching: components, matchingPolicy: .nextTime)
+        }
+        return candidate ?? Date().addingTimeInterval(60)
+    }
+
+    /// A rehearsal ring, far enough out that the user can put the phone down first.
+    nonisolated func rehearsalFireDate() -> Date {
+        Date().addingTimeInterval(rehearsalLeadIn)
+    }
+
+    // MARK: - Persistence
+
+    private func loadChains() {
+        guard let data = defaults.data(forKey: chainsKey),
+              let stored = try? JSONDecoder().decode([UUID: AlarmChain].self, from: data) else { return }
+        chains = stored
+    }
+
+    private func persistChains() {
+        guard let data = try? JSONEncoder().encode(chains) else { return }
+        defaults.set(data, forKey: chainsKey)
+    }
+
     // MARK: - AlarmKit plumbing (the only API-drift-prone part)
 
     private nonisolated func makeConfiguration(
         for commitment: Commitment,
-        isNag: Bool
+        link: AlarmLink
     ) throws -> AlarmManager.AlarmConfiguration<LockinMetadata> {
 
         let stopButton = AlarmButton(
-            text: isNag ? "Still not started" : "Dismiss",
+            text: link.isNag ? "Still not started" : "Dismiss",
             textColor: .white,
             systemImageName: "xmark"
         )
@@ -218,7 +359,7 @@ final class AlarmService {
         )
 
         return AlarmManager.AlarmConfiguration(
-            schedule: try makeSchedule(for: commitment, isNag: isNag),
+            schedule: try makeSchedule(for: commitment, link: link),
             attributes: attributes,
             secondaryIntent: ProofIntent(commitmentID: commitment.id.uuidString),
             sound: .default
@@ -227,19 +368,12 @@ final class AlarmService {
 
     private nonisolated func makeSchedule(
         for commitment: Commitment,
-        isNag: Bool
+        link: AlarmLink
     ) throws -> Alarm.Schedule {
 
-        // A nag is always "n seconds from right now", never on the weekly pattern.
-        if isNag {
-            return .fixed(Date().addingTimeInterval(nagInterval))
-        }
-
-        guard commitment.repeats.isRecurring else {
-            // One-off. If the time has already passed today, roll to tomorrow rather
-            // than scheduling in the past (AlarmKit throws on past dates).
-            let next = nextOccurrence(hour: commitment.hour, minute: commitment.minute)
-            return .fixed(next)
+        // Nags — and one-off rings — are always an exact moment, never a weekly pattern.
+        if let fireDate = link.fireDate {
+            return .fixed(fireDate)
         }
 
         let time = Alarm.Schedule.Relative.Time(
@@ -256,18 +390,6 @@ final class AlarmService {
                 repeats: .weekly(weekdays)
             )
         )
-    }
-
-    private nonisolated func nextOccurrence(hour: Int, minute: Int) -> Date {
-        let calendar = Calendar.current
-        var components = DateComponents()
-        components.hour = hour
-        components.minute = minute
-        return calendar.nextDate(
-            after: .now,
-            matching: components,
-            matchingPolicy: .nextTime
-        ) ?? Date().addingTimeInterval(60)
     }
 }
 

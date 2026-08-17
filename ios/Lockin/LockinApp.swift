@@ -44,20 +44,20 @@ struct LockinApp: App {
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 claimPendingProof()
+                Task { await store.refreshChains() }
             }
         }
     }
 
     /// The intent stashed a commitment id before foregrounding us. Pick it up and
     /// go straight to proof — never make the user find the row themselves at 7am.
+    ///
+    /// Nothing is armed here. Tapping "I'm starting" silences this ring, but the rest of
+    /// the chain was already written when the alarm was scheduled, so walking away
+    /// without proving is not a free escape — the next nag is already on the books.
     private func claimPendingProof() {
         guard let id = PendingProof.shared.take(),
               let commitment = store.commitment(id: id) else { return }
         proofTarget = commitment
-
-        // Tapping "I'm starting" silenced the ring. If the user then walks away without
-        // proving anything, that must not be a free escape — arm a nag now. Recording
-        // proof calls `clearNags` and cancels it. (The Android port closed the same hole.)
-        Task { try? await alarms.scheduleNag(for: commitment) }
     }
 }

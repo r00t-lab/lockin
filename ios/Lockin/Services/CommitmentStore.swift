@@ -34,8 +34,20 @@ final class CommitmentStore {
 
     // MARK: - Queries
 
+    /// Everything the user actually committed to. The rehearsal lives in the same array
+    /// so that the alarm, intent and proof paths need no special case, but it is not a
+    /// commitment — it must never show in the list, count against the free tier, or move
+    /// a streak. Every query below goes through this; `commitments` is for the alarm layer.
+    var visibleCommitments: [Commitment] {
+        commitments.filter { !$0.isRehearsal }
+    }
+
+    var rehearsal: Commitment? {
+        commitments.first(where: \.isRehearsal)
+    }
+
     var activeCount: Int {
-        commitments.filter(\.isEnabled).count
+        visibleCommitments.filter(\.isEnabled).count
     }
 
     func canAddAnother(isPro: Bool) -> Bool {
@@ -48,7 +60,7 @@ final class CommitmentStore {
 
     /// Everything the weekly report needs, in one pass.
     var weeklyStats: (proved: Int, missed: Int, bestStreak: Int) {
-        commitments.reduce(into: (0, 0, 0)) { result, commitment in
+        visibleCommitments.reduce(into: (0, 0, 0)) { result, commitment in
             if commitment.isDoneToday { result.0 += 1 }
             result.1 += commitment.missCount
             result.2 = max(result.2, commitment.bestStreak)
@@ -76,30 +88,84 @@ final class CommitmentStore {
         await AlarmService.shared.cancel(commitment.id)
     }
 
+    // MARK: - Rehearsal
+
+    /// Arm a compressed run of the whole mechanic. See `Commitment.rehearsal`.
+    func startRehearsal(proofKind: Commitment.ProofKind = .focusTimer) async throws {
+        await endRehearsal()
+
+        let commitment = Commitment.rehearsal(
+            firing: AlarmService.shared.rehearsalFireDate(),
+            proofKind: proofKind
+        )
+        commitments.append(commitment)
+        save()
+        try await AlarmService.shared.schedule(commitment)
+    }
+
+    /// Tear it down without touching any streak. Called when the rehearsal is proved,
+    /// dismissed for good, or cancelled from the list.
+    func endRehearsal() async {
+        guard let existing = rehearsal else { return }
+        commitments.removeAll(where: \.isRehearsal)
+        save()
+        await AlarmService.shared.cancel(existing.id)
+    }
+
+    /// Repair chains that have been spent or aged out. Cheap and idempotent — call on
+    /// every foreground.
+    func refreshChains() async {
+        await AlarmService.shared.refreshChains(for: commitments)
+
+        // A rehearsal is over the moment its chain runs out, whether it was proved,
+        // dismissed five times, or simply ignored. Nothing else clears it, and a stale
+        // "Rehearsal armed" banner on a rehearsal that will never ring again is worse
+        // than no banner — it teaches the user the alarm lies.
+        if let rehearsal, AlarmService.shared.isSpent(rehearsal.id) {
+            await endRehearsal()
+        }
+    }
+
+    // MARK: - Occurrences
+
     /// The happy path: user proved they started.
     func recordProof(for commitmentID: UUID) async {
         guard let index = commitments.firstIndex(where: { $0.id == commitmentID }) else { return }
+
+        // A rehearsal proves nothing about a real habit. Clear the chain, drop the row,
+        // leave the streak alone — otherwise the demo would inflate the number the app
+        // exists to keep honest.
+        guard !commitments[index].isRehearsal else {
+            await endRehearsal()
+            return
+        }
+
         commitments[index].recordProof()
         save()
         await AlarmService.shared.clearNags(for: commitmentID)
 
-        // Recurring commitments need their next occurrence put back on the schedule,
-        // because clearNags cancelled the live alarm along with the nag chain.
+        // Put the next occurrence back on the schedule — `clearNags` cancelled the ring
+        // along with the nags, and a one-off is genuinely finished.
         if commitments[index].repeats.isRecurring {
             try? await AlarmService.shared.schedule(commitments[index])
         }
     }
 
-    /// User hit Stop without proving. Start (or continue) the nag chain.
+    /// User walked away from the proof screen without proving.
+    ///
+    /// This does **not** schedule anything. The nag chain was written in full when the
+    /// alarm was scheduled, precisely because on iOS nothing tells us the user hit Stop
+    /// — see the header of `AlarmService`. All that is left to record is the miss.
     func recordDismissal(for commitmentID: UUID) async {
         guard let index = commitments.firstIndex(where: { $0.id == commitmentID }) else { return }
+
+        guard !commitments[index].isRehearsal else {
+            await endRehearsal()
+            return
+        }
+
         commitments[index].recordMiss()
         save()
-
-        let stillNagging = (try? await AlarmService.shared.scheduleNag(for: commitments[index])) ?? false
-        if !stillNagging, commitments[index].repeats.isRecurring {
-            try? await AlarmService.shared.schedule(commitments[index])
-        }
     }
 
     // MARK: - Persistence

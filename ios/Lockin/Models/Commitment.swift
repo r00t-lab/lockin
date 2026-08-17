@@ -87,6 +87,33 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
     var hour: Int { Calendar.current.component(.hour, from: fireDate) }
     var minute: Int { Calendar.current.component(.minute, from: fireDate) }
 
+    // MARK: - Rehearsal
+    //
+    // A rehearsal is a real commitment on a compressed clock: it rings in seconds and its
+    // nags are 30 seconds apart instead of two minutes, so the whole chain plays out in
+    // under three minutes. It exists for three reasons and they all matter — the user can
+    // check the alarm really does beat Silent before they trust it with a 6am, the nag
+    // chain can be verified on a device without burning ten minutes a run, and it is the
+    // only way to film the mechanic for a 30-second video.
+    //
+    // Identity is a fixed id rather than a stored flag so that no Codable migration is
+    // needed and re-rehearsing reuses the same record instead of piling them up.
+
+    /// Deterministic, so `isRehearsal` needs no extra field on disk.
+    static let rehearsalID = UUID(uuidString: "00000000-0000-0000-0000-00000000BEEF")!
+
+    var isRehearsal: Bool { id == Self.rehearsalID }
+
+    static func rehearsal(firing at: Date, proofKind: ProofKind = .focusTimer) -> Commitment {
+        Commitment(
+            id: rehearsalID,
+            title: "Rehearsal — this is what it feels like",
+            fireDate: at,
+            repeats: .never,
+            proofKind: proofKind
+        )
+    }
+
     /// True if the user already proved this one today. Used to grey out the row.
     var isDoneToday: Bool {
         guard let lastCompletedAt else { return false }
