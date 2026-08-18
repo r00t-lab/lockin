@@ -50,8 +50,19 @@ final class CommitmentStore {
         visibleCommitments.filter(\.isEnabled).count
     }
 
+    /// Whether the user may add another commitment.
+    ///
+    /// The free ceiling only applies when there is something to buy. With no store
+    /// products configured the paywall has nothing in it, so enforcing the limit turns
+    /// the "+" button into a dead end: you cannot add, and you cannot pay to add either.
+    /// That is not a limit, it is a lock with no key — it is also a guaranteed App Review
+    /// rejection, since a reviewer taps "+" and reaches a paywall that sells nothing.
+    ///
+    /// This does not soften the number. `freeCommitmentLimit` is still two and still
+    /// binding the moment RevenueCat is configured; see `docs/LAUNCH.md`.
     func canAddAnother(isPro: Bool) -> Bool {
-        isPro || activeCount < Self.freeCommitmentLimit
+        guard SubscriptionService.isConfigured else { return true }
+        return isPro || activeCount < Self.freeCommitmentLimit
     }
 
     func commitment(id: UUID) -> Commitment? {
@@ -69,17 +80,23 @@ final class CommitmentStore {
 
     // MARK: - Mutations
 
+    /// Add a commitment, or add nothing at all.
+    ///
+    /// The alarm is scheduled first. A commitment that saved but failed to arm is the
+    /// worst state this app has: a row sitting in the list looking healthy, which will
+    /// never ring, discovered on the morning it was supposed to matter. Better to fail
+    /// loudly at the moment the user is looking at the screen and can try again.
     func add(_ commitment: Commitment) async throws {
+        try await AlarmService.shared.schedule(commitment)
         commitments.append(commitment)
         save()
-        try await AlarmService.shared.schedule(commitment)
     }
 
     func update(_ commitment: Commitment) async throws {
         guard let index = commitments.firstIndex(where: { $0.id == commitment.id }) else { return }
+        try await AlarmService.shared.schedule(commitment)
         commitments[index] = commitment
         save()
-        try await AlarmService.shared.schedule(commitment)
     }
 
     func delete(_ commitment: Commitment) async {
@@ -95,6 +112,25 @@ final class CommitmentStore {
     /// depend on the alarm's own button having worked.
     func needsProof(_ commitment: Commitment) -> Bool {
         !commitment.isDoneToday && AlarmService.shared.isMidChain(commitment.id)
+    }
+
+    /// True when a commitment should have a live alarm and does not.
+    ///
+    /// Scheduling can fail after the fact — the device hits its alarm ceiling, the user
+    /// deletes the alarm from the system UI, a restore drops it. The row keeps looking
+    /// perfectly healthy while being, in the only sense that matters, switched off. This
+    /// is the one condition the list has to shout about.
+    ///
+    /// A one-off whose time has passed is not unarmed, it is finished.
+    func isSilentlyUnarmed(_ commitment: Commitment) -> Bool {
+        guard commitment.isEnabled, !commitment.isRehearsal else { return false }
+        guard AlarmService.shared.chains[commitment.id] == nil else { return false }
+        return commitment.repeats.isRecurring || commitment.fireDate > .now
+    }
+
+    /// Try again for a commitment whose alarm went missing.
+    func rearm(_ commitment: Commitment) async throws {
+        try await AlarmService.shared.schedule(commitment)
     }
 
     /// What the proof screen should open onto when the app comes to the front.

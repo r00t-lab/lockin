@@ -76,7 +76,9 @@ struct CommitmentListView: View {
                             CommitmentCard(
                                 commitment: commitment,
                                 needsProof: isRinging(commitment),
+                                unarmed: store.isSilentlyUnarmed(commitment),
                                 onProve: { onProve(commitment) },
+                                onRearm: { Task { try? await store.rearm(commitment) } },
                                 onShowCode: { modal = .deskCode(commitment) },
                                 onDelete: { Task { await store.delete(commitment) } }
                             )
@@ -265,7 +267,10 @@ struct CommitmentListView: View {
 private struct CommitmentCard: View {
     let commitment: Commitment
     let needsProof: Bool
+    /// Should have a live alarm and does not. The one thing a card must never keep quiet.
+    let unarmed: Bool
     let onProve: () -> Void
+    let onRearm: () -> Void
     let onShowCode: () -> Void
     let onDelete: () -> Void
 
@@ -280,7 +285,7 @@ private struct CommitmentCard: View {
                         .strikethrough(isDone, pattern: .solid)
                         .foregroundStyle(isDone ? Nagg.go : Nagg.ink)
 
-                    Text(needsProof ? "Ringing — you haven't proved it" : meta)
+                    Text(status)
                         .font(Nagg.mono(12, .regular))
                         .monospacedDigit()
                         .foregroundStyle(statusColor)
@@ -317,14 +322,25 @@ private struct CommitmentCard: View {
             if needsProof {
                 Button("Prove you started", action: onProve)
                     .buttonStyle(NaggPrimaryButton(tint: Nagg.alarm, label: .white))
+            } else if unarmed {
+                Button("Set the alarm again", action: onRearm)
+                    .buttonStyle(NaggPrimaryButton(tint: Nagg.alarm, label: .white))
             }
         }
-        .naggCard(done: isDone, alert: needsProof)
+        .naggCard(done: isDone, alert: needsProof || unarmed)
         .opacity(commitment.isEnabled ? 1 : 0.4)
     }
 
+    /// A row that looks healthy while being switched off is the single most dangerous
+    /// thing this list can show, so "no alarm" outranks everything else it could say.
+    private var status: String {
+        if needsProof { return "Ringing — you haven't proved it" }
+        if unarmed { return "No alarm set — this will not ring" }
+        return meta
+    }
+
     private var statusColor: Color {
-        if needsProof { return Nagg.alarm }
+        if needsProof || unarmed { return Nagg.alarm }
         return isDone ? Nagg.go : Nagg.ink2
     }
 

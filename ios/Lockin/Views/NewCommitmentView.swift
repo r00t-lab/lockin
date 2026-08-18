@@ -17,6 +17,7 @@ struct NewCommitmentView: View {
     @State private var weekdays: Set<Int> = []
     @State private var proofKind: Commitment.ProofKind = .photo
     @State private var permissionDenied = false
+    @State private var scheduleError: String?
     /// Set after saving a desk-code commitment so the sticker is shown immediately.
     @State private var createdDeskCode: Commitment?
 
@@ -66,6 +67,27 @@ struct NewCommitmentView: View {
                 }
 
                 if permissionDenied { permissionNotice.padding(.top, 18) }
+
+                if let scheduleError {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("The alarm didn't get set").naggLabel(Nagg.alarm)
+                        Text(scheduleError)
+                            .font(Nagg.sans(13))
+                            .lineSpacing(3)
+                            .foregroundStyle(Nagg.ink2)
+                        Text("Nothing was saved. Try again — if it keeps failing, long-press the Nagg wordmark for diagnostics.")
+                            .font(Nagg.sans(12))
+                            .foregroundStyle(Nagg.ink3)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Nagg.surface)
+                    .clipShape(.rect(cornerRadius: Nagg.radius))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Nagg.radius).stroke(Nagg.alarm, lineWidth: 1)
+                    }
+                    .padding(.top, 18)
+                }
 
                 VStack(spacing: 9) {
                     Button("Lock it in", action: save)
@@ -174,7 +196,17 @@ struct NewCommitmentView: View {
                 repeats: Commitment.Repeat(weekdays: weekdays),
                 proofKind: proofKind
             )
-            try? await store.add(commitment)
+            // Not `try?`. If the alarm does not arm, the commitment is a row that never
+            // rings — the failure this whole app is one long argument against, and the
+            // one the user has no way of noticing until the morning it does not wake
+            // them. `AlarmService` calls it "the worst bug this app can ship" and then
+            // this call site used to swallow it.
+            do {
+                try await store.add(commitment)
+            } catch {
+                scheduleError = error.localizedDescription
+                return
+            }
 
             if proofKind == .deskCode {
                 createdDeskCode = commitment

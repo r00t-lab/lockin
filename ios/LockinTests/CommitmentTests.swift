@@ -234,6 +234,27 @@ final class CommitmentTests: XCTestCase {
         XCTAssertEqual(rehearsal.id, Commitment.rehearsalID)
     }
 
+    // MARK: - The free ceiling
+
+    /// A limit you cannot pay to lift is a lock with no key. With no store products
+    /// configured the paywall is empty, so enforcing the ceiling makes "+" a dead end —
+    /// which is how adding a commitment stopped working on device, and is also a
+    /// guaranteed App Review rejection when a reviewer taps it.
+    ///
+    /// This is a test of the *rule*, not of `CommitmentStore`, which needs a running app.
+    func testTheFreeCeilingOnlyBindsWhenThereIsSomethingToBuy() {
+        func canAdd(active: Int, isPro: Bool, storeConfigured: Bool) -> Bool {
+            guard storeConfigured else { return true }
+            return isPro || active < 2
+        }
+
+        XCTAssertTrue(canAdd(active: 5, isPro: false, storeConfigured: false),
+                      "no products means no ceiling — otherwise the user is simply stuck")
+        XCTAssertFalse(canAdd(active: 2, isPro: false, storeConfigured: true))
+        XCTAssertTrue(canAdd(active: 2, isPro: true, storeConfigured: true))
+        XCTAssertTrue(canAdd(active: 1, isPro: false, storeConfigured: true))
+    }
+
     // MARK: - Storage migration
 
     /// `reconciledUpTo` was added after people already had commitments on disk. Swift's
