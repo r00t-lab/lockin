@@ -29,10 +29,10 @@ struct LockinApp: App {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
 
     init() {
-        // Replace with your RevenueCat public SDK key (appl_…). Safe to ship — it is a
-        // public key. The placeholder is refused rather than passed through, see
-        // `SubscriptionService`.
-        SubscriptionService.configure(apiKey: "appl_REPLACE_ME")
+        // RevenueCat's public app-specific key. It ships inside the binary by design and
+        // is safe in a public repo — it can fetch offerings and create anonymous
+        // subscribers, and nothing else. The *secret* key never comes near this file.
+        SubscriptionService.configure(apiKey: "appl_BbRPLpESqiQNkgsXoiaAcNyfrew")
     }
 
     var body: some Scene {
