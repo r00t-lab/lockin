@@ -13,10 +13,10 @@ app. All this adds is the headline, the ground and the framing, in the same pale
 type as `NaggStyle.swift`.
 
 ## Three decisions that make these convert
-**The first two are red.** A store listing is skimmed as a filmstrip of thumbnails, and
-five identical pale cards read as one card. Putting the alarm's own colour behind the two
-claims that matter gives the eye somewhere to land and matches what the product actually
-feels like. Three, four and five go back to paper, so the set has a shape.
+**The ground is picked against the capture.** Five identical pale cards read as one card in
+a filmstrip, and worse, a pale app screen on a pale ground disappears into it — only the
+bezel separates them. So the two dark lock-screen shots sit on the alarm red, and the three
+light in-app shots sit on the deep red, which lifts them without the flatness of black.
 
 **The phone bleeds off the bottom.** These screens are sparse by design, which is right on
 a phone and useless in a thumbnail — fitting a whole one in leaves half the image empty and
@@ -46,6 +46,7 @@ INK = (23, 23, 26)
 LINE = (213, 212, 204)
 ALARM = (199, 53, 26)
 ALARM_PALE = (246, 217, 210)
+DEEP = (74, 20, 9)          # --alarm-deep
 WHITE = (255, 255, 255)
 
 SANS = "C:/Windows/Fonts/segoeuib.ttf"
@@ -63,19 +64,23 @@ OUT = "design/store"
 SHOTS = [
     ("1.png", "Rings on Silent.\nRings on Focus.",       "01", "alarm"),
     ("2.png", "Dismiss\ndoesn't work.",                  "02", "alarm"),
-    ("3.png", "Prove you started.\nOr it rings again.",  "03", "paper"),
-    ("4.png", "It counts the days\nyou showed up.",      "04", "paper"),
+    ("3.png", "Prove you started.\nOr it rings again.",  "03", "deep"),
+    ("4.png", "It counts the days\nyou showed up.",      "04", "deep"),
     # Honest about what the capture shows — an empty ledger. "So far" does the threatening.
-    ("5.png", "Zero excuses.\nSo far.",                  "05", "paper"),
+    ("5.png", "Zero excuses.\nSo far.",                  "05", "deep"),
 ]
 
 
 def compose(shot_path: str, headline: str, index: str, ground_name: str) -> Image.Image:
-    loud = ground_name == "alarm"
-    ground = ALARM if loud else PAPER
-    text = WHITE if loud else INK
-    index_colour = ALARM_PALE if loud else ALARM
-    edge = (170, 40, 20) if loud else LINE
+    # The ground is chosen against the capture, not for its own sake. A pale app screen on
+    # a pale ground vanishes into it — only the black bezel separates them, which is what
+    # the first attempt looked like. Dark screens go on red; light screens go on the deep
+    # red, which lifts them without the flat harshness of black.
+    ground = {"alarm": ALARM, "deep": DEEP, "paper": PAPER}[ground_name]
+    on_dark = ground_name in ("alarm", "deep")
+    text = WHITE if on_dark else INK
+    index_colour = ALARM_PALE if on_dark else ALARM
+    edge = (170, 40, 20) if ground_name == "alarm" else (110, 34, 18) if on_dark else LINE
 
     canvas = Image.new("RGB", (W, H), ground)
     draw = ImageDraw.Draw(canvas)
