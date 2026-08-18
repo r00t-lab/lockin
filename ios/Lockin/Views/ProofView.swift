@@ -30,8 +30,30 @@ struct ProofView: View {
     /// Incremented to fire the shutter. A counter, not a flag — see `CameraCaptureView`.
     @State private var shutterTrigger = 0
     @State private var cameraDenied = false
+    /// The streak to show on the payoff screen, set the moment proof lands.
+    @State private var provenStreak: Int?
 
     var body: some View {
+        ZStack {
+            if let provenStreak {
+                // The payoff.
+                //
+                // Not decoration. `CONTENT.md` lists "a celebration beat at the end" as
+                // one of the five things every video in this category has in common, and
+                // until now the app had none — proof landed and the screen simply closed,
+                // which is a video with no last second. It is also the only moment Nagg
+                // ever gives anything back, in an app whose entire job is to be
+                // unpleasant at 7am.
+                proofAccepted(streak: provenStreak)
+            } else {
+                proving
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .naggGround()
+    }
+
+    private var proving: some View {
         VStack(spacing: 0) {
             header
 
@@ -64,8 +86,47 @@ struct ProofView: View {
         .padding(.top, 30)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .naggGround()
-            }
+    }
+
+    /// Full bleed, one number, no buttons. It dismisses itself — a tap-to-continue would
+    /// put a decision in front of someone who has just earned the opposite.
+    private func proofAccepted(streak: Int) -> some View {
+        VStack(spacing: 14) {
+            Spacer()
+
+            Text(streak > 0 ? "\(streak)" : "done")
+                .font(Nagg.mono(96))
+                .monospacedDigit()
+                .tracking(-4)
+                .foregroundStyle(Nagg.go)
+                .contentTransition(.numericText())
+
+            Text(payoffLine(streak))
+                .font(Nagg.sans(16))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Nagg.ink2)
+                .padding(.horizontal, 40)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task {
+            // Long enough to read and to film, short enough that nobody has to dismiss it.
+            try? await Task.sleep(for: .milliseconds(1900))
+            onFinish()
+        }
+    }
+
+    /// The copy does the work the number cannot. Day one has nothing to boast about yet,
+    /// and a long run is worth naming as a run rather than as a total.
+    private func payoffLine(_ streak: Int) -> String {
+        switch streak {
+        case 0:      return "Started. That was the whole point."
+        case 1:      return "Day one. The alarm has nothing on you."
+        case 2...6:  return "\(streak) days straight."
+        default:     return "\(streak) days. Nagg has stopped arguing with you."
+        }
+    }
 
     private var header: some View {
         VStack(spacing: 10) {
@@ -187,7 +248,7 @@ struct ProofView: View {
         if sawSomething || !isBlank {
             Haptics.proved()
             await store.recordProof(for: commitment.id)
-            onFinish()
+            provenStreak = store.commitment(id: commitment.id)?.currentStreak ?? 0
         } else {
             Haptics.rejected()
             rejection = "That frame is empty. Point the camera at what you're about to work on."
@@ -212,6 +273,7 @@ struct ProofView: View {
                 Task {
                     // Starting is the proof. Finishing is between them and their degree.
                     await store.recordProof(for: commitment.id)
+                    provenStreak = store.commitment(id: commitment.id)?.currentStreak ?? 0
                 }
             }
             .buttonStyle(NaggPrimaryButton(tint: timerRunning ? Nagg.go : Nagg.ink))
@@ -224,7 +286,6 @@ struct ProofView: View {
                 try? await Task.sleep(for: .seconds(1))
                 timerRemaining -= 1
             }
-            onFinish()
         }
     }
 
@@ -262,7 +323,7 @@ struct ProofView: View {
                     Task {
                         Haptics.proved()
                         await store.recordProof(for: commitment.id)
-                        onFinish()
+                        provenStreak = store.commitment(id: commitment.id)?.currentStreak ?? 0
                     }
                 }
                 .frame(height: 300)

@@ -27,6 +27,7 @@ struct CommitmentListView: View {
     /// one modifier, no ambiguity about which is showing.
     private enum Modal: Identifiable {
         case newCommitment
+        case edit(Commitment)
         case paywall
         case report
         case deskCode(Commitment)
@@ -35,6 +36,7 @@ struct CommitmentListView: View {
         var id: String {
             switch self {
             case .newCommitment:          return "new"
+            case .edit(let c):            return "edit-\(c.id.uuidString)"
             case .paywall:                return "paywall"
             case .report:                 return "report"
             case .deskCode(let c):        return "desk-\(c.id.uuidString)"
@@ -77,6 +79,7 @@ struct CommitmentListView: View {
                                 commitment: commitment,
                                 needsProof: isRinging(commitment),
                                 unarmed: store.isSilentlyUnarmed(commitment),
+                                onEdit: { modal = .edit(commitment) },
                                 onProve: { onProve(commitment) },
                                 onRearm: { Task { try? await store.rearm(commitment) } },
                                 onShowCode: { modal = .deskCode(commitment) },
@@ -103,6 +106,13 @@ struct CommitmentListView: View {
         // screen actually touches.
         .sheet(item: $modal) { modal in
             switch modal {
+            case .edit(let commitment):
+                NewCommitmentView(
+                    store: store,
+                    alarms: AlarmService.shared,
+                    editing: commitment
+                ) { _ in self.modal = nil }
+
             case .newCommitment:
                 NewCommitmentView(store: store, alarms: AlarmService.shared) { created in
                     self.modal = nil
@@ -284,6 +294,7 @@ private struct CommitmentCard: View {
     let needsProof: Bool
     /// Should have a live alarm and does not. The one thing a card must never keep quiet.
     let unarmed: Bool
+    let onEdit: () -> Void
     let onProve: () -> Void
     let onRearm: () -> Void
     let onShowCode: () -> Void
@@ -344,6 +355,12 @@ private struct CommitmentCard: View {
         }
         .naggCard(done: isDone, alert: needsProof || unarmed)
         .opacity(commitment.isEnabled ? 1 : 0.4)
+        // The card body opens the editor. No pencil icon: the row is already the thing
+        // the user is looking at, and the buttons that must not be hit by accident
+        // (delete, and proof while an alarm is ringing) have their own tap targets.
+        .contentShape(.rect)
+        .onTapGesture { onEdit() }
+        .accessibilityHint("Opens this commitment for editing")
     }
 
     /// A row that looks healthy while being switched off is the single most dangerous

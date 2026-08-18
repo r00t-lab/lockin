@@ -14,6 +14,13 @@ struct NewCommitmentView: View {
     /// A parameter cannot be missing, and the call site has to say what it depends on.
     let store: CommitmentStore
     let alarms: AlarmService
+    /// Non-nil when editing rather than creating.
+    ///
+    /// Without this the only way to change a time was delete and re-add, which threw away
+    /// the streak — quietly destroying the one thing the user has been accumulating, as a
+    /// side effect of fixing a typo. In a habit app that is not a missing feature, it is a
+    /// hole. Editing keeps the id, so the streak, the misses and the history all survive.
+    var editing: Commitment? = nil
     /// Non-nil when a commitment was created. The caller decides what happens next —
     /// notably, a desk-code commitment needs its sticker shown, and presenting that from
     /// in here would be a sheet opened from inside a sheet, which is the exact shape that
@@ -24,6 +31,7 @@ struct NewCommitmentView: View {
     @State private var fireDate = Date()
     @State private var weekdays: Set<Int> = []
     @State private var proofKind: Commitment.ProofKind = .photo
+    @State private var loaded = false
     @State private var permissionDenied = false
     @State private var scheduleError: String?
 
@@ -37,7 +45,7 @@ struct NewCommitmentView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("New commitment")
+                Text(editing == nil ? "New commitment" : "Edit commitment")
                     .font(Nagg.sans(20, .medium))
                     .foregroundStyle(Nagg.ink)
                     .padding(.bottom, 20)
@@ -96,7 +104,7 @@ struct NewCommitmentView: View {
                 }
 
                 VStack(spacing: 9) {
-                    Button("Lock it in", action: save)
+                    Button(editing == nil ? "Lock it in" : "Save changes", action: save)
                         .buttonStyle(NaggPrimaryButton())
                         .disabled(!isValid)
                         .opacity(isValid ? 1 : 0.4)
@@ -112,6 +120,16 @@ struct NewCommitmentView: View {
         }
         .naggGround()
         .scrollDismissesKeyboard(.interactively)
+        // Fill in once. `onAppear` can run again on a re-render, and doing this twice
+        // would stamp on whatever the user had already typed.
+        .onAppear {
+            guard !loaded, let editing else { loaded = true; return }
+            title = editing.title
+            fireDate = editing.fireDate
+            weekdays = editing.repeats.weekdays
+            proofKind = editing.proofKind
+            loaded = true
+        }
     }
 
     // MARK: - Pieces
@@ -191,19 +209,30 @@ struct NewCommitmentView: View {
                 permissionDenied = true
                 return
             }
-            let commitment = Commitment(
+            // Editing keeps the id and every counter hanging off it. Building a fresh
+            // Commitment here would silently reset the streak, which is exactly the bug
+            // this screen exists to stop.
+            var commitment = editing ?? Commitment(
                 title: title.trimmingCharacters(in: .whitespaces),
                 fireDate: fireDate,
                 repeats: Commitment.Repeat(weekdays: weekdays),
                 proofKind: proofKind
             )
+            commitment.title = title.trimmingCharacters(in: .whitespaces)
+            commitment.fireDate = fireDate
+            commitment.repeats = Commitment.Repeat(weekdays: weekdays)
+            commitment.proofKind = proofKind
             // Not `try?`. If the alarm does not arm, the commitment is a row that never
             // rings — the failure this whole app is one long argument against, and the
             // one the user has no way of noticing until the morning it does not wake
             // them. `AlarmService` calls it "the worst bug this app can ship" and then
             // this call site used to swallow it.
             do {
-                try await store.add(commitment)
+                if editing == nil {
+                    try await store.add(commitment)
+                } else {
+                    try await store.update(commitment)
+                }
             } catch {
                 scheduleError = error.localizedDescription
                 return
