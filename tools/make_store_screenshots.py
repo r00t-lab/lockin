@@ -18,11 +18,12 @@ five identical pale cards read as one card. Putting the alarm's own colour behin
 claims that matter gives the eye somewhere to land and matches what the product actually
 feels like. Three, four and five go back to paper, so the set has a shape.
 
-**Only the part that carries the message is shown.** These screens are deliberately sparse,
-which is right on a phone and wrong in a thumbnail — over half the frame would be empty
-ground. Each capture is cropped to a fraction set by eye, then scaled up. Automatic
-trimming was tried and does not work here: the last row of content is the rail pinned to
-the bottom of the screen, so nothing gets cut and the gap in the middle survives.
+**The phone bleeds off the bottom.** These screens are sparse by design, which is right on
+a phone and useless in a thumbnail — fitting a whole one in leaves half the image empty and
+the content too small to read at listing size. Framing the capture in a device and letting
+it run past the bottom edge shows the part that carries the message at full size, and a
+phone continuing off the frame reads as deliberate where a cut-off rectangle reads as a
+mistake.
 
 **The headline is the product, not the feature.** "Rings on Silent" beats "Alarm settings".
 Nobody downloads a feature list.
@@ -53,24 +54,18 @@ MONO = "C:/Windows/Fonts/CascadiaMono.ttf"
 SRC = "design/shots"
 OUT = "design/store"
 
-# file, headline, index, ground, keep
-#
-# `keep` is the fraction of the capture to show, measured from the top. These screens put
-# their content at the top and a rail at the very bottom with a large gap between — right
-# on a phone, useless in a thumbnail. Automatic trimming does not help, because the last
-# row of content is that bottom rail, so nothing gets cut. The fraction is set by eye per
-# shot instead, which is honest about it being a judgement rather than a measurement.
+# file, headline, index, ground
 SHOTS = [
-    ("1.png", "Rings on Silent.\nRings on Focus.",       "01", "alarm", 1.00),
-    ("2.png", "Dismiss\ndoesn't work.",                  "02", "alarm", 1.00),
-    ("3.png", "Prove you started.\nOr it rings again.",  "03", "paper", 0.72),
-    ("4.png", "It counts the days\nyou showed up.",      "04", "paper", 0.34),
+    ("1.png", "Rings on Silent.\nRings on Focus.",       "01", "alarm"),
+    ("2.png", "Dismiss\ndoesn't work.",                  "02", "alarm"),
+    ("3.png", "Prove you started.\nOr it rings again.",  "03", "paper"),
+    ("4.png", "It counts the days\nyou showed up.",      "04", "paper"),
     # Honest about what the capture shows — an empty ledger. "So far" does the threatening.
-    ("5.png", "Zero excuses.\nSo far.",                  "05", "paper", 0.52),
+    ("5.png", "Zero excuses.\nSo far.",                  "05", "paper"),
 ]
 
 
-def compose(shot_path: str, headline: str, index: str, ground_name: str, keep: float) -> Image.Image:
+def compose(shot_path: str, headline: str, index: str, ground_name: str) -> Image.Image:
     loud = ground_name == "alarm"
     ground = ALARM if loud else PAPER
     text = WHITE if loud else INK
@@ -91,39 +86,45 @@ def compose(shot_path: str, headline: str, index: str, ground_name: str, keep: f
         y += 128
 
     shot = Image.open(shot_path).convert("RGB")
-    if keep < 1.0:
-        shot = shot.crop((0, 0, shot.width, int(shot.height * keep)))
 
-    # A short crop gets a narrower margin, so the little that is left lands as large as
-    # possible. A full-height capture keeps the wider margin — it needs the breathing room
-    # and it is tall enough to read anyway.
-    margin = 96 if keep >= 0.7 else 64
-    target_w = W - margin * 2
-    shot = shot.resize((target_w, int(shot.height * (target_w / shot.width))), Image.LANCZOS)
+    # The capture goes inside a drawn device rather than sitting as a bare rounded card.
+    # STORE.md asks for a phone frame and it is right to: a flat rectangle reads as a
+    # picture of an app, a framed one reads as a phone somebody is holding.
+    #
+    # Drawn rather than downloaded from a template pack. Those come wrapped in a house
+    # style — gradients, angled devices, badges — and using one would throw away the
+    # identity the rest of the app was built around. A bezel is four numbers.
+    device_w = int(W * 0.86)
+    scale = device_w / shot.width
+    screen = shot.resize((device_w, int(shot.height * scale)), Image.LANCZOS)
 
-    region_top = y + 96
-    region_bottom = H - 110
-    if shot.height > region_bottom - region_top:
-        shot = shot.crop((0, 0, shot.width, region_bottom - region_top))
+    bezel = max(10, device_w // 46)
+    outer_w = screen.width + bezel * 2
+    outer_h = screen.height + bezel * 2
+    outer_r = int(outer_w * 0.115)
+    inner_r = max(4, outer_r - bezel)
 
-    # Centred in what is left rather than pinned under the headline. Pinned, a short crop
-    # leaves a single hole at the bottom that reads as a mistake; centred, the same space
-    # splits in two and reads as margin.
-    top = region_top + (region_bottom - region_top - shot.height) // 2
-
-    radius = 56
-    mask = Image.new("L", (shot.width * 2, shot.height * 2), 0)
+    device = Image.new("RGB", (outer_w, outer_h), (12, 12, 14))
+    mask = Image.new("L", (screen.width * 2, screen.height * 2), 0)
     ImageDraw.Draw(mask).rounded_rectangle(
-        [0, 0, shot.width * 2 - 1, shot.height * 2 - 1], radius=radius * 2, fill=255
+        [0, 0, screen.width * 2 - 1, screen.height * 2 - 1], radius=inner_r * 2, fill=255
     )
-    mask = mask.resize(shot.size, Image.LANCZOS)
-    canvas.paste(shot, (margin, top), mask)
+    device.paste(screen, (bezel, bezel), mask.resize(screen.size, Image.LANCZOS))
 
-    # A hairline, never a drop shadow — the identity has no shadows anywhere.
-    draw.rounded_rectangle(
-        [margin, top, margin + shot.width - 1, top + shot.height - 1],
-        radius=radius, outline=edge, width=2,
+    shape = Image.new("L", (outer_w * 2, outer_h * 2), 0)
+    ImageDraw.Draw(shape).rounded_rectangle(
+        [0, 0, outer_w * 2 - 1, outer_h * 2 - 1], radius=outer_r * 2, fill=255
     )
+    shape = shape.resize((outer_w, outer_h), Image.LANCZOS)
+
+    # Pinned under the headline and allowed to run off the bottom edge. That bleed is what
+    # replaces cropping: on a sparse screen the eye gets the part that matters at full
+    # size, and a phone continuing past the frame reads as deliberate where a cut-off
+    # rectangle reads as a mistake.
+    left = (W - outer_w) // 2
+    top = y + 104
+    canvas.paste(device, (left, top), shape)
+
     return canvas
 
 
@@ -131,13 +132,13 @@ def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     missing = []
 
-    for filename, headline, index, ground, keep in SHOTS:
+    for filename, headline, index, ground in SHOTS:
         path = os.path.join(SRC, filename)
         if not os.path.exists(path):
             missing.append(path)
             continue
         out = os.path.join(OUT, f"store-{index}.png")
-        compose(path, headline, index, ground, keep).save(out, "PNG")
+        compose(path, headline, index, ground).save(out, "PNG")
         print("wrote", out)
 
     if missing:
