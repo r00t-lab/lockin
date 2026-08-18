@@ -161,6 +161,22 @@ Telefon **sessizde ve Focus açıkken**, ekran kilitli, uygulama arka planda de�
 Ekran kilitliyken tam ekran alarm gelir; telefonu kullanırken sadece üstte şerit gelir.
 İkincisi iOS'un normali, hata değil.
 
+### 7.2 Masa kodu ve rapor
+
+| # | Yap | Görmen gereken |
+|---|---|---|
+| 1 | + → kanıt tipi **Scan your desk code** → Lock it in | Kaydeder kaydetmez QR sayfası açılıyor |
+| 2 | "Save or print" | Paylaşım sayfası çıkıyor, kodu kaydedebiliyorsun |
+| 3 | Listeye dön, o kartın **QR butonuna** bas | Aynı kod tekrar açılıyor |
+| 4 | Kodu ekranda/kağıtta bırak, alarmı bekle, kanıt ekranında okut | Zincir susuyor |
+| 5 | Üstteki sayı şeridine dokun | Bahane raporu açılıyor |
+
+1. adım geçmiyorsa masa kodu yine kullanılamaz durumda demektir — o kanıt tipini
+kullanıcıya hiç gösterme, çünkü seçen kişi alarmını susturamaz.
+
+4. adımda kamera açılmıyorsa ve siyah ekran yerine "Open Settings" diyen bir metin
+görüyorsan bu doğru davranış; kamera izni reddedilmiş demektir.
+
 4. adım iOS'a özel ve en kolay atlanan yer: AlarmKit çalan alarmı kendisi susturur ve
 bunu bize söylemez. Zincir önceden kurulmuş olmasaydı orada sessizce biterdi.
 
