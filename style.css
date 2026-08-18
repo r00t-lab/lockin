@@ -1,0 +1,97 @@
+/* The app's identity, on the web. Same tokens as ios/Lockin/Design/NaggStyle.swift —
+   a support page that looks like a different product is its own small credibility leak,
+   and App Review follows these links. */
+:root {
+  --ground: #EFEEE9;
+  --surface: #FBFAF7;
+  --ink: #17171A;
+  --ink-2: #5C5C58;
+  --ink-3: #8E8E88;
+  --line: #D5D4CC;
+  --alarm: #C7351A;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #121214;
+    --surface: #1C1C1F;
+    --ink: #EAEAE6;
+    --ink-2: #A3A39D;
+    --ink-3: #6E6E69;
+    --line: #303035;
+    --alarm: #E85236;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 660px; margin: 0 auto; padding: 48px 24px 80px; }
+
+header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 44px; }
+.wordmark {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  color: var(--ink);
+}
+.wordmark span { color: var(--alarm); }
+
+nav { margin-left: auto; display: flex; gap: 18px; }
+nav a {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+nav a:hover, nav a[aria-current] { color: var(--alarm); }
+
+h1 { font-size: 30px; font-weight: 500; line-height: 1.2; margin: 0 0 8px; }
+h2 { font-size: 17px; font-weight: 600; margin: 36px 0 8px; }
+
+.updated {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 32px;
+}
+
+p, li { color: var(--ink-2); font-size: 15px; }
+strong { color: var(--ink); font-weight: 600; }
+ul { padding-left: 20px; }
+li { margin-bottom: 6px; }
+
+a { color: var(--alarm); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin: 28px 0;
+}
+.card p:first-child { margin-top: 0; }
+.card p:last-child { margin-bottom: 0; }
+
+footer {
+  margin-top: 56px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-3);
+}

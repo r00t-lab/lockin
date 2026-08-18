@@ -1,8 +1,0 @@
-# Authored on Windows, built on macOS and Linux runners. Force LF in the repo so a
-# CRLF line ending never reaches a shell script or a Ruby file on the runner.
-* text=auto eol=lf
-
-*.jks binary
-*.keystore binary
-*.png binary
-*.jar binary

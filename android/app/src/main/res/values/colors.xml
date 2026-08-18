@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Only the values the XML layer needs. The real palette lives in ui/theme/Theme.kt. -->
-<resources>
-    <color name="ground">#EFEEE9</color>
-    <color name="ground_dark">#121214</color>
-    <color name="alarm">#C7351A</color>
-    <color name="ic_launcher_background">#17171A</color>
-</resources>
