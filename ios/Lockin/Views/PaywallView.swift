@@ -65,8 +65,10 @@ struct PaywallView: View {
 
                 HStack(spacing: 18) {
                     Button("Restore") { Task { await subscriptions.restore() } }
-                    Link("Terms", destination: URL(string: "https://lockin.app/terms")!)
-                    Link("Privacy", destination: URL(string: "https://lockin.app/privacy")!)
+                    // Real, reachable pages. These pointed at lockin.app, a domain nobody
+                    // owns — App Review clicks them, and a dead legal link is a rejection.
+                    Link("Terms", destination: URL(string: "https://r00t-lab.github.io/lockin/terms.html")!)
+                    Link("Privacy", destination: URL(string: "https://r00t-lab.github.io/lockin/privacy.html")!)
                 }
                 .font(Nagg.sans(12))
                 .foregroundStyle(Nagg.ink3)
