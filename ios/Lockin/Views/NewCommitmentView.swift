@@ -8,9 +8,17 @@ import SwiftUI
 /// thumb is. A `Form` would have been less code and would have looked like Settings.
 struct NewCommitmentView: View {
 
-    @Environment(CommitmentStore.self) private var store
-    @Environment(AlarmService.self) private var alarms
-    @Environment(\.dismiss) private var dismiss
+    /// Passed in, never read from the environment. `@Environment(Type.self)` on a
+    /// non-optional traps at runtime when the value is absent, and this app has now lost
+    /// three rounds to crashes that all looked identical from a phone with no debugger.
+    /// A parameter cannot be missing, and the call site has to say what it depends on.
+    let store: CommitmentStore
+    let alarms: AlarmService
+    /// Non-nil when a commitment was created. The caller decides what happens next —
+    /// notably, a desk-code commitment needs its sticker shown, and presenting that from
+    /// in here would be a sheet opened from inside a sheet, which is the exact shape that
+    /// silently failed for the camera.
+    let onFinish: (Commitment?) -> Void
 
     @State private var title = ""
     @State private var fireDate = Date()
@@ -18,8 +26,6 @@ struct NewCommitmentView: View {
     @State private var proofKind: Commitment.ProofKind = .photo
     @State private var permissionDenied = false
     @State private var scheduleError: String?
-    /// Set after saving a desk-code commitment so the sticker is shown immediately.
-    @State private var createdDeskCode: Commitment?
 
     /// Index 0 is Sunday, matching `Calendar.component(.weekday:)`.
     private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
@@ -95,7 +101,7 @@ struct NewCommitmentView: View {
                         .disabled(!isValid)
                         .opacity(isValid ? 1 : 0.4)
 
-                    Button("Never mind") { dismiss() }
+                    Button("Never mind") { onFinish(nil) }
                         .buttonStyle(NaggGhostButton())
                 }
                 .padding(.top, 26)
@@ -106,11 +112,6 @@ struct NewCommitmentView: View {
         }
         .naggGround()
         .scrollDismissesKeyboard(.interactively)
-        // Show the sticker the moment a desk-code commitment is created. Anyone who has
-        // to go hunting for it later has already been locked out of their own alarm once.
-        .sheet(item: $createdDeskCode, onDismiss: { dismiss() }) { commitment in
-            DeskCodeView(commitment: commitment)
-        }
     }
 
     // MARK: - Pieces
@@ -208,11 +209,7 @@ struct NewCommitmentView: View {
                 return
             }
 
-            if proofKind == .deskCode {
-                createdDeskCode = commitment
-            } else {
-                dismiss()
-            }
+            onFinish(commitment)
         }
     }
 }

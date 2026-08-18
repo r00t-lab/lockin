@@ -93,20 +93,35 @@ struct CommitmentListView: View {
             rail
         }
         .naggGround()
-        // Supplied here rather than at the app root: the sheets below read them, and the
-        // critical path (alarm to proof) takes its dependencies as parameters instead.
-        .environment(store)
-        .environment(subscriptions)
-        .environment(AlarmService.shared)
         .onReceive(clock) { tick = $0 }
         .animation(.easeOut(duration: 0.22), value: store.commitments)
+        // Every screen is handed exactly what it needs. Nothing reads an observable out
+        // of the environment any more: `@Environment(Type.self)` on a non-optional traps
+        // when the value is missing, and moving those values around while fixing an
+        // unrelated crash is how tapping "+" started killing the app. A parameter list
+        // cannot drift out from under a screen, and it says at the call site what that
+        // screen actually touches.
         .sheet(item: $modal) { modal in
             switch modal {
-            case .newCommitment:       NewCommitmentView()
-            case .paywall:             PaywallView()
-            case .report:              WeeklyReportView()
-            case .deskCode(let c):     DeskCodeView(commitment: c)
-            case .diagnostics:         DiagnosticsView(store: store) { self.modal = nil }
+            case .newCommitment:
+                NewCommitmentView(store: store, alarms: AlarmService.shared) { created in
+                    self.modal = nil
+                    // A desk-code commitment is useless until its sticker has been seen,
+                    // so hand straight over to it. Done here rather than from inside the
+                    // create screen, because that would be a sheet opened from inside a
+                    // sheet — the shape that silently swallowed the camera.
+                    if let created, created.proofKind == .deskCode {
+                        self.modal = .deskCode(created)
+                    }
+                }
+            case .paywall:
+                PaywallView(subscriptions: subscriptions, store: store) { self.modal = nil }
+            case .report:
+                WeeklyReportView(store: store) { self.modal = nil }
+            case .deskCode(let commitment):
+                DeskCodeView(commitment: commitment) { self.modal = nil }
+            case .diagnostics:
+                DiagnosticsView(store: store) { self.modal = nil }
             }
         }
     }

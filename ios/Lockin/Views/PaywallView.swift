@@ -16,9 +16,9 @@ import SwiftUI
 /// numbers, because it is another fact and not a pitch.
 struct PaywallView: View {
 
-    @Environment(SubscriptionService.self) private var subscriptions
-    @Environment(CommitmentStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    let subscriptions: SubscriptionService
+    let store: CommitmentStore
+    let onFinish: () -> Void
 
     @State private var selected: Package?
 
@@ -53,7 +53,7 @@ struct PaywallView: View {
                     Button {
                         guard let package = selected ?? packages.first else { return }
                         Task {
-                            if await subscriptions.purchase(package) { dismiss() }
+                            if await subscriptions.purchase(package) { onFinish() }
                         }
                     } label: {
                         Text(subscriptions.isPurchasing ? "…" : "Start free trial")
@@ -73,7 +73,7 @@ struct PaywallView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 18)
 
-                Button("Not now") { dismiss() }
+                Button("Not now") { onFinish() }
                     .buttonStyle(NaggBailButton())
                     .padding(.top, 4)
             }

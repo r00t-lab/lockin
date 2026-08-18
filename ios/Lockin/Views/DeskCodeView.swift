@@ -23,8 +23,8 @@ struct DeskCodeView: View {
 
     let commitment: Commitment
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var showShare = false
+    let onFinish: () -> Void
+
 
     var body: some View {
         ScrollView {
@@ -55,7 +55,7 @@ struct DeskCodeView: View {
                         .buttonStyle(NaggPrimaryButton())
                     }
 
-                    Button("Done") { dismiss() }
+                    Button("Done") { onFinish() }
                         .buttonStyle(NaggGhostButton())
                 }
                 .padding(.top, 26)

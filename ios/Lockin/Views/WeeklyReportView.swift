@@ -19,8 +19,8 @@ import SwiftUI
 /// a day someone did fine.
 struct WeeklyReportView: View {
 
-    @Environment(CommitmentStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    let store: CommitmentStore
+    let onFinish: () -> Void
 
     private var commitments: [Commitment] { store.visibleCommitments }
 
@@ -63,7 +63,7 @@ struct WeeklyReportView: View {
                     .padding(.top, 24)
                 }
 
-                Button("Close") { dismiss() }
+                Button("Close") { onFinish() }
                     .buttonStyle(NaggGhostButton())
                     .padding(.top, 28)
             }
