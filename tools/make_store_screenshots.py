@@ -50,27 +50,187 @@ DEEP = (168, 69, 47)       # ayni renk: tek zemin, set tek urun gibi dursun
 WHITE = (255, 255, 255)
 
 SANS = "C:/Windows/Fonts/segoeuib.ttf"
+SANS_BOOK = "C:/Windows/Fonts/segoeui.ttf"
 MONO = "C:/Windows/Fonts/CascadiaMono.ttf"
 
 SRC = "design/shots"
 OUT = "design/store"
 
-# file, headline, index, ground
+# file, headline, subline, index, ground
 #
 # No tilt. It was tried, because the template packs all lean their devices and the energy
 # looks appealing in their examples. Theirs are rendered in 3D; a flat rotation of a
 # rectangle is not the same thing and reads as a crooked picture rather than a phone held
 # at an angle. Straight is better than nearly.
 SHOTS = [
-    ("1.png", "It rings on\nsilent.",                "01", "alarm"),
-    ("2.png", "Prove it,\nand it stops.",            "02", "deep"),
-    ("3.png", "Three ways\nto prove it.",            "03", "deep"),
-    ("4.png", "It finds you at\nthe time you chose.", "04", "deep"),
-    ("5.png", "Zero excuses.\nSo far.",              "05", "deep"),
+    ("1.png", "It rings on\nsilent.",                 "Through Focus. Through Do Not Disturb.",
+     "01", "alarm"),
+    ("2.png", "Prove it,\nand it stops.",             "Dismiss does not. Only proof clears the alarm.",
+     "02", "deep"),
+    ("3.png", "Three ways\nto prove it.",             "A photo of your desk, a 25-minute timer, or a code you taped to it.",
+     "03", "deep"),
+    ("4.png", "It finds you at\nthe time you chose.", "Set it once. It shows up whether you feel like it or not.",
+     "04", "deep"),
+    ("5.png", "Zero excuses.\nSo far.",               "Nagg keeps the receipts.",
+     "05", "deep"),
 ]
 
 
-def compose(shot_path: str, headline: str, index: str, ground_name: str) -> Image.Image:
+# The status bar is not the app, and the one that came off the phone says 21:31 and 8%
+# battery in low-power yellow. Nobody reads a listing and thinks "their phone was dying",
+# they just register something slightly off. Apple does not require the captured status
+# bar -- it requires the interface below it to be the shipping app -- so the bar gets
+# repainted with the marketing time and a full battery, and the app underneath is
+# untouched.
+#
+# Detected rather than configured: a standard bar is ink at the far left and ink at the
+# far right with a gap between. The lock screen capture has neither, so it is left alone
+# instead of having a status bar invented over its dynamic island.
+STATUS_TIME = "9:41"
+
+
+def _band_geometry(shot: Image.Image):
+    """Background colour, ink rows and column clusters in the top band, or None."""
+    band_h = max(24, round(shot.height * 0.049))
+    band = shot.crop((0, 0, shot.width, band_h)).convert("RGB")
+    bg = max(band.getcolors(band.width * band.height))[1]
+
+    px = band.load()
+    ink_cols, ink_rows = [], []
+    for x in range(band.width):
+        for y in range(band_h):
+            r, g, b = px[x, y]
+            if abs(r - bg[0]) + abs(g - bg[1]) + abs(b - bg[2]) > 90:
+                ink_cols.append(x)
+                ink_rows.append(y)
+                break
+
+    if not ink_cols:
+        return None
+
+    clusters, start, prev = [], ink_cols[0], ink_cols[0]
+    for x in ink_cols[1:]:
+        if x - prev > 25:
+            clusters.append((start, prev))
+            start = x
+        prev = x
+    clusters.append((start, prev))
+
+    if len(clusters) < 2:
+        return None
+    if clusters[0][0] > shot.width * 0.27 or clusters[-1][1] < shot.width * 0.84:
+        return None
+
+    rows = []
+    for x in range(band.width):
+        for y in range(band_h):
+            r, g, b = px[x, y]
+            if abs(r - bg[0]) + abs(g - bg[1]) + abs(b - bg[2]) > 90:
+                rows.append(y)
+    return {
+        "band_h": band_h,
+        "bg": bg,
+        "left": clusters[0],
+        "right": clusters[-1],
+        "top": min(rows),
+        "bottom": max(rows),
+    }
+
+
+def _fit_font(text: str, target_h: int) -> ImageFont.FreeTypeFont:
+    size = target_h
+    for _ in range(24):
+        font = ImageFont.truetype(SANS, size)
+        box = font.getbbox(text)
+        height = box[3] - box[1]
+        if abs(height - target_h) <= 1:
+            return font
+        size += 1 if height < target_h else -1
+        size = max(8, size)
+    return ImageFont.truetype(SANS, size)
+
+
+def neutralise_status_bar(shot: Image.Image) -> Image.Image:
+    geometry = _band_geometry(shot)
+    if geometry is None:
+        return shot
+
+    bg = geometry["bg"]
+    ink = WHITE if sum(bg) / 3 < 128 else INK
+    top, bottom = geometry["top"], geometry["bottom"]
+    h = bottom - top
+    middle = (top + bottom) / 2
+
+    shot = shot.copy()
+    draw = ImageDraw.Draw(shot)
+    draw.rectangle([0, 0, shot.width, geometry["band_h"]], fill=bg)
+
+    font = _fit_font(STATUS_TIME, h)
+    offset = font.getbbox(STATUS_TIME)[1]
+    draw.text((geometry["left"][0], top - offset), STATUS_TIME, font=font, fill=ink)
+
+    right = geometry["right"][1]
+
+    # Battery, drawn full. Outline, nub, and a fill inset by the stroke.
+    bat_h = round(h * 0.82)
+    bat_w = round(h * 1.85)
+    stroke = max(2, round(h * 0.09))
+    bx1, by1 = right - round(h * 0.16), round(middle + bat_h / 2)
+    bx0, by0 = bx1 - bat_w, by1 - bat_h
+    draw.rounded_rectangle([bx0, by0, bx1, by1], radius=round(bat_h * 0.34),
+                           outline=ink, width=stroke)
+    nub_h = round(bat_h * 0.38)
+    draw.rounded_rectangle(
+        [bx1 + stroke, round(middle - nub_h / 2), right, round(middle + nub_h / 2)],
+        radius=max(1, stroke), fill=ink,
+    )
+    inset = stroke + max(2, round(h * 0.12))   # daylight between shell and charge
+    draw.rounded_rectangle([bx0 + inset, by0 + inset, bx1 - inset, by1 - inset],
+                           radius=round(bat_h * 0.3), fill=ink)
+
+    # Wi-Fi: three arcs and a dot, sharing a centre below the glyph.
+    gap = round(h * 0.42)
+    wifi_w = round(h * 1.15)
+    wx1 = bx0 - gap
+    wx0 = wx1 - wifi_w
+    cx, cy = (wx0 + wx1) / 2, middle + h * 0.30
+    for i, radius in enumerate((wifi_w * 0.5, wifi_w * 0.33, wifi_w * 0.16)):
+        draw.arc([cx - radius, cy - radius, cx + radius, cy + radius],
+                 start=218, end=322, fill=ink, width=max(2, round(h * 0.11)))
+    dot = max(2, round(h * 0.075))
+    draw.ellipse([cx - dot, cy - dot, cx + dot, cy + dot], fill=ink)
+
+    # Cellular: four bars, all full.
+    bar_w = round(h * 0.22)
+    bar_gap = max(2, round(h * 0.12))
+    sx1 = wx0 - gap
+    for i in range(4):
+        bar_h = h * (0.34 + 0.18 * (3 - i))   # tallest bar nearest the Wi-Fi glyph
+        x1 = sx1 - i * (bar_w + bar_gap)
+        draw.rounded_rectangle(
+            [x1 - bar_w, middle + h * 0.42 - bar_h, x1, middle + h * 0.42],
+            radius=max(1, bar_w // 3), fill=ink,
+        )
+
+    return shot
+
+
+def wrap(text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
+    """Greedy wrap. Sublines are one or two lines; a third means the copy is wrong."""
+    lines, line = [], ""
+    for word in text.split():
+        trial = f"{line} {word}".strip()
+        if font.getlength(trial) <= width or not line:
+            line = trial
+        else:
+            lines.append(line)
+            line = word
+    lines.append(line)
+    return lines
+
+
+def compose(shot_path: str, headline: str, subline: str, index: str,
+            ground_name: str) -> Image.Image:
     # The ground is chosen against the capture, not for its own sake. A pale app screen on
     # a pale ground vanishes into it — only the black bezel separates them, which is what
     # the first attempt looked like. Dark screens go on red; light screens go on the deep
@@ -79,6 +239,7 @@ def compose(shot_path: str, headline: str, index: str, ground_name: str) -> Imag
     on_dark = ground_name in ("alarm", "deep")
     text = WHITE if on_dark else INK
     index_colour = ALARM_PALE if on_dark else ALARM
+    subline_colour = ALARM_PALE if on_dark else (92, 90, 86)
     edge = (170, 40, 20) if ground_name == "alarm" else (110, 34, 18) if on_dark else LINE
 
     canvas = Image.new("RGB", (W, H), ground)
@@ -94,7 +255,17 @@ def compose(shot_path: str, headline: str, index: str, ground_name: str) -> Imag
         draw.text((96, y), line, font=title, fill=text)
         y += 128
 
-    shot = Image.open(shot_path).convert("RGB")
+    # The subline carries what the headline cannot fit: which three proofs, which
+    # Focus. Set in the pale tint rather than white so it reads as the second thing
+    # on the image instead of competing with the headline for the same glance.
+    if subline:
+        body = ImageFont.truetype(SANS_BOOK, 46)
+        y += 34
+        for line in wrap(subline, body, W - 96 * 2):
+            draw.text((96, y), line, font=body, fill=subline_colour)
+            y += 62
+
+    shot = neutralise_status_bar(Image.open(shot_path).convert("RGB"))
 
     # The capture goes inside a drawn device rather than sitting as a bare rounded card.
     # STORE.md asks for a phone frame and it is right to: a flat rectangle reads as a
@@ -141,13 +312,13 @@ def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     missing = []
 
-    for filename, headline, index, ground in SHOTS:
+    for filename, headline, subline, index, ground in SHOTS:
         path = os.path.join(SRC, filename)
         if not os.path.exists(path):
             missing.append(path)
             continue
         out = os.path.join(OUT, f"store-{index}.png")
-        compose(path, headline, index, ground).save(out, "PNG")
+        compose(path, headline, subline, index, ground).save(out, "PNG")
         print("wrote", out)
 
     if missing:
