@@ -38,6 +38,19 @@ jobs:
       - name: Install fastlane
         run: bundle install
 
+      # Apple caps how many certificates an account may hold, and every run here mints a
+      # development certificate that dies with the runner. Left alone the ceiling fills
+      # and every build breaks with an error that talks about provisioning profiles. This
+      # step is the reason that does not happen again; it never fails the job.
+      - name: Prune stale CI certificates
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+        run: |
+          python3 -m pip install --quiet pyjwt cryptography
+          python3 .github/scripts/prune_certificates.py
+
       - name: Build ad-hoc IPA
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
