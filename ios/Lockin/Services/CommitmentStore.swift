@@ -230,6 +230,5 @@ final class CommitmentStore {
         // Every mutation funnels through here, so this is the one place the wrist has to
         // be told about. WatchConnectivity coalesces application context updates, so
         // pushing on every save costs a dictionary and nothing else.
-        WatchSyncService.shared.pushSnapshot()
     }
 }

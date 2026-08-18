@@ -14,9 +14,13 @@ import Vision
 struct ProofView: View {
 
     let commitment: Commitment
-
-    @Environment(CommitmentStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
+    /// Passed in, not read from the environment. `@Environment(Type.self)` on a
+    /// non-optional traps at runtime when the value is missing, and on a phone with no
+    /// debugger that crash is indistinguishable from every other one this screen has had.
+    let store: CommitmentStore
+    /// Called when this screen is finished with, instead of `@Environment(\.dismiss)` —
+    /// proof is a state of the root view now, not a presentation.
+    let onFinish: () -> Void
 
     @State private var capturedImage: UIImage?
     @State private var isCheckingPhoto = false
@@ -51,7 +55,7 @@ struct ProofView: View {
             Button("I'm not doing it") {
                 Task {
                     await store.recordDismissal(for: commitment.id)
-                    dismiss()
+                    onFinish()
                 }
             }
             .buttonStyle(NaggBailButton())
@@ -61,8 +65,7 @@ struct ProofView: View {
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .naggGround()
-        .interactiveDismissDisabled()
-    }
+            }
 
     private var header: some View {
         VStack(spacing: 10) {
@@ -184,7 +187,7 @@ struct ProofView: View {
         if sawSomething || !isBlank {
             Haptics.proved()
             await store.recordProof(for: commitment.id)
-            dismiss()
+            onFinish()
         } else {
             Haptics.rejected()
             rejection = "That frame is empty. Point the camera at what you're about to work on."
@@ -221,7 +224,7 @@ struct ProofView: View {
                 try? await Task.sleep(for: .seconds(1))
                 timerRemaining -= 1
             }
-            dismiss()
+            onFinish()
         }
     }
 
@@ -259,7 +262,7 @@ struct ProofView: View {
                     Task {
                         Haptics.proved()
                         await store.recordProof(for: commitment.id)
-                        dismiss()
+                        onFinish()
                     }
                 }
                 .frame(height: 300)

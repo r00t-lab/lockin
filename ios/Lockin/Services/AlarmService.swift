@@ -288,12 +288,6 @@ final class AlarmService {
                 }
             }
 
-            // Forward the same batch to the wrist. This is the only signal the watch app
-            // cannot get for itself — AlarmKit has no watchOS surface, the ring reaches
-            // the wrist by system mirroring and tells our code nothing. Do not add a
-            // second `for await alarms in manager.alarmUpdates` elsewhere to get it;
-            // that sequence is not safe to iterate twice.
-            WatchSyncService.shared.announceRinging(alarms)
         }
     }
 

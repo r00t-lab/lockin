@@ -67,6 +67,13 @@ targets:
     platform: iOS
     sources:
       - path: ios/Lockin
+        excludes:
+          # The watch targets are not built (see the note above), so this is the phone
+          # half of a link to an app that does not exist. It was still activating a
+          # WCSession on every launch and pushing a snapshot on every single save —
+          # sitting directly on the launch path, doing nothing, for a target that does
+          # not ship. The file stays in the repo; it comes back with the watch.
+          - "Services/WatchSyncService.swift"
     dependencies:
       - target: LockinWidget
         embed: true

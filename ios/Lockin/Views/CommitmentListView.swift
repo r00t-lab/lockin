@@ -12,12 +12,11 @@ import SwiftUI
 /// size literal in this file, it belongs in `NaggStyle.swift` instead.
 struct CommitmentListView: View {
 
-    /// Shared with `LockinApp` so both routes to the proof screen — the alarm's
-    /// "I'm starting" intent and the card below — land on the same sheet.
-    @Binding var proofTarget: Commitment?
-
-    @Environment(CommitmentStore.self) private var store
-    @Environment(SubscriptionService.self) private var subscriptions
+    let store: CommitmentStore
+    let subscriptions: SubscriptionService
+    /// Hands the commitment up to the root view, which swaps the screen for proof. The
+    /// list never presents it — see the note at the top of `LockinApp`.
+    let onProve: (Commitment) -> Void
 
     /// Every modal this screen can present, as one value.
     ///
@@ -31,6 +30,7 @@ struct CommitmentListView: View {
         case paywall
         case report
         case deskCode(Commitment)
+        case diagnostics
 
         var id: String {
             switch self {
@@ -38,6 +38,7 @@ struct CommitmentListView: View {
             case .paywall:                return "paywall"
             case .report:                 return "report"
             case .deskCode(let c):        return "desk-\(c.id.uuidString)"
+            case .diagnostics:            return "diagnostics"
             }
         }
     }
@@ -63,7 +64,7 @@ struct CommitmentListView: View {
                         RehearsalCard(
                             commitment: rehearsal,
                             needsProof: isRinging(rehearsal),
-                            onProve: { proofTarget = rehearsal },
+                            onProve: { onProve(rehearsal) },
                             onStop: { Task { await store.endRehearsal() } }
                         )
                     }
@@ -75,7 +76,7 @@ struct CommitmentListView: View {
                             CommitmentCard(
                                 commitment: commitment,
                                 needsProof: isRinging(commitment),
-                                onProve: { proofTarget = commitment },
+                                onProve: { onProve(commitment) },
                                 onShowCode: { modal = .deskCode(commitment) },
                                 onDelete: { Task { await store.delete(commitment) } }
                             )
@@ -90,6 +91,11 @@ struct CommitmentListView: View {
             rail
         }
         .naggGround()
+        // Supplied here rather than at the app root: the sheets below read them, and the
+        // critical path (alarm to proof) takes its dependencies as parameters instead.
+        .environment(store)
+        .environment(subscriptions)
+        .environment(AlarmService.shared)
         .onReceive(clock) { tick = $0 }
         .animation(.easeOut(duration: 0.22), value: store.commitments)
         .sheet(item: $modal) { modal in
@@ -98,6 +104,7 @@ struct CommitmentListView: View {
             case .paywall:             PaywallView()
             case .report:              WeeklyReportView()
             case .deskCode(let c):     DeskCodeView(commitment: c)
+            case .diagnostics:         DiagnosticsView(store: store) { self.modal = nil }
             }
         }
     }
@@ -111,6 +118,9 @@ struct CommitmentListView: View {
             (Text("na").foregroundStyle(Nagg.ink) + Text("gg").foregroundStyle(Nagg.alarm))
                 .font(Nagg.mono(17))
                 .tracking(-0.3)
+                // Long press for diagnostics. Deliberately undiscoverable — it is not a
+                // feature, and nobody should land on it by accident.
+                .onLongPressGesture(minimumDuration: 1.2) { modal = .diagnostics }
 
             Spacer()
 

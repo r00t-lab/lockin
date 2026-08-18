@@ -59,10 +59,26 @@ struct PendingProof {
         defaults.removeObject(forKey: key)
         return UUID(uuidString: raw)
     }
+
+    /// Read without consuming. Diagnostics only — `take` is the real accessor, and a
+    /// diagnostics screen that ate the pending id would break the thing it is inspecting.
+    func peek() -> String? {
+        defaults.string(forKey: key)
+    }
 }
 
 enum AppGroup {
     /// Must match the App Group capability on BOTH the app and the widget target.
     /// Change this to your own team's group before the first build.
     static let identifier = "group.com.r00tlab.lockin"
+
+    /// Whether the shared container actually exists.
+    ///
+    /// If this is ever false, the app and the widget are writing to different places and
+    /// nothing works: the intent stashes a proof id the app cannot see, commitments save
+    /// somewhere the widget cannot read. It fails silently and looks like six other bugs,
+    /// which is why the diagnostics screen asks out loud.
+    static var isReachable: Bool {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier) != nil
+    }
 }
