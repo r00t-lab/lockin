@@ -33,14 +33,16 @@ Nobody downloads a feature list.
     2. python tools/make_store_screenshots.py
     3. Upload design/store/*.png to App Store Connect
 
-Output is 1290 x 2796 — the 6.9" size, which Apple scales down for every smaller device,
-so this is the only set that has to exist.
+Output is 1320 x 2868 — the 6.9" size App Store Connect asks for by name, and the one
+required slot since April 2025. Apple scales it down for every smaller device, so this is
+the only set that has to exist. (It also accepts 1290 x 2796 in the same slot; matching
+the number in the panel just removes a question.)
 """
 from PIL import Image, ImageDraw, ImageFont
 import math
 import os
 
-W, H = 1290, 2796
+W, H = 1320, 2868
 
 PAPER = (239, 238, 233)
 INK = (23, 23, 26)
