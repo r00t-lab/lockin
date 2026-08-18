@@ -44,9 +44,9 @@ W, H = 1290, 2796
 PAPER = (239, 238, 233)
 INK = (23, 23, 26)
 LINE = (213, 212, 204)
-ALARM = (199, 53, 26)
+ALARM = (168, 69, 47)      # sakinlestirilmis alarm kirmizisi, #A8452F
 ALARM_PALE = (246, 217, 210)
-DEEP = (74, 20, 9)          # --alarm-deep
+DEEP = (168, 69, 47)       # ayni renk: tek zemin, set tek urun gibi dursun
 WHITE = (255, 255, 255)
 
 SANS = "C:/Windows/Fonts/segoeuib.ttf"
@@ -62,12 +62,11 @@ OUT = "design/store"
 # rectangle is not the same thing and reads as a crooked picture rather than a phone held
 # at an angle. Straight is better than nearly.
 SHOTS = [
-    ("1.png", "Rings on Silent.\nRings on Focus.",       "01", "alarm"),
-    ("2.png", "Dismiss\ndoesn't work.",                  "02", "alarm"),
-    ("3.png", "Prove you started.\nOr it rings again.",  "03", "deep"),
-    ("4.png", "It counts the days\nyou showed up.",      "04", "deep"),
-    # Honest about what the capture shows — an empty ledger. "So far" does the threatening.
-    ("5.png", "Zero excuses.\nSo far.",                  "05", "deep"),
+    ("1.png", "It rings on\nsilent.",                "01", "alarm"),
+    ("2.png", "Prove it,\nand it stops.",            "02", "deep"),
+    ("3.png", "Three ways\nto prove it.",            "03", "deep"),
+    ("4.png", "It finds you at\nthe time you chose.", "04", "deep"),
+    ("5.png", "Zero excuses.\nSo far.",              "05", "deep"),
 ]
 
 
@@ -86,7 +85,7 @@ def compose(shot_path: str, headline: str, index: str, ground_name: str) -> Imag
     draw = ImageDraw.Draw(canvas)
 
     label = ImageFont.truetype(MONO, 34)
-    title = ImageFont.truetype(SANS, 108)
+    title = ImageFont.truetype(SANS, 96 if max(len(l) for l in headline.split(chr(10))) > 16 else 108)
 
     draw.text((96, 150), index, font=label, fill=index_colour)
 
