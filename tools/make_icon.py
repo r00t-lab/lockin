@@ -1,48 +1,48 @@
-"""Generate the Nagg app icon from the wordmark.
+"""Generate the Nagg app icon.
 
-The icon is the wordmark cropped to its loudest half: "gg" in alarm red on the same
-warm paper as the app. Four letters are unreadable at 60px on a home screen; two are
-not, and "gg" is the half that carries the colour.
+The artwork is a twin-bell alarm clock in alarm red on the app's own paper ground —
+`design/icon-clock-source.png`, generated from the prompt in docs/VISUALS.md.
+
+This script does one thing to it that matters: it knocks the clock face out in paper.
+The generated art has a solid body, which is fine at poster size and turns into a red
+blob at 60px — and 60px is the only size that decides anything, because that is how big
+the icon is on a home screen. A hollow face gives it structure that survives the shrink.
+The radius is tuned: much larger and the body becomes a thin ring that reads as fragile.
 
 Run: python tools/make_icon.py
-Writes ios/Lockin/Assets.xcassets/AppIcon.appiconset/icon-1024.png (and the watch copy).
 
-Deliberately a script and not a hand-exported PNG: this project has no Mac and no
-design tool in the loop, so the icon has to be reproducible from text like everything
-else here. Change PAPER/RED/TEXT below and re-run.
+Deliberately a script and not a hand-exported PNG. There is no Mac and no design tool in
+this loop, so the icon has to be reproducible from text like everything else in the repo.
+Retune FACE_RADIUS, re-run, and look at the 60px column before believing anything.
 """
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
+SOURCE = "design/icon-clock-source.png"
 SIZE = 1024
-PAPER = (239, 238, 233)   # --ground
-RED = (199, 53, 26)       # --alarm
-TEXT = "gg"
-FONT = "C:/Windows/Fonts/CascadiaMono.ttf"   # closest local stand-in for SF Mono
+PAPER = (239, 238, 233)          # --ground, matching NaggStyle
 
-# Apple already rounds and masks the corners, so the artwork is a full-bleed square.
-img = Image.new("RGB", (SIZE, SIZE), PAPER)
-draw = ImageDraw.Draw(img)
+# Centre of the clock body and the size of the hole, both as a fraction of the canvas.
+FACE_CENTRE = (0.500, 0.612)
+FACE_RADIUS = 0.14
 
-# Fit the glyphs to ~64% of the canvas width, then centre on the *ink* box rather than
-# the font's line box — a monospace font's line box is mostly leading, and centring on
-# it parks the letters visibly high.
-size = 10
-while True:
-    trial = ImageFont.truetype(FONT, size + 10)
-    box = draw.textbbox((0, 0), TEXT, font=trial)
-    if box[2] - box[0] > SIZE * 0.64:
-        break
-    size += 10
-
-font = ImageFont.truetype(FONT, size)
-box = draw.textbbox((0, 0), TEXT, font=font)
-x = (SIZE - (box[2] - box[0])) / 2 - box[0]
-y = (SIZE - (box[3] - box[1])) / 2 - box[1]
-draw.text((x, y), TEXT, font=font, fill=RED)
-
-for path in [
+TARGETS = [
     "ios/Lockin/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
     "ios/LockinWatch/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
-]:
+]
+
+img = Image.open(SOURCE).convert("RGB").resize((SIZE, SIZE), Image.LANCZOS)
+
+# Punch the face. Drawn at 4x and downsampled — a circle drawn straight at final size has
+# visibly stepped edges against a flat field this large.
+scale = 4
+mask = Image.new("L", (SIZE * scale, SIZE * scale), 0)
+cx, cy = FACE_CENTRE[0] * SIZE * scale, FACE_CENTRE[1] * SIZE * scale
+r = FACE_RADIUS * SIZE * scale
+ImageDraw.Draw(mask).ellipse([cx - r, cy - r, cx + r, cy + r], fill=255)
+mask = mask.resize((SIZE, SIZE), Image.LANCZOS)
+
+img.paste(Image.new("RGB", (SIZE, SIZE), PAPER), (0, 0), mask)
+
+for path in TARGETS:
     img.save(path, "PNG")
     print("wrote", path)
