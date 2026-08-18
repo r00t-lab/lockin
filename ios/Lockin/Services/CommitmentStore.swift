@@ -61,8 +61,17 @@ final class CommitmentStore {
     /// This does not soften the number. `freeCommitmentLimit` is still two and still
     /// binding the moment RevenueCat is configured; see `docs/LAUNCH.md`.
     func canAddAnother(isPro: Bool) -> Bool {
-        guard SubscriptionService.isConfigured else { return true }
-        return isPro || activeCount < Self.freeCommitmentLimit
+        // ⚠️ THROWAWAY BRANCH — screenshots-unlimited. Never merge into main.
+        //
+        // The store listing needs a screenshot of a full list, and the free ceiling is two.
+        // Rather than reach for it through a sandbox purchase every time a capture needs
+        // retaking, this branch simply lifts it.
+        //
+        // It lives on a branch and not behind a build flag on main on purpose: a flag on
+        // main is a flag somebody eventually ships, and an App Store build that hands out
+        // unlimited commitments is the worst possible version of this mistake. A branch
+        // cannot be shipped by accident — the release lane only ever builds main.
+        return true
     }
 
     func commitment(id: UUID) -> Commitment? {
