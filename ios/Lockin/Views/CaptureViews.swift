@@ -3,59 +3,12 @@ import AVFoundation
 import SwiftUI
 import UIKit
 
-/// System camera, no custom UI. The proof screen is time-critical; a bespoke capture
-/// pipeline is exactly the kind of work that feels productive and ships nothing.
-struct CameraPicker: UIViewControllerRepresentable {
+// `CameraPicker` used to live here: a `UIImagePickerController` presented as a sheet from
+// inside the proof sheet. On device the camera never appeared — several builds, no crash,
+// nothing in the log. It is gone rather than left around, because a type called
+// CameraPicker sitting in a file called CaptureViews is an invitation to wire it back in.
+// The camera is embedded now; see `CameraCaptureView`.
 
-    @Binding var image: UIImage?
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        let hasCamera = UIImagePickerController.isSourceTypeAvailable(.camera)
-        picker.sourceType = hasCamera ? .camera : .photoLibrary
-
-        // Only when the source really is the camera. Setting `cameraDevice` on a picker
-        // configured for the photo library raises NSInvalidArgumentException and takes
-        // the whole app down — and the fallback path is exactly the one nobody tests,
-        // because every real iPhone has a camera. It fires in the simulator, and on a
-        // device whose camera is unavailable for any reason at all.
-        if hasCamera {
-            picker.cameraDevice = .rear
-        }
-
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        private let parent: CameraPicker
-
-        init(_ parent: CameraPicker) { self.parent = parent }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            parent.image = info[.originalImage] as? UIImage
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
-        }
-    }
-}
-
-/// QR scanner for the desk-sticker proof mode.
-///
-/// The sticker is just the commitment's UUID rendered as a QR code — generate it in
-/// settings, let the user print or screenshot it. Cheap to build, and physically
-/// getting to the desk is the entire point.
 /// Carries an `AVCaptureSession` into a detached task.
 ///
 /// The session is thread-safe by contract but Apple has not marked it `Sendable`, so a
@@ -66,6 +19,11 @@ private final class SessionBox: @unchecked Sendable {
     let session = AVCaptureSession()
 }
 
+/// QR scanner for the desk-sticker proof mode.
+///
+/// The sticker is the commitment's UUID rendered as a QR code — see `DeskCodeView`, which
+/// generates and prints it. Physically having to reach the desk is the entire point of
+/// this proof mode, and the reason it is the hardest of the three.
 struct QRScannerView: UIViewControllerRepresentable {
 
     let onScan: (String) -> Void

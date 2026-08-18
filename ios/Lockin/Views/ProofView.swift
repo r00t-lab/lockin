@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreImage
 import SwiftUI
 import Vision
 
@@ -22,7 +23,8 @@ struct ProofView: View {
     @State private var rejection: String?
     @State private var timerRemaining: TimeInterval = 25 * 60
     @State private var timerRunning = false
-    @State private var showCamera = false
+    /// Incremented to fire the shutter. A counter, not a flag — see `CameraCaptureView`.
+    @State private var shutterTrigger = 0
     @State private var cameraDenied = false
 
     var body: some View {
@@ -83,6 +85,10 @@ struct ProofView: View {
     }
 
     // MARK: - Photo
+    //
+    // The camera lives on this screen rather than behind a button that presents one.
+    // Presenting it as a sheet from inside a sheet did not work on device, across several
+    // builds, with no crash and nothing in the log — see `CameraCaptureView`.
 
     private var photoProof: some View {
         VStack(spacing: 16) {
@@ -91,41 +97,72 @@ struct ProofView: View {
                     Image(uiImage: capturedImage)
                         .resizable()
                         .scaledToFill()
+                } else if cameraDenied {
+                    deniedNotice
                 } else {
-                    Text("Point it at what you're about to work on")
-                        .font(Nagg.sans(13))
-                        .foregroundStyle(Nagg.ink3)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
+                    CameraCaptureView(shutterTrigger: shutterTrigger) { image in
+                        capturedImage = image
+                    }
                 }
             }
-            .frame(height: 210)
+            .frame(height: 260)
             .frame(maxWidth: .infinity)
             .background(Nagg.sunk)
             .clipShape(.rect(cornerRadius: Nagg.radius))
 
-            Button(capturedImage == nil ? "Photograph your setup" : "Retake") {
-                showCamera = true
+            if !cameraDenied {
+                Button(capturedImage == nil ? "Take the photo" : "Retake") {
+                    if capturedImage == nil {
+                        shutterTrigger += 1
+                    } else {
+                        capturedImage = nil
+                        rejection = nil
+                    }
+                }
+                .buttonStyle(NaggPrimaryButton())
+                .disabled(isCheckingPhoto)
             }
-            .buttonStyle(NaggPrimaryButton())
-            .disabled(isCheckingPhoto)
 
             if isCheckingPhoto {
                 Text("Checking…").naggLabel()
             }
         }
-        .sheet(isPresented: $showCamera) {
-            CameraPicker(image: $capturedImage)
-        }
+        .task { await resolveCameraAccess() }
         .onChange(of: capturedImage) { _, image in
             guard let image else { return }
             Task { await validate(image) }
         }
     }
 
-    /// On-device first. A rectangle detection pass catches the obvious cheat — a photo
-    /// of the ceiling, or of nothing — without a network round trip or an API bill.
-    /// Only ambiguous frames should ever reach a server model.
+    private var deniedNotice: some View {
+        VStack(spacing: 12) {
+            Text("Nagg can't open the camera, so it can't take your proof. Allow camera access and this works again.")
+                .font(Nagg.sans(14))
+                .lineSpacing(4)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Nagg.ink2)
+
+            Button("Open Settings") {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                UIApplication.shared.open(url)
+            }
+            .buttonStyle(NaggGhostButton())
+        }
+        .padding(20)
+    }
+
+    /// Decide whether this photo counts.
+    ///
+    /// `PRODUCT.md` draws a red line here and the previous version crossed it: "a wrongly
+    /// rejected photo is far worse than an accepted fake one — someone cheating has
+    /// already paid". Requiring `VNDetectRectanglesRequest` to find something meant a
+    /// cluttered desk, a dim room or an odd angle could refuse a person who genuinely got
+    /// up, while an alarm carried on nagging them and the app offered no way out. That is
+    /// the worst failure this screen has.
+    ///
+    /// So the test is inverted. Anything that looks like a real photograph passes. The
+    /// only thing rejected is a frame with nothing in it — a covered lens, the inside of
+    /// a duvet, a dark ceiling — which is the actual cheat and is unambiguous.
     private func validate(_ image: UIImage) async {
         isCheckingPhoto = true
         rejection = nil
@@ -134,22 +171,23 @@ struct ProofView: View {
         guard let cgImage = image.cgImage else { return }
 
         let request = VNDetectRectanglesRequest()
-        request.minimumAspectRatio = 0.3
+        request.minimumAspectRatio = 0.2
         request.maximumObservations = 8
-        request.minimumConfidence = 0.6
+        request.minimumConfidence = 0.4
 
         let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up)
         try? handler.perform([request])
 
-        let looksLikeAWorkspace = (request.results?.isEmpty == false)
+        let sawSomething = (request.results?.isEmpty == false)
+        let isBlank = image.looksBlank
 
-        if looksLikeAWorkspace {
+        if sawSomething || !isBlank {
             Haptics.proved()
             await store.recordProof(for: commitment.id)
             dismiss()
         } else {
             Haptics.rejected()
-            rejection = "That doesn't look like a desk. Point it at what you're about to work on."
+            rejection = "That frame is empty. Point the camera at what you're about to work on."
             capturedImage = nil
         }
     }
@@ -248,6 +286,40 @@ struct ProofView: View {
         default:
             cameraDenied = true
         }
+    }
+}
+
+private extension UIImage {
+    /// True when the frame carries essentially no image — a covered lens, the inside of a
+    /// duvet, a dark ceiling.
+    ///
+    /// Averaged down to a single pixel by CoreImage rather than walked in Swift: this runs
+    /// on a full-resolution photo while someone is standing at their desk waiting, and the
+    /// GPU path is the difference between instant and a visible pause.
+    var looksBlank: Bool {
+        guard let cgImage else { return false }
+        let input = CIImage(cgImage: cgImage)
+
+        guard let filter = CIFilter(
+            name: "CIAreaAverage",
+            parameters: [kCIInputImageKey: input, kCIInputExtentKey: CIVector(cgRect: input.extent)]
+        ), let output = filter.outputImage else { return false }
+
+        var pixel = [UInt8](repeating: 0, count: 4)
+        CIContext(options: [.workingColorSpace: NSNull()]).render(
+            output,
+            toBitmap: &pixel,
+            rowBytes: 4,
+            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+            format: .RGBA8,
+            colorSpace: nil
+        )
+
+        // Rec. 709 luma. The threshold is deliberately low — this is a floor for "there is
+        // nothing here at all", not a judgement about lighting. A dim dorm room at 6am has
+        // to pass, because that is the exact situation the app was built for.
+        let luma = 0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])
+        return luma < 12
     }
 }
 
