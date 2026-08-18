@@ -13,6 +13,8 @@ there is still time to fix it.
 
 ## What it sets
   * Age rating declaration -- every question, from docs/ASC-FORMS.md
+  * Categories -- Productivity, then Utilities. These were never set, and an app with no
+    category cannot be submitted at all
   * Content rights -- the app contains no third-party content
   * Release type -- MANUAL, because approval day and launch day are different days
     (docs/LAUNCH.md section 5)
@@ -49,6 +51,13 @@ APP_ID = os.environ.get("ASC_APP_ID", "6802195603")
 API = "https://api.appstoreconnect.apple.com/"
 
 VERSION_STRING = "1.0.0"
+
+# Productivity, because that is the shelf this competes on and the one docs/LAUNCH.md
+# already priced against. Utilities second: an alarm is a utility, and the obvious
+# alternative -- Health & Fitness -- is the one category this app must stay out of, since
+# sitting there invites the health claim the store copy is forbidden from making.
+PRIMARY_CATEGORY = "PRODUCTIVITY"
+SECONDARY_CATEGORY = "UTILITIES"
 RELEASE_TYPE = "MANUAL"
 CONTENT_RIGHTS = "DOES_NOT_USE_THIRD_PARTY_CONTENT"
 
@@ -143,6 +152,14 @@ def call(path, method="GET", body=None):
         raise SystemExit("HTTP %s %s %s\n%s" % (error.code, method, url, detail))
 
 
+def categories(info_id):
+    """Read them with `include`; without it the relationship comes back with no data key
+    and every category looks unset, which is a convincing way to fix the same thing twice."""
+    info = call("v1/appInfos/%s?include=primaryCategory,secondaryCategory" % info_id)
+    found = [i["id"] for i in info.get("included", [])]
+    return found
+
+
 def context():
     """The three ids everything else hangs off, looked up rather than pasted."""
     version = call("v1/apps/%s/appStoreVersions?limit=1" % APP_ID)["data"][0]
@@ -161,6 +178,7 @@ def check():
     print("version         %s  %s  release=%s"
           % (attrs["versionString"], attrs["appStoreState"], attrs["releaseType"]))
     print("content rights  %s" % (app["contentRightsDeclaration"] or "NOT SET"))
+    print("categories      %s" % (", ".join(categories(_info["id"])) or "NOT SET"))
     print("age rating      %d answers set (needs %d)" % (answered, len(AGE_RATING) + 3))
 
     detail = call("v1/appStoreVersions/%s/appStoreReviewDetail" % version["id"]).get("data")
@@ -195,6 +213,14 @@ def apply(phone: str):
          {"data": {"type": "ageRatingDeclarations", "id": declaration_id,
                    "attributes": AGE_RATING}})
     print("age rating      set")
+
+    call("v1/appInfos/%s" % _info["id"], "PATCH",
+         {"data": {"type": "appInfos", "id": _info["id"], "relationships": {
+             "primaryCategory": {"data": {"type": "appCategories",
+                                          "id": PRIMARY_CATEGORY}},
+             "secondaryCategory": {"data": {"type": "appCategories",
+                                            "id": SECONDARY_CATEGORY}}}}})
+    print("categories      %s, %s" % (PRIMARY_CATEGORY, SECONDARY_CATEGORY))
 
     call("v1/apps/%s" % APP_ID, "PATCH",
          {"data": {"type": "apps", "id": APP_ID,

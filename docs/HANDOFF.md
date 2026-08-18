@@ -7,9 +7,9 @@ sorusunun cevabı; kararların gerekçeleri kendi dosyalarında.
 
 ## Tek cümlede
 
-Uygulama çalışıyor ve mağazaya gönderilebilecek durumda. Kalan iş kod değil: **bir cihaz
-turu, üç form, bir build yüklemesi.** Cihaz turu tek başına zincir testini, üç mağaza
-karesini ve paywall görüntüsünü birden veriyor.
+Sürüm gönderime hazır duruyor: build bağlı, kareler yüklü, formlar dolu. Kalan üç şey
+kod değil: **gizlilik etiketi** (panelde, API'de yok), **zincir testi** (cihazda, üç
+dakika) ve **Gönder düğmesi**.
 
 ## Bugün kapanan hatalar
 
@@ -41,36 +41,33 @@ bağlı olamaz. Bu üç kez ısırdı.
 
 ## Sırada — önem sırasıyla
 
-**1. Cihaz turu.** [PRESUBMIT.md](PRESUBMIT.md). Yirmi beş dakika ve kalan işin çoğunu
-tek seferde bitiriyor: zincir testi, üç mağaza karesi, bir de paywall görüntüsü.
+**1. Zincir testi.** [PRESUBMIT.md](PRESUBMIT.md) bölüm A, üç dakika, telefon sessizde ve
+bir Focus açıkken. **Hâlâ yapılmadı** ve gönderimden önce geçmesi gereken tek şey bu:
+beşinci tekrardan sonra alarm duruyor mu. Durmayan alarm tek yıldız yağmuru demek.
 
-- **Zincir testi (bölüm A) hâlâ yapılmadı** ve ürünün tüm iddiası bu: alarm beş kez geri
-  gelip beşincide duruyor mu. Bu geçmezse gerisinin anlamı yok.
-- **Kareler çekildi** (18 Ağustos, 22:49–23:05): kilit ekranı alarmı, canlı kamera,
-  dört taahhütlük liste, paywall. Mağaza seti bunlarla yeniden derlendi.
-  **Kalan iki kare kısa:** ikinci alarm ("Still not started" — ürünün asıl iddiası ve şu
-  an hiçbir karede yok) ve güncel veriyle bahane raporu.
-- **Paywall görüntüsü hazır** (`design/shots/paywall.png`, fiyatlar canlı: $7.99 /
-  $44.99). Abonelik ürünlerine yüklenince `MISSING_METADATA` kalkıyor.
+**2. App Privacy etiketi.** Panelde, [ASC-FORMS.md](ASC-FORMS.md) bölüm 2'deki tabloyu
+satır satır. API'de yok (`appDataUsages` bu sürümde 404), o yüzden tek elle iş bu.
 
-Kare geldiğinde `python tools/make_store_screenshots.py` — kareler artık numarayla
-değil adla duruyor (`design/shots/alarm.png`, `proof.png`, …), sıra ve başlıklar
-`SHOTS` listesinde.
+**3. Gönder.** Panelde "Add for Review": sürüm + iki abonelik aynı gönderime giriyor.
+Abonelikler `MISSING_METADATA` görünmeye devam ediyor ve panelde doldurulacak alanları
+yok — ilk kez bir sürümle gönderilince çözülüyor.
 
-**Şablon araçlarına dikkat:** dışarıdan gelen bir düzenleyiciden çıkan görseller
-324 × 702 geldi; App Store **1290 × 2796** istiyor ve büyütmek çözüm değil. Derleyici
-zaten doğru boyutta üretiyor.
+**4. Yirmi video.** [CONTENT.md](CONTENT.md). Kod üç hafta sürdü, bu on iki ay.
 
-**2. Formlar.** [ASC-FORMS.md](ASC-FORMS.md) — cevaplar hazır, panelde tıklanacak.
-Yaş derecelendirmesi (4+) ve **App Privacy etiketi**; ikincisi gönderim için zorunlu ve
-bugüne kadar hiçbir yerde yazılmamıştı.
+### 19 Ağustos gecesi kapananlar
 
-**3. Build'i yükle.** `git tag v1.0.0 && git push origin v1.0.0` → TestFlight. Sonra
-sürüme bağla.
+`python tools/asc_metadata.py --check` her zaman güncel hâli basar. O gece yazılanlar:
 
-**4. Gönder.**
-
-**5. Yirmi video.** [CONTENT.md](CONTENT.md). Kod üç hafta sürdü, bu on iki ay.
+| | |
+|---|---|
+| Yaş derecelendirmesi | 25 soru → **4+** (Brezilya L). 2025'te eklenen altı alan olmadan API PATCH'i reddediyor |
+| **Kategori** | **hiç ayarlanmamıştı** — kategorisiz uygulama gönderilemez. Productivity + Utilities |
+| Sürüm numarası | `1.0` → **`1.0.0`**. Build ancak numarası aynı olan sürüme bağlanır; seçici sebepsiz boş görünecekti |
+| Yayın tipi | **Manual** — onay günü değil, yirmi video hazır olduğu gün |
+| İçerik hakları | üçüncü taraf içerik yok |
+| App Review notu + iletişim | [STORE.md](STORE.md)'deki metin, telefon ve e-posta |
+| Build | `v1.0.0` etiketi → TestFlight → **sürüme bağlandı** (build 1, `usesNonExemptEncryption` false) |
+| Mağaza kareleri | 6,9" ve 6,5" yuvaları dolu, beşer kare, `COMPLETE` |
 
 ## Bekleyen
 
@@ -85,6 +82,7 @@ sürüme bağla.
 ## Araçlar
 
 ```text
+tools/asc_metadata.py             App Store Connect alanları — --check okur, --apply yazar
 tools/make_icon.py                ikon (design/icon-clock-source.png'den)
 tools/make_store_screenshots.py   mağaza görselleri (durum çubuğunu da temizler)
 docs/PRESUBMIT.md                 gönderim öncesi tur — test + dört görüntü
