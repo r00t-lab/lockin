@@ -84,6 +84,28 @@ diğer ikisi zaten anlamsız.
 Watch'ın büyük kısmı bedava geliyor: AlarmKit alarmları zaten saate düşüyor. Ayrı
 watchOS uygulamasının tek işi telefonu eline almadan kanıtlamak ve komplikasyon.
 
+## v1.1 — odak oturumunda uygulama engelleme
+
+**Başvuru 18 Ağustos 2026'da yapıldı, onay bekleniyor.**
+
+Sayaç şu an üç kanıt tipinin en zayıfı ve bu bilinçli değil, eksik: "Start 25 minutes"a
+basınca kanıt anında kaydediliyor ve kullanıcı iki saniye sonra TikTok'a geçebiliyor.
+Fotoğraf ve masa kodu insanı fiziksel olarak masaya götürüyor; sayaç hiçbir şeye zorlamıyor.
+
+Çözüm `FamilyControls` + `ManagedSettings`: kullanıcının kendi seçtiği uygulamalar, sadece
+o 25 dakika boyunca, sadece kendi cihazında kalkanlanıyor. Opal ve one sec'in kullandığı
+API'nin aynısı.
+
+**Neden v1 değil:** dağıtım entitlement'ı Apple'ın ayrı onayına tabi — ana uygulama ve
+göndereceğin her Screen Time uzantısı için ayrı başvuru. Süre birkaç iş günü ile birkaç
+hafta arası, 2026'da bildirilen birikmelerle. Geliştirme entitlement'ı onaysız çalıştığı
+için **yazıp cihazda test edebiliriz, sadece yayınlayamayız.** Onay beklerken v1 mağazada
+olsun; özellik onay düştüğü gün çıkar.
+
+**Kırmızı çizgi:** engelleme yalnızca kullanıcının kendi cihazında ve kendi seçtiği
+uygulamalarda. Başkasını izleme, ebeveyn kontrolü konumlaması yok — o ayrı bir ürün ve
+ayrı bir inceleme kategorisi.
+
 ## v1.1 — syllabus importu
 
 Ders programının / syllabus'un fotoğrafını veya PDF'ini at, LLM tüm teslim tarihlerini
