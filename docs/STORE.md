@@ -13,10 +13,14 @@ Kullanıcı görmüyor, ve kayıtlı identifier'ları geçersiz kılmak boşuna 
 
 ```
 Name:     Nagg Alarm
-Subtitle: Prove you started, or it returns
+Subtitle: It comes back until you start
 ```
 
-Alt başlık 30 karakter sınırında ve ASO için ismin kadar önemli. `alarm` artık isimde
+**Düzeltme:** önceki alt başlık ("Prove you started, or it returns") **32 karakterdi**,
+sınır 30. Doküman "sınırında" diyordu, değildi — App Store Connect'e girmeye çalışınca
+yakalandı. Şimdiki 29 karakter.
+
+Alt başlık ASO için ismin kadar önemli. `alarm` artık isimde
 geçtiği için alt başlığı mekaniği anlatmaya ayırdık — asıl merak uyandıran şey o.
 
 ## Anahtar kelimeler (100 karakter, virgülle, boşluksuz)
