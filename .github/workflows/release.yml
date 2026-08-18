@@ -49,9 +49,15 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+        # `continue-on-error` is the guarantee, not the intention. The first version of
+        # this step promised in a comment that it could never fail the build, and then
+        # failed the build — pip refuses to install into the runner's externally-managed
+        # Python, which killed the step before the script's own error handling could run.
+        # A promise about failure modes belongs in the workflow, where it is enforced.
+        continue-on-error: true
         run: |
-          python3 -m pip install --quiet pyjwt cryptography
-          python3 .github/scripts/prune_certificates.py
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography ||             python3 -m pip install --quiet --user pyjwt cryptography || true
+          python3 .github/scripts/prune_certificates.py || true
 
       - name: Install fastlane
         run: bundle install
