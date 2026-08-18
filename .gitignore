@@ -36,3 +36,7 @@ ios/**/*.entitlements
 docs/*.pdf
 
 ios/Lockin/Info.plist
+
+# Raw device captures — the finished store images are regenerated from them.
+design/shots/*.png
+design/store/

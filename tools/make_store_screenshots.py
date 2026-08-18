@@ -12,26 +12,40 @@ dishonest and a rejection risk, since App Review checks that screenshots show th
 app. All this adds is the headline, the ground and the framing, in the same palette and
 type as `NaggStyle.swift`.
 
+## Three decisions that make these convert
+**The first two are red.** A store listing is skimmed as a filmstrip of thumbnails, and
+five identical pale cards read as one card. Putting the alarm's own colour behind the two
+claims that matter gives the eye somewhere to land and matches what the product actually
+feels like. Three, four and five go back to paper, so the set has a shape.
+
+**Only the part that carries the message is shown.** These screens are deliberately sparse,
+which is right on a phone and wrong in a thumbnail — over half the frame would be empty
+ground. Each capture is cropped to a fraction set by eye, then scaled up. Automatic
+trimming was tried and does not work here: the last row of content is the rail pinned to
+the bottom of the screen, so nothing gets cut and the gap in the middle survives.
+
+**The headline is the product, not the feature.** "Rings on Silent" beats "Alarm settings".
+Nobody downloads a feature list.
+
 ## Use
-    1. Capture the five screens on the phone (see SHOTS below) and drop them in
-       design/shots/ as 1.png … 5.png
+    1. Capture the five screens (see SHOTS) into design/shots/ as 1.png … 5.png
     2. python tools/make_store_screenshots.py
     3. Upload design/store/*.png to App Store Connect
 
-Output is 1290 x 2796 — the 6.9" size, which Apple will scale down for every smaller
-device, so this is the only set that has to exist.
+Output is 1290 x 2796 — the 6.9" size, which Apple scales down for every smaller device,
+so this is the only set that has to exist.
 """
 from PIL import Image, ImageDraw, ImageFont
 import os
 
-# 6.9" — iPhone 16 Pro Max and friends. One set covers the rest.
 W, H = 1290, 2796
 
 PAPER = (239, 238, 233)
 INK = (23, 23, 26)
-INK3 = (142, 142, 136)
 LINE = (213, 212, 204)
 ALARM = (199, 53, 26)
+ALARM_PALE = (246, 217, 210)
+WHITE = (255, 255, 255)
 
 SANS = "C:/Windows/Fonts/segoeuib.ttf"
 MONO = "C:/Windows/Fonts/CascadiaMono.ttf"
@@ -39,44 +53,63 @@ MONO = "C:/Windows/Fonts/CascadiaMono.ttf"
 SRC = "design/shots"
 OUT = "design/store"
 
-# Order matters and is not arbitrary: `docs/STORE.md` puts the two strongest claims first
-# because most people never swipe past them.
+# file, headline, index, ground, keep
+#
+# `keep` is the fraction of the capture to show, measured from the top. These screens put
+# their content at the top and a rail at the very bottom with a large gap between — right
+# on a phone, useless in a thumbnail. Automatic trimming does not help, because the last
+# row of content is that bottom rail, so nothing gets cut. The fraction is set by eye per
+# shot instead, which is honest about it being a judgement rather than a measurement.
 SHOTS = [
-    ("1.png", "Rings on Silent.\nRings on Focus.",      "01"),
-    ("2.png", "Dismiss doesn't work.",                  "02"),
-    ("3.png", "Prove you started.",                     "03"),
-    ("4.png", "It counts the days\nyou showed up.",     "04"),
-    ("5.png", "It remembers\nevery excuse.",            "05"),
+    ("1.png", "Rings on Silent.\nRings on Focus.",       "01", "alarm", 1.00),
+    ("2.png", "Dismiss\ndoesn't work.",                  "02", "alarm", 1.00),
+    ("3.png", "Prove you started.\nOr it rings again.",  "03", "paper", 0.72),
+    ("4.png", "It counts the days\nyou showed up.",      "04", "paper", 0.34),
+    # Honest about what the capture shows — an empty ledger. "So far" does the threatening.
+    ("5.png", "Zero excuses.\nSo far.",                  "05", "paper", 0.52),
 ]
 
 
-def compose(shot_path: str, headline: str, index: str) -> Image.Image:
-    canvas = Image.new("RGB", (W, H), PAPER)
+def compose(shot_path: str, headline: str, index: str, ground_name: str, keep: float) -> Image.Image:
+    loud = ground_name == "alarm"
+    ground = ALARM if loud else PAPER
+    text = WHITE if loud else INK
+    index_colour = ALARM_PALE if loud else ALARM
+    edge = (170, 40, 20) if loud else LINE
+
+    canvas = Image.new("RGB", (W, H), ground)
     draw = ImageDraw.Draw(canvas)
 
     label = ImageFont.truetype(MONO, 34)
-    title = ImageFont.truetype(SANS, 96)
+    title = ImageFont.truetype(SANS, 108)
 
-    # The small red index doubles as a reading order cue in the store's filmstrip.
-    draw.text((96, 150), index, font=label, fill=ALARM)
+    draw.text((96, 150), index, font=label, fill=index_colour)
 
-    y = 230
+    y = 232
     for line in headline.split("\n"):
-        draw.text((96, y), line, font=title, fill=INK)
-        y += 118
+        draw.text((96, y), line, font=title, fill=text)
+        y += 128
 
-    # The device capture, full width minus a margin, pinned below the headline. Cropped
-    # from the bottom rather than squashed if it is too tall — an aspect-distorted
-    # screenshot is instantly obvious and reads as carelessness.
     shot = Image.open(shot_path).convert("RGB")
-    target_w = W - 192
-    scale = target_w / shot.width
-    shot = shot.resize((target_w, int(shot.height * scale)), Image.LANCZOS)
+    if keep < 1.0:
+        shot = shot.crop((0, 0, shot.width, int(shot.height * keep)))
 
-    top = y + 90
-    room = H - top - 96
-    if shot.height > room:
-        shot = shot.crop((0, 0, shot.width, room))
+    # A short crop gets a narrower margin, so the little that is left lands as large as
+    # possible. A full-height capture keeps the wider margin — it needs the breathing room
+    # and it is tall enough to read anyway.
+    margin = 96 if keep >= 0.7 else 64
+    target_w = W - margin * 2
+    shot = shot.resize((target_w, int(shot.height * (target_w / shot.width))), Image.LANCZOS)
+
+    region_top = y + 96
+    region_bottom = H - 110
+    if shot.height > region_bottom - region_top:
+        shot = shot.crop((0, 0, shot.width, region_bottom - region_top))
+
+    # Centred in what is left rather than pinned under the headline. Pinned, a short crop
+    # leaves a single hole at the bottom that reads as a mistake; centred, the same space
+    # splits in two and reads as margin.
+    top = region_top + (region_bottom - region_top - shot.height) // 2
 
     radius = 56
     mask = Image.new("L", (shot.width * 2, shot.height * 2), 0)
@@ -84,12 +117,12 @@ def compose(shot_path: str, headline: str, index: str) -> Image.Image:
         [0, 0, shot.width * 2 - 1, shot.height * 2 - 1], radius=radius * 2, fill=255
     )
     mask = mask.resize(shot.size, Image.LANCZOS)
-    canvas.paste(shot, (96, top), mask)
+    canvas.paste(shot, (margin, top), mask)
 
-    # A hairline instead of a drop shadow. The identity has no shadows anywhere.
+    # A hairline, never a drop shadow — the identity has no shadows anywhere.
     draw.rounded_rectangle(
-        [96, top, 96 + shot.width - 1, top + shot.height - 1],
-        radius=radius, outline=LINE, width=2,
+        [margin, top, margin + shot.width - 1, top + shot.height - 1],
+        radius=radius, outline=edge, width=2,
     )
     return canvas
 
@@ -98,13 +131,13 @@ def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     missing = []
 
-    for filename, headline, index in SHOTS:
+    for filename, headline, index, ground, keep in SHOTS:
         path = os.path.join(SRC, filename)
         if not os.path.exists(path):
             missing.append(path)
             continue
         out = os.path.join(OUT, f"store-{index}.png")
-        compose(path, headline, index).save(out, "PNG")
+        compose(path, headline, index, ground, keep).save(out, "PNG")
         print("wrote", out)
 
     if missing:
