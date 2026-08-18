@@ -91,6 +91,16 @@ AGE_RATING = {
     "gambling": False,
     "unrestrictedWebAccess": False,
     "lootBox": False,
+    # Apple added these six in the 2025 questionnaire and rejects the PATCH without them.
+    # All false, and two of them are the same decision made elsewhere: no advertising SDK
+    # of any kind, and no health or wellness content -- the app is about starting a task,
+    # and calling it a wellness tool is the first step toward a claim it cannot make.
+    "advertising": False,
+    "parentalControls": False,
+    "healthOrWellnessTopics": False,
+    "ageAssurance": False,
+    "messagingAndChat": False,
+    "userGeneratedContent": False,
 }
 
 
