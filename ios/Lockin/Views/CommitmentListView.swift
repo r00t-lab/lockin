@@ -19,10 +19,30 @@ struct CommitmentListView: View {
     @Environment(CommitmentStore.self) private var store
     @Environment(SubscriptionService.self) private var subscriptions
 
-    @State private var showNewCommitment = false
-    @State private var showPaywall = false
-    @State private var showReport = false
-    @State private var deskCodeTarget: Commitment?
+    /// Every modal this screen can present, as one value.
+    ///
+    /// Not four separate `.sheet` modifiers stacked on the same view. SwiftUI has never
+    /// been dependable about that — historically only the last one took effect, and even
+    /// where it works it produces exactly the symptom that is hardest to diagnose from a
+    /// device report: a sheet that appears and immediately closes again. One optional,
+    /// one modifier, no ambiguity about which is showing.
+    private enum Modal: Identifiable {
+        case newCommitment
+        case paywall
+        case report
+        case deskCode(Commitment)
+
+        var id: String {
+            switch self {
+            case .newCommitment:          return "new"
+            case .paywall:                return "paywall"
+            case .report:                 return "report"
+            case .deskCode(let c):        return "desk-\(c.id.uuidString)"
+            }
+        }
+    }
+
+    @State private var modal: Modal?
     @State private var rehearsalError: String?
 
     /// Nudged every few seconds so "is this ringing right now" stays true while the app
@@ -42,7 +62,7 @@ struct CommitmentListView: View {
                     if let rehearsal = store.rehearsal {
                         RehearsalCard(
                             commitment: rehearsal,
-                            needsProof: store.needsProof(rehearsal),
+                            needsProof: isRinging(rehearsal),
                             onProve: { proofTarget = rehearsal },
                             onStop: { Task { await store.endRehearsal() } }
                         )
@@ -54,9 +74,9 @@ struct CommitmentListView: View {
                         ForEach(store.visibleCommitments) { commitment in
                             CommitmentCard(
                                 commitment: commitment,
-                                needsProof: store.needsProof(commitment),
+                                needsProof: isRinging(commitment),
                                 onProve: { proofTarget = commitment },
-                                onShowCode: { deskCodeTarget = commitment },
+                                onShowCode: { modal = .deskCode(commitment) },
                                 onDelete: { Task { await store.delete(commitment) } }
                             )
                         }
@@ -72,10 +92,14 @@ struct CommitmentListView: View {
         .naggGround()
         .onReceive(clock) { tick = $0 }
         .animation(.easeOut(duration: 0.22), value: store.commitments)
-        .sheet(isPresented: $showNewCommitment) { NewCommitmentView() }
-        .sheet(isPresented: $showPaywall) { PaywallView() }
-        .sheet(isPresented: $showReport) { WeeklyReportView() }
-        .sheet(item: $deskCodeTarget) { DeskCodeView(commitment: $0) }
+        .sheet(item: $modal) { modal in
+            switch modal {
+            case .newCommitment:       NewCommitmentView()
+            case .paywall:             PaywallView()
+            case .report:              WeeklyReportView()
+            case .deskCode(let c):     DeskCodeView(commitment: c)
+            }
+        }
     }
 
     // MARK: - Chrome
@@ -91,11 +115,7 @@ struct CommitmentListView: View {
             Spacer()
 
             Button {
-                if store.canAddAnother(isPro: subscriptions.isPro) {
-                    showNewCommitment = true
-                } else {
-                    showPaywall = true
-                }
+                modal = store.canAddAnother(isPro: subscriptions.isPro) ? .newCommitment : .paywall
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 16, weight: .medium))
@@ -123,7 +143,7 @@ struct CommitmentListView: View {
         // are already the thing the user's eye lands on, and anyone who wants more detail
         // reaches for them first.
         .contentShape(.rect)
-        .onTapGesture { showReport = true }
+        .onTapGesture { modal = .report }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Opens the report")
@@ -189,6 +209,14 @@ struct CommitmentListView: View {
     }
 
     private var isFirstRun: Bool { store.visibleCommitments.isEmpty }
+
+    /// Reads `tick` on purpose. It makes the clock an explicit dependency of the card's
+    /// state instead of relying on a `@State` write to invalidate the view as a side
+    /// effect — the kind of thing that quietly stops working after a refactor.
+    private func isRinging(_ commitment: Commitment) -> Bool {
+        _ = tick
+        return store.needsProof(commitment)
+    }
 
     private func armRehearsal(_ proofKind: Commitment.ProofKind) async {
         guard await AlarmService.shared.ensureAuthorized() else {
