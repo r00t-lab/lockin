@@ -46,13 +46,20 @@ tek seferde bitiriyor: zincir testi, üç mağaza karesi, bir de paywall görün
 
 - **Zincir testi (bölüm A) hâlâ yapılmadı** ve ürünün tüm iddiası bu: alarm beş kez geri
   gelip beşincide duruyor mu. Bu geçmezse gerisinin anlamı yok.
-- **Üç kare** — ikinci alarm, canlı kamera, dolu liste — aynı turun içinden çıkıyor;
-  hangi adımda hangisinin çekileceği PRESUBMIT'in başındaki tabloda.
-- **Paywall görüntüsü** (E1) abonelik ürünlerinin `MISSING_METADATA` durumunu kaldıran
-  şey. Aşağıya bak.
+- **Kareler çekildi** (18 Ağustos, 22:49–23:05): kilit ekranı alarmı, canlı kamera,
+  dört taahhütlük liste, paywall. Mağaza seti bunlarla yeniden derlendi.
+  **Kalan iki kare kısa:** ikinci alarm ("Still not started" — ürünün asıl iddiası ve şu
+  an hiçbir karede yok) ve güncel veriyle bahane raporu.
+- **Paywall görüntüsü hazır** (`design/shots/paywall.png`, fiyatlar canlı: $7.99 /
+  $44.99). Abonelik ürünlerine yüklenince `MISSING_METADATA` kalkıyor.
 
-Tur bitince `python tools/make_store_screenshots.py`, sonra `SHOTS` başlıklarını
-[STORE.md](STORE.md)'deki hedef metinlere döndür.
+Kare geldiğinde `python tools/make_store_screenshots.py` — kareler artık numarayla
+değil adla duruyor (`design/shots/alarm.png`, `proof.png`, …), sıra ve başlıklar
+`SHOTS` listesinde.
+
+**Şablon araçlarına dikkat:** dışarıdan gelen bir düzenleyiciden çıkan görseller
+324 × 702 geldi; App Store **1290 × 2796** istiyor ve büyütmek çözüm değil. Derleyici
+zaten doğru boyutta üretiyor.
 
 **2. Formlar.** [ASC-FORMS.md](ASC-FORMS.md) — cevaplar hazır, panelde tıklanacak.
 Yaş derecelendirmesi (4+) ve **App Privacy etiketi**; ikincisi gönderim için zorunlu ve

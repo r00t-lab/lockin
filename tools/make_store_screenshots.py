@@ -29,7 +29,7 @@ mistake.
 Nobody downloads a feature list.
 
 ## Use
-    1. Capture the five screens (see SHOTS) into design/shots/ as 1.png … 5.png
+    1. Capture the five screens into design/shots/ under the names in SHOTS
     2. python tools/make_store_screenshots.py
     3. Upload design/store/*.png to App Store Connect
 
@@ -37,6 +37,7 @@ Output is 1290 x 2796 — the 6.9" size, which Apple scales down for every small
 so this is the only set that has to exist.
 """
 from PIL import Image, ImageDraw, ImageFont
+import math
 import os
 
 W, H = 1290, 2796
@@ -56,23 +57,23 @@ MONO = "C:/Windows/Fonts/CascadiaMono.ttf"
 SRC = "design/shots"
 OUT = "design/store"
 
-# file, headline, subline, index, ground
+# file, headline, subline, index, ground, tilt
 #
 # No tilt. It was tried, because the template packs all lean their devices and the energy
 # looks appealing in their examples. Theirs are rendered in 3D; a flat rotation of a
 # rectangle is not the same thing and reads as a crooked picture rather than a phone held
 # at an angle. Straight is better than nearly.
 SHOTS = [
-    ("1.png", "It rings on\nsilent.",                 "Through Focus. Through Do Not Disturb.",
-     "01", "alarm"),
-    ("2.png", "Prove it,\nand it stops.",             "Dismiss does not. Only proof clears the alarm.",
-     "02", "deep"),
-    ("3.png", "Three ways\nto prove it.",             "A photo of your desk, a 25-minute timer, or a code you taped to it.",
-     "03", "deep"),
-    ("4.png", "It finds you at\nthe time you chose.", "Set it once. It shows up whether you feel like it or not.",
-     "04", "deep"),
-    ("5.png", "Zero excuses.\nSo far.",               "Nagg keeps the receipts.",
-     "05", "deep"),
+    ("alarm.png",  "It rings on\nsilent.",
+     "Through Focus. Through Do Not Disturb.",                              "01", "alarm", False),
+    ("proof.png",  "Prove you\nstarted.",
+     "Photograph your desk, or the alarm comes back.",                      "02", "deep", True),
+    ("list.png",   "It counts the days\nyou showed up.",
+     "And every one you didn't.",                                           "03", "deep", False),
+    ("create.png", "Three ways\nto prove it.",
+     "A photo of your desk, a 25-minute timer, or a code you taped to it.", "04", "deep", True),
+    ("report.png", "Zero excuses.\nSo far.",
+     "Nagg keeps the receipts.",                                            "05", "deep", False),
 ]
 
 
@@ -215,6 +216,32 @@ def neutralise_status_bar(shot: Image.Image) -> Image.Image:
     return shot
 
 
+# The four-pointed sparkle. It is the one ornament allowed in here, and it earns its
+# place by doing something a rectangle cannot: it breaks the silhouette of the phone so
+# the image stops reading as a screenshot pasted on a colour and starts reading as a
+# composed picture. Drawn, not imported -- a star is polar coordinates.
+def sparkle(canvas: Image.Image, cx: float, cy: float, radius: float, colour, alpha=255):
+    scale = 4  # drawn large and resampled down; the concave edges alias badly otherwise
+    size = int(radius * 2 * scale)
+    layer = Image.new("L", (size, size), 0)
+    points = []
+    for step in range(180):
+        theta = step / 180 * 2 * math.pi
+        pinch = abs(math.sin(2 * theta)) ** 0.62
+        r = radius * scale * (1 - 0.78 * pinch)
+        points.append((size / 2 + r * math.cos(theta), size / 2 + r * math.sin(theta)))
+    ImageDraw.Draw(layer).polygon(points, fill=alpha)
+    layer = layer.resize((int(radius * 2), int(radius * 2)), Image.LANCZOS)
+    canvas.paste(Image.new("RGB", layer.size, colour),
+                 (int(cx - radius), int(cy - radius)), layer)
+
+
+# Placed by hand rather than scattered randomly. Three of them, in the margins the
+# headline and the phone leave empty, at three different sizes so they read as depth
+# instead of a pattern. A fourth one always landed on top of something.
+SPARKLES = [(0.905, 0.082, 68, 255), (0.955, 0.45, 38, 195), (0.05, 0.63, 48, 170)]
+
+
 def wrap(text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
     """Greedy wrap. Sublines are one or two lines; a third means the copy is wrong."""
     lines, line = [], ""
@@ -230,7 +257,7 @@ def wrap(text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
 
 
 def compose(shot_path: str, headline: str, subline: str, index: str,
-            ground_name: str) -> Image.Image:
+            ground_name: str, tilt: bool = False) -> Image.Image:
     # The ground is chosen against the capture, not for its own sake. A pale app screen on
     # a pale ground vanishes into it — only the black bezel separates them, which is what
     # the first attempt looked like. Dark screens go on red; light screens go on the deep
@@ -301,9 +328,22 @@ def compose(shot_path: str, headline: str, subline: str, index: str,
     # replaces cropping: on a sparse screen the eye gets the part that matters at full
     # size, and a phone continuing past the frame reads as deliberate where a cut-off
     # rectangle reads as a mistake.
+    # A slight rotation on two of the five. Tilting every device was tried once and taken
+    # back out -- a flat rotation of a flat rectangle reads as a crooked picture. Two out
+    # of five reads as variation instead, and the ones that lean are the two whose screens
+    # are dense enough that a straight edge would look like a wall of interface.
+    if tilt:
+        angle = -5.5
+        device = device.rotate(angle, resample=Image.BICUBIC, expand=True)
+        shape = shape.rotate(angle, resample=Image.BICUBIC, expand=True)
+        outer_w, outer_h = device.size
+
     left = (W - outer_w) // 2
     top = y + 104
     canvas.paste(device, (left, top), shape)
+
+    for fx, fy, radius, alpha in SPARKLES:
+        sparkle(canvas, W * fx, H * fy, radius, ALARM_PALE if on_dark else ALARM, alpha)
 
     return canvas
 
@@ -312,13 +352,13 @@ def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     missing = []
 
-    for filename, headline, subline, index, ground in SHOTS:
+    for filename, headline, subline, index, ground, tilt in SHOTS:
         path = os.path.join(SRC, filename)
         if not os.path.exists(path):
             missing.append(path)
             continue
         out = os.path.join(OUT, f"store-{index}.png")
-        compose(path, headline, subline, index, ground).save(out, "PNG")
+        compose(path, headline, subline, index, ground, tilt).save(out, "PNG")
         print("wrote", out)
 
     if missing:

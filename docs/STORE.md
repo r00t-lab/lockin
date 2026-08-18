@@ -65,23 +65,29 @@ weekly report.
 
 Sıra önemli: ilk iki görsel indirmenin çoğunu belirliyor, çünkü çoğu kişi kaydırmıyor.
 
-### Bugün derlenen set, hedef set değil
+### Kareler ve dosya adları
 
-Hedeflenen beş karenin üçü (02, 03, 04) henüz çekilmedi. Set beklemek yerine eldeki
-karelerle gönderilebilir durumda: başlıklar karenin gerçekten gösterdiğini söylüyor, yani
-iddia ile piksel çelişmiyor. Aşağıdaki tablo **hedef**; bugün derlenen başlıklar
-`tools/make_store_screenshots.py` içindeki `SHOTS` listesinde.
+Kareler numarayla değil adla duruyor: `design/shots/alarm.png`, `proof.png`, `list.png`,
+`create.png`, `report.png`. Numaralı hâlde "3 hangisiydi" sorusu bir kez yanlış cevaplandı
+ve kanıt ekranı iki karede birden çıktı — ad bunu imkânsız kılıyor.
 
-| # | Bugünkü kare | Bugünkü başlık | Hedef kare gelince |
-|---|---|---|---|
-| 01 | kilit ekranı alarmı | It rings on silent. | değişmiyor |
-| 02 | kanıtlanmış tek taahhüt | Prove it, and it stops. | ikinci alarm → "Dismiss doesn't work" |
-| 03 | yeni taahhüt ekranı | Three ways to prove it. | canlı kamera → "Prove you started" |
-| 04 | iki satırlık liste | It finds you at the time you chose. | dolu liste, streak > 0 → "It counts the days you showed up" |
-| 05 | bahane raporu | Zero excuses. So far. | değişmiyor |
+Sıra `tools/make_store_screenshots.py` içindeki `SHOTS` listesinde ve bugün şu:
 
-Üç kare de [PRESUBMIT.md](PRESUBMIT.md) turunda çıkıyor; `SHOTS`'u hedefe döndürmek o
-turun son adımı.
+| # | Kare | Başlık |
+|---|---|---|
+| 01 | `alarm.png` — kilit ekranı, "Write the essay intro" | It rings on silent. |
+| 02 | `proof.png` — kanıt ekranı, kamera canlı | Prove you started. |
+| 03 | `list.png` — dört taahhüt, biri kanıtlı, streak 1 | It counts the days you showed up. |
+| 04 | `create.png` — yeni taahhüt, üç kanıt tipi | Three ways to prove it. |
+| 05 | `report.png` — bahane raporu | Zero excuses. So far. |
+
+**İki kare hâlâ eksik ve ikisi de kısa:**
+
+- **İkinci alarm**, butonu "Still not started" yazan. Hedef listedeki 02 bu; geldiğinde
+  kanıt ekranı 03'e kayar. Ürünün asıl iddiası ("dismiss işe yaramıyor") şu an hiçbir
+  karede görünmüyor.
+- **Taze bahane raporu.** Eldeki kare "Brush your teeth" ve sıfırlarla dolu, yani 03'teki
+  streak 1 ile çelişiyor. Sayı şeridine dokunup yeniden çekmek on saniye.
 
 | # | Hangi ekran | Nasıl ulaşılır |
 |---|---|---|
@@ -124,7 +130,9 @@ anlıyor — jenerik bir gradient bu bağı koparır.
 
 ### Kurallar
 
-- **Telefon çerçevesi kullan**, düz ekran görüntüsü koyma.
+- **Telefon çerçevesi kullan**, düz ekran görüntüsü koyma. İkisi hafif eğik (02 ve 04),
+  üçü düz: eğimi hepsine vermek kareyi eğri asılmış tabloya çeviriyor, hiç vermemek beş
+  aynı dikdörtgen demek.
 - **Rozet uydurma.** "Editors' Choice", "App of the Year", basın logoları — hiçbiri
   bizim değil. "Editors' Choice" Apple'ın kendi ödülü; uydurmak ret değil **kaldırma**
   sebebi. Şablonlar bunları yer tutucu olarak bırakıyor, sil.
@@ -141,8 +149,10 @@ anlıyor — jenerik bir gradient bu bağı koparır.
 - **Her karenin bir alt satırı var.** Başlık vaadi satıyor, alt satır tek somut ayrıntıyı
   veriyor: hangi üç kanıt, hangi iki mod. Derleyici ikisini de basıyor.
 
-`tools/make_store_screenshots.py` ham kareleri mağaza boyutuna çeviriyor: `design/shots/`
-içine `1.png` … `5.png` koy, çalıştır, `design/store/` çıkar.
+`tools/make_store_screenshots.py` ham kareleri mağaza boyutuna çeviriyor: kareyi
+`design/shots/` içine yukarıdaki adla koy, çalıştır, `design/store/` çıkar. Çıktı
+**1290 × 2796** — 6.9" boyutu, Apple küçük cihazlara kendisi ölçekliyor. Şablon
+araçlarından çıkan 300-400 piksellik görseller yüklenmiyor; ölçek tek yönlü.
 
 ## Değerlendirme notu (App Review'a)
 
