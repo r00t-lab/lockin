@@ -10,37 +10,47 @@ içeri al. Ters yaparsan RevenueCat eşleştiremez.
 
 ## 1. App Store Connect — abonelik ürünleri
 
-### Subscription Group
+> **Durum: kuruldu (18 Ağustos 2026).** Grup ve iki ürün App Store Connect API'siyle
+> oluşturuldu, fiyatlar ve denemeler bağlandı. Aşağısı artık plan değil, kayıt.
 
-Tek grup oluştur. Adı: `Lockin Pro`
+### Kurulmuş hâli
 
-Aynı gruptaki ürünler arasında kullanıcı yükseltme/düşürme yapabilir. İki planı ayrı
-gruplara koyarsan kullanıcı aylıktan yıllığa geçemez, iki ayrı abonelik ödemeye başlar.
-Bu, sonradan düzeltilmesi acı veren bir hata.
-
-### Ürünler
-
-| Alan | Aylık | Yıllık |
+| | Aylık | Yıllık |
 |---|---|---|
-| Product ID | `com.seninadin.lockin.pro.monthly` | `com.seninadin.lockin.pro.annual` |
-| Reference Name | `Lockin Pro Monthly` | `Lockin Pro Annual` |
-| Duration | 1 Month | 1 Year |
-| Fiyat | **$7.99** | **$44.99** |
-| Introductory Offer | 3 gün ücretsiz deneme | 3 gün ücretsiz deneme |
+| Product ID | `com.r00tlab.lockin.pro.monthly` | `com.r00tlab.lockin.pro.annual` |
+| ASC id | `6802574125` | `6802574534` |
+| Görünen ad | Nagg Pro Monthly | Nagg Pro Annual |
+| Süre | 1 ay | 1 yıl |
+| Fiyat (USA) | **$7.99** | **$44.99** |
+| Deneme | 3 gün ücretsiz | 3 gün ücretsiz |
 
-Product ID'yi sonradan **değiştiremezsin.** Yazmadan önce iki kere oku.
+Grup: `Nagg Pro` (id `22317019`), görünen adı da **Nagg Pro** — Ayarlar ▸ Abonelikler'de
+kullanıcının gördüğü başlık bu. İkisi de **aynı grup, aynı seviye (groupLevel 1)**, yani
+kullanıcı aylıkla yıllık arasında serbestçe geçebiliyor. Ayrı gruplara koymak iki ayrı
+abonelik ödemesine yol açardı ve sonradan düzeltmesi acı verirdi.
 
-### Her ürün için doldurulması zorunlu
+**Product ID'ler `lockin` içeriyor ve bu bilinçli.** Kullanıcı product ID'yi hiçbir yerde
+görmüyor; gördüğü şey yukarıdaki "görünen ad". İç isimlerin `Lockin` kalması kararıyla
+tutarlı, bundle id ile birebir eşleşiyor.
 
-Bunlardan biri eksikse ürün "Missing Metadata"da takılır ve Sandbox'ta görünmez:
+### Fiyat gerekçesi
 
-- **Localization** (en-US): Display Name + Description
-- **Review screenshot** — paywall ekranının fotoğrafı, her ürün için ayrı
-- **Review notes** — boş bırakabilirsin
+Alarmy ~$5/ay ve $59.99/yıl alıyor — yıllığında neredeyse hiç indirim yok. Biz $7.99/ay ile
+onun üstündeyiz, çünkü Nagg *uyandırma* satmıyor: farklı iş, farklı fiyat. RevenueCat SOSA
+2026 verisi ucuz fiyatın iki kez cezalandırdığını gösteriyor — yüksek fiyatlı uygulamalar
+%2.8, düşük fiyatlılar %1.4 dönüşüyor. Yıllık $44.99 ise aylığın 12 katına göre **%53
+indirim**; dönem bazlı kullanan öğrencide erken churn'ü kilitlediği için burada değerli.
 
-> IAP lokalizasyon eksikliği App Review'ın en sık verdiği redlerden biri. Description
-> alanını "Unlimited commitments and the weekly report." gibi gerçek bir cümleyle doldur,
-> ürün adını tekrar etme.
+Fiyat sonradan değiştirilebilir. **Product ID değiştirilemez** — geri dönülemez karar oydu
+ve verildi.
+
+### Kalan tek eksik: review ekran görüntüsü
+
+İki ürün de şu an `MISSING_METADATA`. Sebep tek: her ürün için bir **paywall ekran
+görüntüsü** gerekiyor. Bu olmadan ürünler Sandbox'ta bile görünmez ve paywall boş gelir.
+
+Cihazda paywall'ı aç, ekran görüntüsü al, iki ürüne de yükle. Apple'ın istediği şey satın
+almanın nerede gerçekleştiğini görmek — ekranın canlı ürün listesi göstermesi şart değil.
 
 ---
 
@@ -52,7 +62,8 @@ Sıra: **Entitlement → Product import → Attach → Offering**
    Identifier: `pro` — kod tam olarak bunu arıyor
    ([SubscriptionService.swift](../ios/Lockin/Services/SubscriptionService.swift))
 
-2. **Products** — App Store Connect'ten iki ürünü içeri al (1'e 1 eşleşme)
+2. **Products** — App Store Connect'ten iki ürünü içeri al (1'e 1 eşleşme):
+   `com.r00tlab.lockin.pro.monthly` ve `com.r00tlab.lockin.pro.annual`
 
 3. **Entitlement `pro` ▸ Associated Products ▸ Attach** — iki ürünü de bağla.
    Bu adımı atlarsan satın alma başarılı olur ama `isPro` false kalır. Sessiz hata,
