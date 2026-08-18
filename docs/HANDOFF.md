@@ -77,11 +77,10 @@ sürüme bağla.
 - **Family Controls entitlement** — odak oturumunda uygulama engelleme (v1.1). Başvuru
   Apple'da, birkaç gün–birkaç hafta. Geliştirme entitlement'ı onaysız çalışıyor, yani
   beklerken yazılabilir. Gerekçe `docs/PRODUCT.md`.
-- **Abonelik ürünleri `MISSING_METADATA`.** Sebep tahmin değil: her ürün bir **paywall
-  inceleme görüntüsü** istiyor ([LAUNCH.md](LAUNCH.md) bölüm 1) ve o yüklenmemiş. API'nin
-  gösterdiği alanların dolu olması yanıltıyor — eksik alan metin değil, görüntü. Ürünler
-  bu hâldeyken Sandbox'ta da görünmüyor, ama **boş paywall'ın görüntüsü kabul ediliyor**,
-  yani döngü kırılabilir.
+- **Abonelik ürünleri `MISSING_METADATA`.** İki teori de yanlış çıktı: alanlar dolu ve
+  **inceleme görüntüsü de yüklü** (API'den okundu, ikisinde de `COMPLETE`). Kalan tek
+  açıklama, aboneliklerin ilk kez bir uygulama sürümüyle gönderilmeyi bekliyor olması.
+  Panelde aranacak eksik alan yok — [ASC-FORMS.md](ASC-FORMS.md) bölüm 3.
 
 ## Araçlar
 

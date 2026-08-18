@@ -7,6 +7,22 @@ Cevapların çoğu "yok/hayır". Değerli olan azınlık — **karar olanlar** i
 Onları burada bir kez verip her gönderimde aynı vermek, tutarsız cevap yüzünden gelen
 ikinci tur incelemeyi engelliyor.
 
+**Panelin ne dediğini tahmin etme, oku:**
+
+```bash
+python tools/asc_metadata.py --check
+```
+
+Yaş derecelendirmesi, içerik hakları, sürüm numarası, inceleme notu, bağlı build ve iki
+aboneliğin durumu tek ekranda. Yazan hâli:
+
+```bash
+python tools/asc_metadata.py --apply --phone "+90..."
+```
+
+Bu üç formun ikisini script yazıyor. **App Privacy etiketi API'de yok** (bu sürümde
+`appDataUsages` 404 dönüyor) — o form panelde elle dolduruluyor, cevapları bölüm 2'de.
+
 ---
 
 ## 1. Yaş derecelendirmesi → **4+**
@@ -73,16 +89,35 @@ eklenirse bu satır değişir.
 **Tracking "Hayır" olduğu için ATT izin penceresi de yok.** IDFA okunmuyor, reklam ağı
 yok. Bu cevabı "Evet" yapan tek şey ileride bir attribution SDK'sı eklemek olur.
 
-## 3. Abonelik ürünlerinin inceleme görüntüsü
+## 3. Abonelik ürünleri — `MISSING_METADATA` neden kalkmıyor
 
-İki ürün de `MISSING_METADATA` durumunda ve sebebi tahmin değil, biliniyor:
-**her ürün için bir paywall ekran görüntüsü** gerekiyor ([LAUNCH.md](LAUNCH.md) bölüm 1).
-Bu olmadan ürünler Sandbox'ta bile görünmez.
+**Paywall görüntüsü zaten yüklü.** API'den okundu: iki ürünün de inceleme görüntüsü
+`COMPLETE` durumda, 1290 × 2796. Yani LAUNCH.md'nin ve bu dosyanın önceki hâlinin
+söylediği sebep — "görüntü eksik" — **doğru değil**. Ürünlerde dolu olanlar:
 
-Görüntü cihaz turunda çıkıyor ([PRESUBMIT.md](PRESUBMIT.md) E1). **Ekranın canlı ürün
-listesi göstermesi şart değil** — Apple satın almanın nerede gerçekleştiğini görmek
-istiyor. Yani ürünler `MISSING_METADATA` iken alınan boş paywall görüntüsü de kabul
-ediliyor, ve döngüyü kıran şey bu.
+| Alan | Durum |
+|---|---|
+| Ad, açıklama (en-US) | ✅ |
+| Fiyat ($7.99 / $44.99), bölge, 3 günlük deneme | ✅ |
+| İnceleme notu | ✅ |
+| İnceleme görüntüsü | ✅ ikisinde de |
+| Grup görünen adı "Nagg Pro" | ✅ |
 
-Aynı görüntü iki ürüne de yüklenir: ASC ▸ Abonelikler ▸ ürün ▸ **App Store Promotion /
-Review Information ▸ Screenshot**.
+Geriye tek makul açıklama kalıyor: **abonelikler ilk kez bir uygulama sürümüyle birlikte
+gönderilene kadar bu durumda kalıyor.** Sürüme henüz build bağlanmadı, dolayısıyla
+gönderilecek bir şey de yok. Sıralama şu: build → sürüme bağla → gönderime abonelikleri
+de ekle. Ürünlerde tıklanacak bir eksik aramak, olmayan bir şeyi aramak.
+
+Yine de gönderim ekranı bir alan isterse, görüntü `design/shots/paywall.png` olarak
+duruyor: ASC ▸ Abonelikler ▸ ürün ▸ **Review Information ▸ Screenshot**.
+
+## 4. Sürüm numarası — sessiz tuzak
+
+App Store sürüm kaydı **`1.0`** olarak açılmış, ama TestFlight'taki build'lerin hepsi
+**`1.0.0`** (`project.yml` ▸ `MARKETING_VERSION`). Build ancak numarası kendisiyle aynı
+olan sürüme bağlanabiliyor, yani build seçici boş görünecekti ve panel sebebini
+söylemeyecekti. `asc_metadata.py --apply` sürüm kaydını `1.0.0` yapıyor.
+
+TestFlight'ta duran en yeni build **17 Ağustos'tan** (build 21) — yani bugünün
+düzeltmeleri onda yok. Yeni build gerekiyor: `git tag v1.0.0 && git push origin v1.0.0`,
+`release.yml` derleyip TestFlight'a yüklüyor.
