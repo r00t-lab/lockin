@@ -40,24 +40,28 @@ struct PaywallView: View {
 
                 receipts.padding(.top, 22)
 
-                VStack(spacing: 8) {
-                    ForEach(subscriptions.offering?.availablePackages ?? [], id: \.identifier) { package in
-                        packageRow(package)
+                if packages.isEmpty {
+                    unavailable.padding(.top, 22)
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(packages, id: \.identifier) { package in
+                            packageRow(package)
+                        }
                     }
-                }
-                .padding(.top, 22)
+                    .padding(.top, 22)
 
-                Button {
-                    guard let package = selected ?? subscriptions.offering?.availablePackages.first else { return }
-                    Task {
-                        if await subscriptions.purchase(package) { dismiss() }
+                    Button {
+                        guard let package = selected ?? packages.first else { return }
+                        Task {
+                            if await subscriptions.purchase(package) { dismiss() }
+                        }
+                    } label: {
+                        Text(subscriptions.isPurchasing ? "…" : "Start free trial")
                     }
-                } label: {
-                    Text(subscriptions.isPurchasing ? "…" : "Start free trial")
+                    .buttonStyle(NaggPrimaryButton())
+                    .disabled(subscriptions.isPurchasing)
+                    .padding(.top, 20)
                 }
-                .buttonStyle(NaggPrimaryButton())
-                .disabled(subscriptions.isPurchasing)
-                .padding(.top, 20)
 
                 HStack(spacing: 18) {
                     Button("Restore") { Task { await subscriptions.restore() } }
@@ -81,7 +85,30 @@ struct PaywallView: View {
         .presentationDragIndicator(.visible)
         .task {
             await subscriptions.refresh()
-            selected = subscriptions.offering?.availablePackages.first
+            selected = packages.first
+        }
+    }
+
+    private var packages: [Package] { subscriptions.offering?.availablePackages ?? [] }
+
+    /// Shown when there is genuinely nothing to sell — no store products configured yet,
+    /// or no network. A "Start free trial" button with no package behind it is worse than
+    /// an empty screen: the user taps it, nothing happens, and they conclude the app is
+    /// broken rather than unfinished.
+    private var unavailable: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Nothing to sell yet").naggLabel()
+            Text("Subscriptions aren't set up on this build. Everything else works — you just can't go past two commitments.")
+                .font(Nagg.sans(14))
+                .lineSpacing(4)
+                .foregroundStyle(Nagg.ink2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Nagg.surface)
+        .clipShape(.rect(cornerRadius: Nagg.radius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Nagg.radius).stroke(Nagg.line, lineWidth: 1)
         }
     }
 

@@ -19,15 +19,36 @@ final class SubscriptionService {
     private(set) var offering: Offering?
     private(set) var isPurchasing = false
 
+    /// False until a real key has been handed to `configure`. Every call below checks it.
+    ///
+    /// Configuring RevenueCat with the placeholder does not fail loudly — it fails in a
+    /// loop. On device it produced dozens of `storekitd` tasks a second against the
+    /// sandbox, burning battery and, worse, burying every other line in the system log
+    /// at exactly the point we were reading logs to chase a real bug.
+    private(set) static var isConfigured = false
+
+    /// The value that ships in the repo. Anything equal to it is not a key.
+    private static let placeholderKey = "appl_REPLACE_ME"
+
     private init() {}
 
-    /// Call once, from `LockinApp.init` or the app delegate, before any other RC call.
+    /// Call once, from `LockinApp.init`, before any other RevenueCat call.
+    ///
+    /// Refuses the placeholder rather than passing it through. A paywall with nothing in
+    /// it is a bug someone notices; a silent retry storm is one nobody does.
     static func configure(apiKey: String) {
+        guard apiKey != placeholderKey, apiKey.hasPrefix("appl_") else {
+            isConfigured = false
+            return
+        }
         Purchases.logLevel = .warn
         Purchases.configure(withAPIKey: apiKey)
+        isConfigured = true
     }
 
     func refresh() async {
+        guard Self.isConfigured else { return }
+
         async let info = try? Purchases.shared.customerInfo()
         async let offerings = try? Purchases.shared.offerings()
 
@@ -39,6 +60,7 @@ final class SubscriptionService {
 
     @discardableResult
     func purchase(_ package: Package) async -> Bool {
+        guard Self.isConfigured else { return false }
         isPurchasing = true
         defer { isPurchasing = false }
 
@@ -56,7 +78,8 @@ final class SubscriptionService {
     /// guaranteed rejection, and it is two lines.
     @discardableResult
     func restore() async -> Bool {
-        guard let info = try? await Purchases.shared.restorePurchases() else { return false }
+        guard Self.isConfigured,
+              let info = try? await Purchases.shared.restorePurchases() else { return false }
         isPro = info.entitlements[entitlementID]?.isActive == true
         return isPro
     }
