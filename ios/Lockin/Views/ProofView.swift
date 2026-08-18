@@ -27,6 +27,8 @@ struct ProofView: View {
     @State private var rejection: String?
     @State private var timerRemaining: TimeInterval = 25 * 60
     @State private var timerRunning = false
+    /// Earned the moment the timer starts, shown when the user is done watching it.
+    @State private var timerProvedStreak: Int?
     /// Incremented to fire the shutter. A counter, not a flag — see `CameraCaptureView`.
     @State private var shutterTrigger = 0
     @State private var cameraDenied = false
@@ -74,13 +76,18 @@ struct ProofView: View {
                     .padding(.bottom, 6)
             }
 
-            Button("I'm not doing it") {
-                Task {
-                    await store.recordDismissal(for: commitment.id)
-                    onFinish()
+            // Gone once the timer is running. Proof has already landed by then, and a
+            // button that records an excuse against a day the user showed up is worse
+            // than no button: it is the app calling them a liar for staying on screen.
+            if !timerRunning {
+                Button("I'm not doing it") {
+                    Task {
+                        await store.recordDismissal(for: commitment.id)
+                        onFinish()
+                    }
                 }
+                .buttonStyle(NaggBailButton())
             }
-            .buttonStyle(NaggBailButton())
         }
         .padding(.horizontal, 20)
         .padding(.top, 30)
@@ -273,18 +280,42 @@ struct ProofView: View {
                 Task {
                     // Starting is the proof. Finishing is between them and their degree.
                     await store.recordProof(for: commitment.id)
-                    provenStreak = store.commitment(id: commitment.id)?.currentStreak ?? 0
+                    timerProvedStreak = store.commitment(id: commitment.id)?.currentStreak ?? 0
                 }
             }
             .buttonStyle(NaggPrimaryButton(tint: timerRunning ? Nagg.go : Nagg.ink))
             .disabled(timerRunning)
+
+            // The clock was unreachable. Proof lands in milliseconds, the payoff screen
+            // took over on the same tap, and the countdown was destroyed with the view
+            // before a single second ticked — the one part of this proof the user can
+            // actually watch, and nobody ever saw it. So the payoff waits now: until the
+            // timer runs out, or until they say they are done.
+            if timerRunning {
+                VStack(spacing: 16) {
+                    Text("The alarm is off. The next 25 minutes are yours.")
+                        .font(Nagg.sans(14))
+                        .foregroundStyle(Nagg.ink2)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .padding(.horizontal, 24)
+
+                    Button("Done") { provenStreak = timerProvedStreak ?? 0 }
+                        .buttonStyle(NaggBailButton())
+                }
+            }
         }
         .padding(.top, 12)
+        .animation(.easeOut(duration: 0.22), value: timerRunning)
         .task(id: timerRunning) {
             guard timerRunning else { return }
             while timerRemaining > 0, !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 timerRemaining -= 1
+            }
+            // Sat through the whole thing without being asked to. That earns the beat.
+            if timerRemaining <= 0, !Task.isCancelled {
+                provenStreak = timerProvedStreak ?? 0
             }
         }
     }
