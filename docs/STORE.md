@@ -65,14 +65,60 @@ weekly report.
 
 Sıra önemli: ilk iki görsel indirmenin çoğunu belirliyor, çünkü çoğu kişi kaydırmıyor.
 
-1. **Tam ekran alarm** + üstte yazı: *"Rings on Silent. Rings on Focus."*
-2. **Dismiss → 2 dakika sonra tekrar** + yazı: *"Dismiss doesn't work"*
-3. **Kanıt ekranı, masa fotoğrafı** + yazı: *"Prove you started"*
-4. **Streak ekranı** + yazı: *"14 days. Zero excuses."*
-5. **Bahane raporu** + yazı: *"It remembers everything"*
+| # | Hangi ekran | Nasıl ulaşılır |
+|---|---|---|
+| 01 | Kilit ekranında tam ekran alarm | Prova → uygulamayı kapat → kilitle → 20 sn |
+| 02 | **İkinci** alarm, butonu "Still not started" | İlk alarmda Dismiss → 30 sn bekle |
+| 03 | Kanıt ekranı, **kamera canlıyken** | Zincir dönerken uygulamayı aç |
+| 04 | Dolu liste, streak > 0 | 3-4 taahhüt ekle, birini kanıtla |
+| 05 | Bahane raporu | Üstteki sayı şeridine dokun |
 
-Her görselde telefon çerçevesi kullan, düz ekran görüntüsü koyma. Metin büyük olsun —
-App Store'da küçük görünüyorlar.
+### Metinler
+
+```text
+01  It rings on silent
+    Through Focus. Through Do Not Disturb.
+
+02  Dismiss doesn't work
+    It comes back. Up to five times.
+
+03  Prove you started
+    Photograph your desk, or it rings again.
+
+04  It counts the days you showed up
+    And every one you didn't.
+
+05  Zero excuses. So far.
+    Nagg keeps the receipts.
+```
+
+### Renkler
+
+```text
+Arka plan   #A8452F      sakinleştirilmiş alarm kırmızısı
+Başlık      #FFFFFF
+Alt satır   #F6D9D2
+```
+
+Zemin uygulamanın alarm kırmızısıyla akraba, ama tam ekran kaplarken `#C7351A` kadar
+bağırmıyor. Mağazada gördüğü rengi açtığı uygulamada bulan kişi doğru yere geldiğini
+anlıyor — jenerik bir gradient bu bağı koparır.
+
+### Kurallar
+
+- **Telefon çerçevesi kullan**, düz ekran görüntüsü koyma.
+- **Rozet uydurma.** "Editors' Choice", "App of the Year", basın logoları — hiçbiri
+  bizim değil. "Editors' Choice" Apple'ın kendi ödülü; uydurmak ret değil **kaldırma**
+  sebebi. Şablonlar bunları yer tutucu olarak bırakıyor, sil.
+- **Yorum uydurma.** Sıfır kullanıcı varken "-Emilia, harika uygulama" yazmak hem kural
+  ihlali hem ilk gerçek kullanıcı geldiğinde ödenecek bir borç.
+- **Başlık ekranın gösterdiğini iddia etsin.** Rapor sıfır bahane gösteriyorsa "her
+  bahaneyi hatırlar" yazma. Metinle kare çelişirse ikisi de inandırıcılığını kaybeder.
+- **Özellik değil sonuç yaz.** "Alarm ayarları" kimseyi indirtmiyor, "sessizde çalar"
+  indirtiyor.
+
+`tools/make_store_screenshots.py` ham kareleri mağaza boyutuna çeviriyor: `design/shots/`
+içine `1.png` … `5.png` koy, çalıştır, `design/store/` çıkar.
 
 ## Değerlendirme notu (App Review'a)
 
