@@ -143,3 +143,40 @@ yayınlanması ise ilk dalgayı yakmak demek.
 
 İlk red gelirse panik yapma — normal. Sebebi oku, düzelt, tekrar gönder. Genelde
 yukarıdaki listeden atladığın bir madde çıkıyor.
+
+
+---
+
+## 4. Alan adı ve hukuki sayfalar
+
+> **Durum: canlı (18 Ağustos 2026).**
+
+`nagg.pro`, Cloudflare Workers üzerinde. Kaynak `gh-pages` dalı; oraya yapılan her push
+siteyi günceller.
+
+```text
+https://nagg.pro/           tanıtım
+https://nagg.pro/terms      kullanım şartları
+https://nagg.pro/privacy    gizlilik politikası
+https://nagg.pro/support    destek
+```
+
+**`.html` yazma.** Cloudflare uzantıyı kırpıyor ve uzun hâli 307 ile yönlendiriyor.
+Uygulamadaki ve App Store Connect'teki bağlantıların hepsi uzantısız.
+
+İki tuzak, ikisi de zaman yedi:
+- Nameserver'lar Cloudflare'e geçmeden alan adını Worker'a bağlamaya çalışmak "harici
+  olarak yönetilen DNS kayıtları var" hatası veriyor. Sorun kayıtta değil, bölgenin kimin
+  yetkisinde olduğunda — önce nameserver, sonra bağlama.
+- Worker'ı GitHub'a bağlarken production branch **`gh-pages`** olmalı. `main` seçilirse
+  repo kökündeki `prototype/index.html` yayınlanıyor: site ayakta görünüyor, ama tarayıcı
+  prototipini sunuyor ve diğer bütün yollar 404 veriyor.
+
+### App Store Connect'e girilenler
+
+| Alan | Değer |
+|---|---|
+| Privacy Policy URL | `https://nagg.pro/privacy` |
+| Support URL | `https://nagg.pro/support` |
+| Marketing URL | `https://nagg.pro` |
+| İletişim | `info@kivanckarahasan.pro` |

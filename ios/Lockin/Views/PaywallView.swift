@@ -65,10 +65,11 @@ struct PaywallView: View {
 
                 HStack(spacing: 18) {
                     Button("Restore") { Task { await subscriptions.restore() } }
-                    // Real, reachable pages. These pointed at lockin.app, a domain nobody
-                    // owns — App Review clicks them, and a dead legal link is a rejection.
-                    Link("Terms", destination: URL(string: "https://r00t-lab.github.io/lockin/terms.html")!)
-                    Link("Privacy", destination: URL(string: "https://r00t-lab.github.io/lockin/privacy.html")!)
+                    // Real, reachable pages — App Review follows these and a dead legal
+                    // link is a rejection on its own. No `.html`: the host strips the
+                    // extension and would answer the long form with a redirect.
+                    Link("Terms", destination: URL(string: "https://nagg.pro/terms")!)
+                    Link("Privacy", destination: URL(string: "https://nagg.pro/privacy")!)
                 }
                 .font(Nagg.sans(12))
                 .foregroundStyle(Nagg.ink3)
