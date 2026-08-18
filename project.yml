@@ -113,6 +113,9 @@ targets:
       # The Live Activity is the alarm as far as the Lock Screen is concerned, and it is
       # what ends up in every screen recording. It has to be the same red as the app.
       - path: ios/Lockin/Design/NaggStyle.swift
+      # ProofIntent runs in *this* process, not the app's, so its logging has to come
+      # with it. Without this the widget target does not compile.
+      - path: ios/Lockin/Services/NaggLog.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.widget

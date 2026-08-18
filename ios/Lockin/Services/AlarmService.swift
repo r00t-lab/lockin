@@ -1,5 +1,6 @@
 import AlarmKit
 import Foundation
+import OSLog
 import SwiftUI
 
 // Tuning lives at file scope, not as properties. The `nonisolated` helpers in
@@ -114,7 +115,14 @@ final class AlarmService {
 
     private nonisolated func performSchedule(_ link: AlarmLink, commitment: Commitment) async throws {
         let configuration = try makeConfiguration(for: commitment, link: link)
-        _ = try await AlarmManager.shared.schedule(id: link.alarmID, configuration: configuration)
+        do {
+            _ = try await AlarmManager.shared.schedule(id: link.alarmID, configuration: configuration)
+        } catch {
+            NaggLog.alarms.error(
+                "NAGG schedule failed: step=\(link.step, privacy: .public) \(error.localizedDescription, privacy: .public)"
+            )
+            throw error
+        }
     }
 
     private nonisolated func performCancel(alarmID: UUID) async {
@@ -193,6 +201,13 @@ final class AlarmService {
             alarmIDs: ids,
             firstFire: firstFire,
             expiresAt: firstFire.addingTimeInterval(spacing * Double(maxNags))
+        )
+
+        // `ids.count` is the number that matters. One means the ring armed and every nag
+        // was refused — the product silently reduced to an ordinary alarm, which is the
+        // failure this whole file was rewritten to prevent and is invisible from the UI.
+        NaggLog.alarms.notice(
+            "NAGG scheduled: commitment=\(commitment.id, privacy: .public) alarms=\(ids.count, privacy: .public) firstFire=\(firstFire.timeIntervalSince1970, privacy: .public) spacing=\(spacing, privacy: .public)"
         )
     }
 

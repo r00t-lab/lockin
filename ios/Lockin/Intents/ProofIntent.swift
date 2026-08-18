@@ -1,5 +1,6 @@
 import AppIntents
 import Foundation
+import OSLog
 
 /// Runs when the user taps "I'm starting" on the full-screen alarm, the Lock Screen,
 /// or the Dynamic Island.
@@ -29,6 +30,12 @@ struct ProofIntent: LiveActivityIntent {
 
     func perform() async throws -> some IntentResult {
         PendingProof.shared.set(commitmentID)
+        // If this line is absent from the device log after tapping "I'm starting", the
+        // intent never ran and no amount of work inside the app will help. If it is
+        // present but the app did not come forward, the intent ran and the system chose
+        // not to foreground us. Those are different bugs with different fixes, and this
+        // is the only way to tell them apart without a debugger.
+        NaggLog.proof.notice("NAGG intent: perform, commitment=\(commitmentID, privacy: .public)")
         return .result()
     }
 }

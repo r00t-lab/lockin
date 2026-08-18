@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 
 @main
@@ -74,10 +75,16 @@ struct LockinApp: App {
         guard proofTarget == nil else { return }
 
         if let id = PendingProof.shared.take(), let commitment = store.commitment(id: id) {
+            NaggLog.proof.notice("NAGG handoff: from intent, commitment=\(id, privacy: .public)")
             proofTarget = commitment
             return
         }
 
-        proofTarget = store.commitmentAwaitingProof
+        if let awaiting = store.commitmentAwaitingProof {
+            NaggLog.proof.notice("NAGG handoff: mid-chain, commitment=\(awaiting.id, privacy: .public)")
+            proofTarget = awaiting
+        } else {
+            NaggLog.proof.notice("NAGG handoff: nothing to prove")
+        }
     }
 }
