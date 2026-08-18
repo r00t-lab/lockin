@@ -65,6 +65,24 @@ weekly report.
 
 Sıra önemli: ilk iki görsel indirmenin çoğunu belirliyor, çünkü çoğu kişi kaydırmıyor.
 
+### Bugün derlenen set, hedef set değil
+
+Hedeflenen beş karenin üçü (02, 03, 04) henüz çekilmedi. Set beklemek yerine eldeki
+karelerle gönderilebilir durumda: başlıklar karenin gerçekten gösterdiğini söylüyor, yani
+iddia ile piksel çelişmiyor. Aşağıdaki tablo **hedef**; bugün derlenen başlıklar
+`tools/make_store_screenshots.py` içindeki `SHOTS` listesinde.
+
+| # | Bugünkü kare | Bugünkü başlık | Hedef kare gelince |
+|---|---|---|---|
+| 01 | kilit ekranı alarmı | It rings on silent. | değişmiyor |
+| 02 | kanıtlanmış tek taahhüt | Prove it, and it stops. | ikinci alarm → "Dismiss doesn't work" |
+| 03 | yeni taahhüt ekranı | Three ways to prove it. | canlı kamera → "Prove you started" |
+| 04 | iki satırlık liste | It finds you at the time you chose. | dolu liste, streak > 0 → "It counts the days you showed up" |
+| 05 | bahane raporu | Zero excuses. So far. | değişmiyor |
+
+Üç kare de [PRESUBMIT.md](PRESUBMIT.md) turunda çıkıyor; `SHOTS`'u hedefe döndürmek o
+turun son adımı.
+
 | # | Hangi ekran | Nasıl ulaşılır |
 |---|---|---|
 | 01 | Kilit ekranında tam ekran alarm | Prova → uygulamayı kapat → kilitle → 20 sn |
@@ -116,6 +134,12 @@ anlıyor — jenerik bir gradient bu bağı koparır.
   bahaneyi hatırlar" yazma. Metinle kare çelişirse ikisi de inandırıcılığını kaybeder.
 - **Özellik değil sonuç yaz.** "Alarm ayarları" kimseyi indirtmiyor, "sessizde çalar"
   indirtiyor.
+- **Durum çubuğu boyanır, uygulama asla.** Derleyici saati 9:41 yapıp pili dolduruyor;
+  altındaki arayüz kareden çıktığı gibi kalıyor. Apple'ın kontrol ettiği şey arayüzün
+  gönderilen uygulama olması, çubuğun telefondan çıkan çubuk olması değil. Kilit ekranı
+  karesi dokunulmadan geçiyor — orada boyanacak çubuk yok.
+- **Her karenin bir alt satırı var.** Başlık vaadi satıyor, alt satır tek somut ayrıntıyı
+  veriyor: hangi üç kanıt, hangi iki mod. Derleyici ikisini de basıyor.
 
 `tools/make_store_screenshots.py` ham kareleri mağaza boyutuna çeviriyor: `design/shots/`
 içine `1.png` … `5.png` koy, çalıştır, `design/store/` çıkar.

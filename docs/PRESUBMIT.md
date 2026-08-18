@@ -10,6 +10,33 @@ cihaz vaktini, yalnızca cihazın gösterebildiği şeylerden çalar.
 **tamamen kapalı**, ekran kilitli. Bu üçü kapalıyken yapılan test hiçbir şey kanıtlamaz —
 ürünün tüm iddiası tam olarak bu koşullarda çalmak.
 
+## Bu turda çıkan dört görüntü
+
+Test turu doğru ekranları zaten sırayla açıyor. Mağaza görüntülerini ayrı bir turda
+çekmek aynı işi ikinci kez yapmak olur — dördü de aşağıdaki adımların içinde, yan tuş +
+ses açma ile çıkıyor.
+
+| Ne zaman | Ne çekilecek | Nereye |
+|---|---|---|
+| **A2** — ikinci alarm ekrandayken | Butonu **"Still not started"** yazan tam ekran alarm | `design/shots/2.png` |
+| **B1** — kanıt ekranı | **Kamera canlıyken** — siyah dikdörtgen değil | `design/shots/3.png` |
+| **D1** sonrası | Dolu liste: 3-4 taahhüt, biri kanıtlanmış, **streak > 0** | `design/shots/4.png` |
+| **E1** — paywall açıkken | Paywall'ın tamamı; ürünler boş görünse de olur | ürün inceleme görüntüsü |
+
+Listedeki isimler öğrenciye hitap etsin: "Write the essay intro", "Leave for class",
+"Gym at 5". Şu anki karede "Brush your teeth" duruyor ve kimseye bir şey satmıyor.
+
+Saat ve pil önemsiz — derleyici durum çubuğunu 9:41 ve dolu pille yeniden boyuyor.
+
+Tur bitince, sırayla:
+
+1. `python tools/make_store_screenshots.py`
+2. `SHOTS` başlıklarını [STORE.md](STORE.md)'deki **hedef** metinlere döndür. Bugünküler
+   eldeki eski karelere göre yazılmıştı; yeni kareyle yan yana durduklarında başlık
+   ekranın göstermediği bir şeyi iddia eder.
+3. Paywall görüntüsünü iki abonelik ürününe de yükle
+   ([ASC-FORMS.md](ASC-FORMS.md) bölüm 3) — `MISSING_METADATA`'yı kaldıran tek şey bu.
+
 ---
 
 ## A. Mekanik — bu geçmezse gerisi anlamsız

@@ -7,8 +7,9 @@ sorusunun cevabı; kararların gerekçeleri kendi dosyalarında.
 
 ## Tek cümlede
 
-Uygulama çalışıyor ve mağazaya gönderilebilecek durumda. Kalan iş kod değil: **üç ekran
-görüntüsü, bir build yüklemesi, bir yaş derecelendirmesi.**
+Uygulama çalışıyor ve mağazaya gönderilebilecek durumda. Kalan iş kod değil: **bir cihaz
+turu, üç form, bir build yüklemesi.** Cihaz turu tek başına zincir testini, üç mağaza
+karesini ve paywall görüntüsünü birden veriyor.
 
 ## Bugün kapanan hatalar
 
@@ -40,42 +41,48 @@ bağlı olamaz. Bu üç kez ısırdı.
 
 ## Sırada — önem sırasıyla
 
-**1. Zincir testi.** `docs/PRESUBMIT.md` bölüm A. Üç dakika. **Hâlâ yapılmadı** ve ürünün
-tüm iddiası bu: alarm beş kez geri gelip beşincide duruyor mu.
+**1. Cihaz turu.** [PRESUBMIT.md](PRESUBMIT.md). Yirmi beş dakika ve kalan işin çoğunu
+tek seferde bitiriyor: zincir testi, üç mağaza karesi, bir de paywall görüntüsü.
 
-**2. Üç ekran görüntüsü.** Mevcut mağaza görsellerinde başlıklarla kareler eşleşmiyor.
-Eksik olanlar:
-- İkinci alarm, butonu **"Still not started"** yazan
-- Kanıt ekranı, **kamera canlıyken**
-- **Dolu liste**, 3-4 gerçek taahhüt ve streak > 0 (öğrenciye hitap eden isimler:
-  "Write the essay intro", "Leave for class", "Gym at 5")
+- **Zincir testi (bölüm A) hâlâ yapılmadı** ve ürünün tüm iddiası bu: alarm beş kez geri
+  gelip beşincide duruyor mu. Bu geçmezse gerisinin anlamı yok.
+- **Üç kare** — ikinci alarm, canlı kamera, dolu liste — aynı turun içinden çıkıyor;
+  hangi adımda hangisinin çekileceği PRESUBMIT'in başındaki tabloda.
+- **Paywall görüntüsü** (E1) abonelik ürünlerinin `MISSING_METADATA` durumunu kaldıran
+  şey. Aşağıya bak.
 
-Üçü de tek prova turunda çıkıyor. `tools/make_store_screenshots.py` ham kareyi mağaza
-boyutuna çeviriyor; `design/shots/1..5.png` koy, çalıştır.
+Tur bitince `python tools/make_store_screenshots.py`, sonra `SHOTS` başlıklarını
+[STORE.md](STORE.md)'deki hedef metinlere döndür.
+
+**2. Formlar.** [ASC-FORMS.md](ASC-FORMS.md) — cevaplar hazır, panelde tıklanacak.
+Yaş derecelendirmesi (4+) ve **App Privacy etiketi**; ikincisi gönderim için zorunlu ve
+bugüne kadar hiçbir yerde yazılmamıştı.
 
 **3. Build'i yükle.** `git tag v1.0.0 && git push origin v1.0.0` → TestFlight. Sonra
 sürüme bağla.
 
-**4. Yaş derecelendirmesi.** App Store Connect'te yapılmamış.
+**4. Gönder.**
 
-**5. Gönder.**
-
-**6. Yirmi video.** `docs/CONTENT.md`. Kod üç hafta sürdü, bu on iki ay.
+**5. Yirmi video.** [CONTENT.md](CONTENT.md). Kod üç hafta sürdü, bu on iki ay.
 
 ## Bekleyen
 
 - **Family Controls entitlement** — odak oturumunda uygulama engelleme (v1.1). Başvuru
   Apple'da, birkaç gün–birkaç hafta. Geliştirme entitlement'ı onaysız çalışıyor, yani
   beklerken yazılabilir. Gerekçe `docs/PRODUCT.md`.
-- **Abonelik ürünleri `MISSING_METADATA`.** API'nin gösterdiği her alan dolu; muhtemelen
-  ilk gönderimde uygulama sürümüyle birlikte çözülüyor. Panelde kontrol et.
+- **Abonelik ürünleri `MISSING_METADATA`.** Sebep tahmin değil: her ürün bir **paywall
+  inceleme görüntüsü** istiyor ([LAUNCH.md](LAUNCH.md) bölüm 1) ve o yüklenmemiş. API'nin
+  gösterdiği alanların dolu olması yanıltıyor — eksik alan metin değil, görüntü. Ürünler
+  bu hâldeyken Sandbox'ta da görünmüyor, ama **boş paywall'ın görüntüsü kabul ediliyor**,
+  yani döngü kırılabilir.
 
 ## Araçlar
 
 ```text
 tools/make_icon.py                ikon (design/icon-clock-source.png'den)
-tools/make_store_screenshots.py   mağaza görselleri
-docs/PRESUBMIT.md                 gönderim öncesi 25 dakikalık test
+tools/make_store_screenshots.py   mağaza görselleri (durum çubuğunu da temizler)
+docs/PRESUBMIT.md                 gönderim öncesi tur — test + dört görüntü
+docs/ASC-FORMS.md                 yaş derecelendirmesi, gizlilik etiketi, ürün görüntüsü
 ```
 
 **Tanı ekranı:** uygulamada wordmark'a uzun bas. Kamera izni, capture session kurulabiliyor
