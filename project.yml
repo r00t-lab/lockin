@@ -31,6 +31,23 @@ settings:
     # iPhone only — see LAUNCH.md for why supporting iPad costs screenshots, review
     # surface, and testing time.
     TARGETED_DEVICE_FAMILY: "1"
+  configs:
+    # Archive with a *distribution* identity, not a development one.
+    #
+    # This is not a preference, it is the difference between a pipeline that works and
+    # one that quietly destroys the account it runs against. Left unset, archiving asks
+    # for an "iOS App Development" profile, and `-allowProvisioningUpdates` happily mints
+    # a brand new development certificate to satisfy it — on a runner that is deleted
+    # minutes later, taking the private key with it. Nine builds in one day produced ten
+    # dead certificates and hit Apple's account ceiling, after which *every* build fails
+    # with "Choose a certificate to revoke", and the error names provisioning profiles,
+    # which is not where the problem is.
+    #
+    # Distribution certificates are cloud-managed: Apple holds the private key, Xcode
+    # reuses the existing one, and nothing new is created per run. Both the ad-hoc and
+    # the TestFlight lane export from a Release archive, so pinning it here covers both.
+    Release:
+      CODE_SIGN_IDENTITY: "Apple Distribution"
 
 packages:
   RevenueCat:
