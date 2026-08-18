@@ -80,6 +80,10 @@ targets:
         CFBundleDisplayName: Nagg
         NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
         NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
+        # The camera picker falls back to the photo library when no camera is
+        # available. Reaching that path without this key is an immediate,
+        # unexplained termination by the system rather than a warning.
+        NSPhotoLibraryUsageDescription: "Nagg can accept a photo from your library if the camera is unavailable."
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

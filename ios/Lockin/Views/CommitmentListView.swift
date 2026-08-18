@@ -21,7 +21,16 @@ struct CommitmentListView: View {
 
     @State private var showNewCommitment = false
     @State private var showPaywall = false
+    @State private var showReport = false
+    @State private var deskCodeTarget: Commitment?
     @State private var rehearsalError: String?
+
+    /// Nudged every few seconds so "is this ringing right now" stays true while the app
+    /// is open. `needsProof` is a comparison against the clock, and the clock is not an
+    /// observable — without this, an alarm that starts ringing while the user is looking
+    /// at the list leaves the card sitting there saying nothing is happening.
+    @State private var tick = Date.now
+    private let clock = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,6 +56,7 @@ struct CommitmentListView: View {
                                 commitment: commitment,
                                 needsProof: store.needsProof(commitment),
                                 onProve: { proofTarget = commitment },
+                                onShowCode: { deskCodeTarget = commitment },
                                 onDelete: { Task { await store.delete(commitment) } }
                             )
                         }
@@ -60,8 +70,12 @@ struct CommitmentListView: View {
             rail
         }
         .naggGround()
+        .onReceive(clock) { tick = $0 }
+        .animation(.easeOut(duration: 0.22), value: store.commitments)
         .sheet(isPresented: $showNewCommitment) { NewCommitmentView() }
         .sheet(isPresented: $showPaywall) { PaywallView() }
+        .sheet(isPresented: $showReport) { WeeklyReportView() }
+        .sheet(item: $deskCodeTarget) { DeskCodeView(commitment: $0) }
     }
 
     // MARK: - Chrome
@@ -105,6 +119,14 @@ struct CommitmentListView: View {
             figure("\(stats.proved)", "today")
             figure("\(stats.missed)", "excuses")
         }
+        // The whole strip is the way into the report. No button, no chevron — the numbers
+        // are already the thing the user's eye lands on, and anyone who wants more detail
+        // reaches for them first.
+        .contentShape(.rect)
+        .onTapGesture { showReport = true }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Opens the report")
         .background(Nagg.line)
         .overlay(alignment: .top) { Rectangle().fill(Nagg.line).frame(height: 1) }
         .overlay(alignment: .bottom) { Rectangle().fill(Nagg.line).frame(height: 1) }
@@ -136,13 +158,22 @@ struct CommitmentListView: View {
                     }
                 }
             } label: {
+                // Loud on an empty app, quiet once there is something real on the list.
+                // Before the first commitment this is the only way to find out the alarm
+                // is not a bluff, and that is the whole conversion moment; afterwards it
+                // is a utility and should not outrank the user's own commitments.
                 Text("Rehearse the alarm")
                     .font(Nagg.sans(15, .medium))
-                    .foregroundStyle(Nagg.ground)
+                    .foregroundStyle(isFirstRun ? Nagg.ground : Nagg.ink)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 15)
-                    .background(Nagg.ink)
-                    .clipShape(.rect(cornerRadius: 11))
+                    .padding(.vertical, isFirstRun ? 15 : 13)
+                    .background {
+                        if isFirstRun {
+                            RoundedRectangle(cornerRadius: 11).fill(Nagg.ink)
+                        } else {
+                            RoundedRectangle(cornerRadius: 11).stroke(Nagg.line, lineWidth: 1)
+                        }
+                    }
             }
             .disabled(store.rehearsal != nil)
             .opacity(store.rehearsal == nil ? 1 : 0.4)
@@ -156,6 +187,8 @@ struct CommitmentListView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 26)
     }
+
+    private var isFirstRun: Bool { store.visibleCommitments.isEmpty }
 
     private func armRehearsal(_ proofKind: Commitment.ProofKind) async {
         guard await AlarmService.shared.ensureAuthorized() else {
@@ -195,6 +228,7 @@ private struct CommitmentCard: View {
     let commitment: Commitment
     let needsProof: Bool
     let onProve: () -> Void
+    let onShowCode: () -> Void
     let onDelete: () -> Void
 
     private var isDone: Bool { commitment.isDoneToday }
@@ -214,6 +248,18 @@ private struct CommitmentCard: View {
                         .foregroundStyle(statusColor)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Without this the desk-code mode is unusable: the scanner only accepts
+                // this commitment's id and nothing else in the app ever shows it.
+                if commitment.proofKind == .deskCode {
+                    Button(action: onShowCode) {
+                        Image(systemName: "qrcode")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Nagg.ink2)
+                            .padding(4)
+                    }
+                    .accessibilityLabel("Show the desk code for \(commitment.title)")
+                }
 
                 if commitment.currentStreak > 0 {
                     Text("\(commitment.currentStreak)")

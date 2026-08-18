@@ -34,17 +34,24 @@ ios/Lockin/
     ProofIntent.swift          "I'm starting" butonu → uygulamayı aç
   Design/
     NaggStyle.swift            ⭐ tüm görsel kimlik — renk, tip, buton, kart
+    Haptics.swift              iki an: kanıt kabul, kanıt ret
   Views/
     OnboardingView.swift       3 ekran, izin isteme yok
     CommitmentListView.swift   ana ekran + prova rayı
     NewCommitmentView.swift    izin tam burada isteniyor
     ProofView.swift            ⭐ foto / sayaç / QR — 8 saniyede bitmeli
+    DeskCodeView.swift         masaya yapıştırılan QR — üretim + yazdırma
+    WeeklyReportView.swift     bahane raporu — onboarding ve paywall bunu vaat ediyor
     PaywallView.swift          aylık öne, yıllık tasarruf olarak
     CaptureViews.swift         kamera + QR okuyucu sarmalayıcıları
+ios/LockinTests/
+  CommitmentTests.swift        streak aritmetiği — bakarak doğrulanamayan tek yer
 ios/LockinWidget/
   LockinWidgetBundle.swift     Live Activity + Dynamic Island
 ios/LockinWatch/               bilekten kanıt + complication (watchOS 26)
 android/                       Kotlin + Compose sürümü
+tools/make_icon.py             ikonu kaynak PNG'den üretir
+design/                        ikon kaynak görseli
 prototype/index.html           çalışan tarayıcı prototipi
 ```
 

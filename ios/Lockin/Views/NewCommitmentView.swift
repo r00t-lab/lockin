@@ -17,6 +17,8 @@ struct NewCommitmentView: View {
     @State private var weekdays: Set<Int> = []
     @State private var proofKind: Commitment.ProofKind = .photo
     @State private var permissionDenied = false
+    /// Set after saving a desk-code commitment so the sticker is shown immediately.
+    @State private var createdDeskCode: Commitment?
 
     /// Index 0 is Sunday, matching `Calendar.component(.weekday:)`.
     private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
@@ -82,6 +84,11 @@ struct NewCommitmentView: View {
         }
         .naggGround()
         .scrollDismissesKeyboard(.interactively)
+        // Show the sticker the moment a desk-code commitment is created. Anyone who has
+        // to go hunting for it later has already been locked out of their own alarm once.
+        .sheet(item: $createdDeskCode, onDismiss: { dismiss() }) { commitment in
+            DeskCodeView(commitment: commitment)
+        }
     }
 
     // MARK: - Pieces
@@ -168,7 +175,12 @@ struct NewCommitmentView: View {
                 proofKind: proofKind
             )
             try? await store.add(commitment)
-            dismiss()
+
+            if proofKind == .deskCode {
+                createdDeskCode = commitment
+            } else {
+                dismiss()
+            }
         }
     }
 }

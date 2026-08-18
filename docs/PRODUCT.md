@@ -55,7 +55,9 @@ Lockin kullanıcıyı buluyor.
 - Üç kanıt tipi
 - Nag zinciri (alarmdan sonra 2 dk arayla 5 tekrar, kanıt gelince iptal)
 - Prova — aynı zinciri 20 sn + 30 sn arayla oynatır
-- Streak ve kaçırma sayacı
+- Masa kodu üretimi ve yazdırma — kanıt tipi bu olmadan kullanılamaz
+- Streak ve kaçırma sayacı; kaçırma alarmdan değil takvimden türetiliyor
+- Bahane raporu — üstteki sayı şeridine dokun
 - Paywall (2 ücretsiz taahhüt sınırı)
 
 ## v1'de OLMAYAN — bilerek

@@ -23,6 +23,7 @@ struct ProofView: View {
     @State private var timerRemaining: TimeInterval = 25 * 60
     @State private var timerRunning = false
     @State private var showCamera = false
+    @State private var cameraDenied = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -143,9 +144,11 @@ struct ProofView: View {
         let looksLikeAWorkspace = (request.results?.isEmpty == false)
 
         if looksLikeAWorkspace {
+            Haptics.proved()
             await store.recordProof(for: commitment.id)
             dismiss()
         } else {
+            Haptics.rejected()
             rejection = "That doesn't look like a desk. Point it at what you're about to work on."
             capturedImage = nil
         }
@@ -164,6 +167,7 @@ struct ProofView: View {
 
             Button(timerRunning ? "Running" : "Start 25 minutes") {
                 timerRunning = true
+                Haptics.proved()
                 Task {
                     // Starting is the proof. Finishing is between them and their degree.
                     await store.recordProof(for: commitment.id)
@@ -188,18 +192,61 @@ struct ProofView: View {
     private var deskCodeProof: some View {
         VStack(spacing: 14) {
             Text("Scan the sticker on your desk").naggLabel()
-            QRScannerView { payload in
-                guard payload == commitment.id.uuidString else {
-                    rejection = "Wrong code. That's not your desk."
-                    return
+
+            // A denied camera used to render as a black rectangle with no explanation,
+            // at the one moment the user most needs the app to be clear. Say what is
+            // wrong and open the place that fixes it.
+            if cameraDenied {
+                VStack(spacing: 12) {
+                    Text("Nagg can't open the camera, so it can't read your desk code. Allow camera access and this works again.")
+                        .font(Nagg.sans(14))
+                        .lineSpacing(4)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Nagg.ink2)
+
+                    Button("Open Settings") {
+                        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                        UIApplication.shared.open(url)
+                    }
+                    .buttonStyle(NaggGhostButton())
                 }
-                Task {
-                    await store.recordProof(for: commitment.id)
-                    dismiss()
+                .padding(.vertical, 40)
+            } else {
+                QRScannerView { payload in
+                    guard payload == commitment.id.uuidString else {
+                        Haptics.rejected()
+                        rejection = "Wrong code. That's not your desk."
+                        return
+                    }
+                    Task {
+                        Haptics.proved()
+                        await store.recordProof(for: commitment.id)
+                        dismiss()
+                    }
                 }
+                .frame(height: 300)
+                .clipShape(.rect(cornerRadius: Nagg.radius))
+
+                Text("Lost the sticker? Your code is on the commitment's card, behind the QR button.")
+                    .font(Nagg.sans(12))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Nagg.ink3)
             }
-            .frame(height: 300)
-            .clipShape(.rect(cornerRadius: Nagg.radius))
+        }
+        .task { await resolveCameraAccess() }
+    }
+
+    /// Ask once, here, rather than letting `AVCaptureSession` fail silently inside the
+    /// scanner. `.notDetermined` has to be requested before the session is built or the
+    /// first presentation always shows nothing.
+    private func resolveCameraAccess() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            cameraDenied = false
+        case .notDetermined:
+            cameraDenied = !(await AVCaptureDevice.requestAccess(for: .video))
+        default:
+            cameraDenied = true
         }
     }
 }

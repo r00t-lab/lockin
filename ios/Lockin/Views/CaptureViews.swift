@@ -12,8 +12,18 @@ struct CameraPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
-        picker.cameraDevice = .rear
+        let hasCamera = UIImagePickerController.isSourceTypeAvailable(.camera)
+        picker.sourceType = hasCamera ? .camera : .photoLibrary
+
+        // Only when the source really is the camera. Setting `cameraDevice` on a picker
+        // configured for the photo library raises NSInvalidArgumentException and takes
+        // the whole app down — and the fallback path is exactly the one nobody tests,
+        // because every real iPhone has a camera. It fires in the simulator, and on a
+        // device whose camera is unavailable for any reason at all.
+        if hasCamera {
+            picker.cameraDevice = .rear
+        }
+
         picker.delegate = context.coordinator
         return picker
     }
