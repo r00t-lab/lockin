@@ -194,6 +194,35 @@ final class CommitmentTests: XCTestCase {
         XCTAssertNil(commitment.previousOccurrence(before: at(9)))
     }
 
+    // MARK: - Bailing out
+
+    /// Saying "I'm not doing it" has to be remembered, or the app reopens the proof sheet
+    /// every single time the user returns to it for the rest of the chain. The alarm keeps
+    /// nagging — that is the product — but a modal that will not stay closed is a bug.
+    func testBailingOutIsRecordedAsAMissAndRemembered() {
+        var commitment = daily(firing: at(7))
+        commitment.currentStreak = 4
+
+        let when = at(7, 30)
+        commitment.recordMiss(at: when)
+
+        XCTAssertEqual(commitment.currentStreak, 0)
+        XCTAssertEqual(commitment.missCount, 1)
+        XCTAssertEqual(commitment.bailedAt, when)
+    }
+
+    /// A bail must not be counted twice — once by the user pressing the button and again
+    /// by `reconcile` walking the same occurrence on the next launch.
+    func testABailOutIsNotCountedAgainByReconcile() {
+        var commitment = daily(firing: at(7))
+        commitment.recordMiss(at: at(7, 30))
+
+        let missed = commitment.reconcile(now: at(12))
+
+        XCTAssertEqual(missed, 0)
+        XCTAssertEqual(commitment.missCount, 1)
+    }
+
     // MARK: - Rehearsal
 
     func testARehearsalIsRecognisedAndAnOrdinaryCommitmentIsNot() {
@@ -232,5 +261,6 @@ final class CommitmentTests: XCTestCase {
         XCTAssertEqual(decoded.count, 1)
         XCTAssertEqual(decoded[0].currentStreak, 3)
         XCTAssertNil(decoded[0].reconciledUpTo)
+        XCTAssertNil(decoded[0].bailedAt)
     }
 }

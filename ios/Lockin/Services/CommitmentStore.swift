@@ -97,6 +97,25 @@ final class CommitmentStore {
         !commitment.isDoneToday && AlarmService.shared.isMidChain(commitment.id)
     }
 
+    /// What the proof screen should open onto when the app comes to the front.
+    ///
+    /// The intent behind the alarm's own button is not reliable enough to be the only
+    /// way in — on device it silences the ring and does not always bring the app forward,
+    /// which leaves someone holding a phone that is nagging them with no way to answer.
+    /// So *opening the app at all* now counts as answering the alarm.
+    ///
+    /// Skipped once the user has said "I'm not doing it" for this occurrence. The alarm
+    /// keeps nagging — that is its job, and it is the product — but a modal that reopens
+    /// every time they return to the app is not nagging, it is a bug.
+    var commitmentAwaitingProof: Commitment? {
+        commitments.first { commitment in
+            guard needsProof(commitment) else { return false }
+            guard let chain = AlarmService.shared.chains[commitment.id] else { return false }
+            guard let bailed = commitment.bailedAt else { return true }
+            return bailed < chain.firstFire
+        }
+    }
+
     /// Arm a compressed run of the whole mechanic. See `Commitment.rehearsal`.
     ///
     /// The proof kind is the caller's choice and there is no sensible default: a timer

@@ -35,6 +35,13 @@ struct LockinApp: App {
                 ProofView(commitment: commitment)
             }
             .task {
+                // `onChange(of: scenePhase)` does not fire for the initial value, so a
+                // cold launch used to skip the hand-off entirely — and a cold launch is
+                // the normal case here, because the whole point is that the alarm goes
+                // off while the app is closed.
+                claimPendingProof()
+                await store.refreshChains()
+
                 // Activate before observing alarms — `observeAlarmUpdates` never returns,
                 // and anything after it in this task would never run.
                 watchSync.activate()
@@ -49,15 +56,28 @@ struct LockinApp: App {
         }
     }
 
-    /// The intent stashed a commitment id before foregrounding us. Pick it up and
-    /// go straight to proof — never make the user find the row themselves at 7am.
+    /// Decide what the user should be looking at, the moment the app comes forward.
     ///
-    /// Nothing is armed here. Tapping "I'm starting" silences this ring, but the rest of
-    /// the chain was already written when the alarm was scheduled, so walking away
+    /// Two routes, and the second one is not a nicety. The alarm's "I'm starting" button
+    /// runs `ProofIntent`, which stashes an id and asks the system to open us — but on
+    /// device that button silences the ring without reliably bringing the app forward.
+    /// Someone in that state is being nagged by an alarm they have no way to answer.
+    ///
+    /// So if no id was stashed, we ask a simpler question: is anything being nagged right
+    /// now? If so, open onto it. Opening the app is now itself a valid way to answer the
+    /// alarm, whatever happened to the intent.
+    ///
+    /// Nothing is armed here either way. Tapping "I'm starting" silences one ring; the
+    /// rest of the chain was written when the alarm was scheduled, so walking away
     /// without proving is not a free escape — the next nag is already on the books.
     private func claimPendingProof() {
-        guard let id = PendingProof.shared.take(),
-              let commitment = store.commitment(id: id) else { return }
-        proofTarget = commitment
+        guard proofTarget == nil else { return }
+
+        if let id = PendingProof.shared.take(), let commitment = store.commitment(id: id) {
+            proofTarget = commitment
+            return
+        }
+
+        proofTarget = store.commitmentAwaitingProof
     }
 }

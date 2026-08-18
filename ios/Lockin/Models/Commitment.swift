@@ -63,6 +63,12 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
     /// Swift's synthesised `Codable` only tolerates a missing key on an Optional, a
     /// default value on a non-Optional does not help.
     var reconciledUpTo: Date?
+    /// When the user last said out loud they were not doing it.
+    ///
+    /// Only purpose: stop the app shoving the proof screen back in their face every time
+    /// they open it for the rest of the chain. The nagging is the alarm's job; a modal
+    /// that will not stay closed is just a broken app.
+    var bailedAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -76,7 +82,8 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         missCount: Int = 0,
         isEnabled: Bool = true,
         createdAt: Date = .now,
-        reconciledUpTo: Date? = nil
+        reconciledUpTo: Date? = nil,
+        bailedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -90,6 +97,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         self.isEnabled = isEnabled
         self.createdAt = createdAt
         self.reconciledUpTo = reconciledUpTo
+        self.bailedAt = bailedAt
     }
 
     var hour: Int { Calendar.current.component(.hour, from: fireDate) }
@@ -241,6 +249,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         missCount += 1
         // Claim the window so `reconcile` does not count this same occurrence again.
         reconciledUpTo = date
+        bailedAt = date
     }
 
     /// Count occurrences that came and went without proof. Call on every foreground.
