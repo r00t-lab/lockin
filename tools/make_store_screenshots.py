@@ -55,6 +55,11 @@ SRC = "design/shots"
 OUT = "design/store"
 
 # file, headline, index, ground
+#
+# No tilt. It was tried, because the template packs all lean their devices and the energy
+# looks appealing in their examples. Theirs are rendered in 3D; a flat rotation of a
+# rectangle is not the same thing and reads as a crooked picture rather than a phone held
+# at an angle. Straight is better than nearly.
 SHOTS = [
     ("1.png", "Rings on Silent.\nRings on Focus.",       "01", "alarm"),
     ("2.png", "Dismiss\ndoesn't work.",                  "02", "alarm"),
