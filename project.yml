@@ -129,10 +129,35 @@ targets:
         com.apple.security.application-groups:
           - group.com.r00tlab.lockin
 
+  # ── Logic tests ──────────────────────────────────────────────────────────────
+  #
+  # Deliberately NOT a host-app test bundle, and deliberately not `@testable import
+  # Lockin`. Doing it that way would drag AlarmKit and RevenueCat into every test run,
+  # and then a test failure could mean a framework that does not load in a simulator
+  # rather than a bug in our code — which is the opposite of what a test is for.
+  #
+  # Instead the model file is compiled straight into the bundle, the same multi-target
+  # trick the widget uses. Everything worth testing here is pure date arithmetic.
+  LockinTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ios/LockinTests
+      - path: ios/Lockin/Models/Commitment.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.tests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   Lockin:
     build:
       targets:
         Lockin: all
+        LockinTests: [test]
+    test:
+      config: Debug
+      targets:
+        - LockinTests
     archive:
       config: Release

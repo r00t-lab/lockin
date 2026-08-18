@@ -72,6 +72,26 @@ jobs:
           echo "───────── warnings ─────────"
           grep -E "warning:" build.log | sort -u | head -15 || true
 
+      # Logic tests. Separate step from the compile check on purpose: a red build and a
+      # red test mean different things and must not be reported as the same failure.
+      #
+      # The simulator is chosen by UDID, never by name. Device names differ between
+      # runner images and a guessed `name=iPhone 17 Pro` fails in seconds with an error
+      # that reads like a build problem rather than a missing device.
+      - name: Run logic tests
+        run: |
+          set -o pipefail
+          xcrun simctl list devices available
+          udid=$(xcrun simctl list devices available --json             | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for rt in d for x in d[rt] if 'iPhone' in x['name']))")
+          echo "simulator: $udid"
+          xcodebuild test             -project Lockin.xcodeproj             -scheme Lockin             -destination "id=$udid"             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO 2>&1 | tee test.log
+
+      - name: Test failures only
+        if: failure()
+        run: |
+          grep -E "error:|XCTAssert|failed \(|Test Case .* failed" test.log | sort -u | head -30 > /tmp/terrs.txt || true
+          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/terrs.txt
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
