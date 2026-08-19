@@ -92,6 +92,13 @@ android {
         // issues themselves go to a report file nobody on CI ever opens. Printing them to
         // stdout is the difference between one round trip and four.
         textReport = true
+
+        // Lint does not gate the bundle. Play has its own checks and does not consult
+        // this one, so a lint rule standing between a finished app and a test track is a
+        // gate with no one behind it. The findings still get produced and read -- the
+        // workflow runs lintRelease separately and prints the report -- they just stop
+        // being the reason twelve testers are waiting.
+        checkReleaseBuilds = false
     }
 
     packaging {

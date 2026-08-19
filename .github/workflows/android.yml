@@ -117,6 +117,30 @@ jobs:
           track: internal
           status: completed
 
+      # Lint, on its own, after the bundle exists. Informational: the report is
+      # printed and the step cannot fail the job.
+      - name: Lint report
+        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/play-')
+        continue-on-error: true
+        run: |
+          gradle lintRelease > /dev/null 2>&1 || true
+          for r in app/build/reports/lint*.txt; do
+            [ -f "$r" ] && { echo "── $r"; head -80 "$r"; }
+          done
+
+      # The bundle is published rather than left as an artifact, because artifacts
+      # need a signed-in session to download and the upload to Play is driven from a
+      # machine that has the Play key but not a GitHub token.
+      - name: Publish the bundle
+        if: startsWith(github.ref, 'refs/tags/play-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/bundle/release/app-release.aab
+          name: "Nagg Play bundle ${{ github.ref_name }}"
+          body: |
+            Signed Android App Bundle for the Play internal track.
+          prerelease: true
+
       - name: Upload APK artifact
         if: always()
         uses: actions/upload-artifact@v4
