@@ -238,3 +238,23 @@ her seferinde yeniden yapılabiliyor:
 Tek dönüşüm boyut: Apple kareleri 1260 × 2736, yani 2.17:1. **Play uzun kenarın kısa
 kenarın iki katını aşmasına izin vermiyor**, o yüzden genişliğe ölçeklenip alttan
 kırpılıyor (1080 × 2160). Tabletler 9:16 istediği için onlara 1080 × 1920 kesim gidiyor.
+
+### 19 Ağustos, ikinci tur — neyin otomatikleşebildiği
+
+**Mağaza girişi API'den yazılabiliyor artık.** Hizmet hesabına hesap düzeyinde
+*Mağazadaki varlığı yönetme* verildi; `edits.listings` yazıp commit etmek çalışıyor.
+Uygulama düzeyindeki aynı isimli kutu gri görünüyor ve **yetmiyor** — hesap düzeyinde
+işaretlenmesi gerekiyor, bu ikisi ayrı şey.
+
+**Abonelik ürünleri hâlâ oluşturulamıyor ve sebebi yetki değil.** Aynı hesapla mağaza
+girişi commit'i geçerken `applications/{package}/subscriptions` POST'u
+`PERMISSION_DENIED` dönüyor. Play, **ödeme profili (satıcı hesabı) kurulmadan** para
+uçlarını hiç açmıyor; hata mesajı bunu söylemiyor, "izin yok" diyor. Yani:
+
+    ödeme profili → abonelik ürünleri → RevenueCat → goog_ anahtarı → yeni build
+
+Bu zincirin ilk halkası bankaya ve vergi bilgisine bağlı; orası bende olamaz.
+
+**Gövde/parametre tuzağı:** `regionsVersion` istek gövdesinde değil, **sorgu
+parametresi** (`?regionsVersion.version=2022/02`). Gövdeye koyunca "Cannot find field",
+hiç koymayınca "Regions Version must be specified" diyor.
