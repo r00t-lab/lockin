@@ -30,6 +30,7 @@ import app.lockin.model.Commitment
 import app.lockin.system.SystemPrompts
 import app.lockin.ui.AlarmWarning
 import app.lockin.ui.CommitmentListScreen
+import app.lockin.ui.DeskCodeScreen
 import app.lockin.ui.NewCommitmentSheet
 import app.lockin.ui.OnboardingScreen
 import app.lockin.ui.PaywallScreen
@@ -92,6 +93,7 @@ private sealed interface Screen {
     data object New : Screen
     data object Paywall : Screen
     data class Proof(val commitmentId: UUID) : Screen
+    data class DeskCode(val commitmentId: UUID) : Screen
 }
 
 @Composable
@@ -125,6 +127,7 @@ private fun LockinApp(
      */
     LaunchedEffect(resumeTick) {
         warningEpoch++
+        store.reconcileRehearsal()
         prefs.takePendingProof()?.let { id ->
             if (store.commitment(id) != null) screen = Screen.Proof(id)
         }
@@ -166,6 +169,15 @@ private fun LockinApp(
                 },
                 onDelete = { commitment -> scope.launch { store.delete(commitment) } },
                 onOpenProof = { commitment -> screen = Screen.Proof(commitment.id) },
+                onOpenDeskCode = { commitment -> screen = Screen.DeskCode(commitment.id) },
+                onRehearse = {
+                    scope.launch {
+                        // The timer rehearsal is the one that finishes without asking for
+                        // the camera, so it is the one that works the first time on a
+                        // phone that has not granted anything yet.
+                        store.startRehearsal(Commitment.ProofKind.FOCUS_TIMER)
+                    }
+                },
             )
         }
 
@@ -174,7 +186,11 @@ private fun LockinApp(
             onSave = { commitment ->
                 scope.launch {
                     store.add(commitment)
-                    screen = Screen.List
+                    screen = if (commitment.proofKind == Commitment.ProofKind.DESK_CODE) {
+                        Screen.DeskCode(commitment.id)
+                    } else {
+                        Screen.List
+                    }
 
                     // Permissions are asked for here — after the user has committed to
                     // something — and never on launch.
@@ -202,6 +218,15 @@ private fun LockinApp(
             subscriptions = subscriptions,
             onDismiss = { screen = Screen.List },
         )
+
+        is Screen.DeskCode -> {
+            val commitment: Commitment? = commitments.firstOrNull { it.id == current.commitmentId }
+            if (commitment == null) {
+                LaunchedEffect(current) { screen = Screen.List }
+            } else {
+                DeskCodeScreen(commitment = commitment, onFinish = { screen = Screen.List })
+            }
+        }
 
         is Screen.Proof -> {
             val commitment: Commitment? = commitments.firstOrNull { it.id == current.commitmentId }

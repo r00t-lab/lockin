@@ -2,6 +2,8 @@ package app.lockin.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,9 +22,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -51,6 +55,7 @@ import java.util.Locale
  * Layout is a direct transcription of the prototype: wordmark row, three-column stats
  * strip with hairline dividers, then cards.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CommitmentListScreen(
     commitments: List<Commitment>,
@@ -59,6 +64,10 @@ fun CommitmentListScreen(
     onAdd: () -> Unit,
     onDelete: (Commitment) -> Unit,
     onOpenProof: (Commitment) -> Unit,
+    onOpenDeskCode: (Commitment) -> Unit = {},
+    onOpenReport: () -> Unit = {},
+    onOpenDiagnostics: () -> Unit = {},
+    onRehearse: () -> Unit = {},
 ) {
     val palette = Lockin.palette
 
@@ -75,14 +84,22 @@ fun CommitmentListScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row {
+            // Long-press opens diagnostics, same as iOS: the one gesture that is worth
+            // knowing when an alarm does not ring on a device nobody can attach a
+            // debugger to.
+            Row(
+                modifier = Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = onOpenDiagnostics,
+                ),
+            ) {
                 Text(
-                    "lock",
+                    "na",
                     style = MetaText.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold),
                     color = palette.ink,
                 )
                 Text(
-                    "in",
+                    "gg",
                     style = MetaText.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold),
                     color = palette.alarm,
                 )
@@ -98,7 +115,7 @@ fun CommitmentListScreen(
             }
         }
 
-        StatsRow(stats)
+        StatsRow(stats, onClick = onOpenReport)
 
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -123,19 +140,68 @@ fun CommitmentListScreen(
                     commitment = commitment,
                     onClick = { onOpenProof(commitment) },
                     onDelete = { onDelete(commitment) },
+                    onShowDeskCode = { onOpenDeskCode(commitment) },
                 )
             }
         }
+
+        RehearsalFooter(
+            armed = commitments.any { it.isRehearsal },
+            onRehearse = onRehearse,
+        )
+    }
+}
+
+/**
+ * The demo button, and the only honest way to earn trust before the first 7am.
+ *
+ * Someone who has just installed an alarm that claims to beat Do Not Disturb has no
+ * reason to believe it, and the alternative to this button is asking them to set one for
+ * tomorrow morning and find out the hard way. Twenty seconds is cheaper than a night.
+ */
+@Composable
+private fun RehearsalFooter(armed: Boolean, onRehearse: () -> Unit) {
+    val palette = Lockin.palette
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        OutlinedButton(
+            onClick = onRehearse,
+            enabled = !armed,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(11.dp),
+        ) {
+            Text(
+                if (armed) "Rehearsal armed" else "Rehearse the alarm",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (armed) palette.go else palette.ink,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Rings in 20 seconds, then every 30 — the real thing on fast-forward. Put the "
+                + "phone down and prove nothing; that's the part worth watching.",
+            fontSize = 12.sp,
+            lineHeight = 18.sp,
+            color = palette.ink3,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
 @Composable
-private fun StatsRow(stats: CommitmentStore.Stats) {
+private fun StatsRow(stats: CommitmentStore.Stats, onClick: () -> Unit) {
     val palette = Lockin.palette
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(palette.line)
+            .clickable(onClick = onClick)
             .padding(vertical = 1.dp),
         horizontalArrangement = Arrangement.spacedBy(1.dp),
     ) {
@@ -164,6 +230,7 @@ private fun CommitmentCard(
     commitment: Commitment,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onShowDeskCode: () -> Unit = {},
 ) {
     val palette = Lockin.palette
     val done = commitment.isDoneToday
@@ -197,10 +264,18 @@ private fun CommitmentCard(
             )
             Spacer(Modifier.height(3.dp))
             Text(
-                text = "${commitment.formattedTime()}  ·  ${commitment.proofKind.shortLabel}" +
-                    if (commitment.repeats.isRecurring) "  ·  repeats" else "",
+                text = if (commitment.isRehearsal) {
+                    "REHEARSAL  ·  ${commitment.proofKind.shortLabel}"
+                } else {
+                    "${commitment.formattedTime()}  ·  ${commitment.proofKind.shortLabel}" +
+                        if (commitment.repeats.isRecurring) "  ·  repeats" else ""
+                },
                 style = MetaText,
-                color = if (done) palette.go else palette.ink2,
+                color = when {
+                    commitment.isRehearsal -> palette.alarm
+                    done -> palette.go
+                    else -> palette.ink2
+                },
             )
         }
 
@@ -211,6 +286,19 @@ private fun CommitmentCard(
                 color = if (done) palette.go else palette.ink,
                 modifier = Modifier.padding(horizontal = 10.dp),
             )
+        }
+
+        // Without this the code is unreachable after the commitment is created, which is
+        // the whole reason the proof mode was a dead end in the first place.
+        if (commitment.proofKind == Commitment.ProofKind.DESK_CODE) {
+            IconButton(onClick = onShowDeskCode, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Filled.QrCode2,
+                    contentDescription = "Show the desk code for ${commitment.title}",
+                    tint = palette.ink3,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
 
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
