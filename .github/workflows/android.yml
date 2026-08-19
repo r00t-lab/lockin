@@ -12,7 +12,10 @@ on:
     # apk-* publishes the debug build as a release asset the testers can download
     # without a GitHub account. v* is the signed Play upload; the two are different
     # tags on purpose, because handing twelve people a link is not shipping.
-    tags: ["apk-*", "v*"]
+    # apk-*  tester APK, public download link
+    # play-* Android store upload on its own, without minting an iOS build
+    # v*     both stores, for the same-day launch
+    tags: ["apk-*", "play-*", "v*"]
   workflow_dispatch:
 
 concurrency:
@@ -66,11 +69,11 @@ jobs:
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Decode upload keystore
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/play-')
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > upload.jks
 
       - name: Build release bundle
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/play-')
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -83,8 +86,13 @@ jobs:
           # about the certificate, hours later. Catch it here instead.
           unzip -l app/build/outputs/bundle/release/app-release.aab | grep -q "META-INF/.*\.RSA\|META-INF/.*\.EC"             || { echo "::error::release bundle is not signed -- check the keystore secrets"; exit 1; }
 
+      # Skipped rather than failed when the service account is not set up yet, so a tag
+      # pushed to check the signing half does not come back red for the half that was
+      # never claimed to be ready.
       - name: Upload to Play closed testing
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: |
+          (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/play-'))
+          && secrets.PLAY_SERVICE_ACCOUNT_JSON != ''
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
