@@ -98,6 +98,7 @@ private sealed interface Screen {
     data class DeskCode(val commitmentId: UUID) : Screen
     data object Report : Screen
     data object Diagnostics : Screen
+    data class Edit(val commitmentId: UUID) : Screen
 }
 
 @Composable
@@ -176,6 +177,11 @@ private fun LockinApp(
                 onOpenDeskCode = { commitment -> screen = Screen.DeskCode(commitment.id) },
                 onOpenReport = { screen = Screen.Report },
                 onOpenDiagnostics = { screen = Screen.Diagnostics },
+                onEdit = { commitment -> screen = Screen.Edit(commitment.id) },
+                // Mid-chain and not proved today: the alarm is out there and still owed.
+                needsProof = { commitment ->
+                    !commitment.isDoneToday && alarms.nagsUsed(commitment.id) > 0
+                },
                 onRehearse = {
                     scope.launch {
                         // The timer rehearsal is the one that finishes without asking for
@@ -224,6 +230,24 @@ private fun LockinApp(
             subscriptions = subscriptions,
             onDismiss = { screen = Screen.List },
         )
+
+        is Screen.Edit -> {
+            val commitment: Commitment? = commitments.firstOrNull { it.id == current.commitmentId }
+            if (commitment == null) {
+                LaunchedEffect(current) { screen = Screen.List }
+            } else {
+                NewCommitmentSheet(
+                    editing = commitment,
+                    onCancel = { screen = Screen.List },
+                    onSave = { updated ->
+                        scope.launch {
+                            store.update(updated)
+                            screen = Screen.List
+                        }
+                    },
+                )
+            }
+        }
 
         Screen.Diagnostics -> DiagnosticsScreen(
             commitments = commitments,

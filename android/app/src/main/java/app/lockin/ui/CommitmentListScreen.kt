@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -64,6 +67,8 @@ fun CommitmentListScreen(
     onAdd: () -> Unit,
     onDelete: (Commitment) -> Unit,
     onOpenProof: (Commitment) -> Unit,
+    onEdit: (Commitment) -> Unit = {},
+    needsProof: (Commitment) -> Boolean = { false },
     onOpenDeskCode: (Commitment) -> Unit = {},
     onOpenReport: () -> Unit = {},
     onOpenDiagnostics: () -> Unit = {},
@@ -138,7 +143,9 @@ fun CommitmentListScreen(
             items(commitments, key = { it.id }) { commitment ->
                 CommitmentCard(
                     commitment = commitment,
-                    onClick = { onOpenProof(commitment) },
+                    owed = needsProof(commitment),
+                    onClick = { onEdit(commitment) },
+                    onProve = { onOpenProof(commitment) },
                     onDelete = { onDelete(commitment) },
                     onShowDeskCode = { onOpenDeskCode(commitment) },
                 )
@@ -228,14 +235,16 @@ private fun Stat(value: String, label: String, modifier: Modifier = Modifier) {
 @Composable
 private fun CommitmentCard(
     commitment: Commitment,
+    owed: Boolean,
     onClick: () -> Unit,
+    onProve: () -> Unit,
     onDelete: () -> Unit,
     onShowDeskCode: () -> Unit = {},
 ) {
     val palette = Lockin.palette
     val done = commitment.isDoneToday
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(
@@ -244,14 +253,21 @@ private fun CommitmentCard(
             )
             .border(
                 width = 1.dp,
-                color = if (done) palette.goBg else palette.line,
+                color = when {
+                    owed -> palette.alarm
+                    done -> palette.goBg
+                    else -> palette.line
+                },
                 shape = RoundedCornerShape(14.dp),
             )
+            // The body opens the editor. No pencil icon: the row is already the thing the
+            // user is looking at, and the taps that must not land by accident -- delete,
+            // and proof while an alarm is ringing -- have their own targets.
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp)
             .alpha(if (commitment.isEnabled) 1f else 0.4f),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = commitment.title,
@@ -264,7 +280,9 @@ private fun CommitmentCard(
             )
             Spacer(Modifier.height(3.dp))
             Text(
-                text = if (commitment.isRehearsal) {
+                text = if (owed) {
+                    "Ringing — you haven't proved it"
+                } else if (commitment.isRehearsal) {
                     "REHEARSAL  ·  ${commitment.proofKind.shortLabel}"
                 } else {
                     "${commitment.formattedTime()}  ·  ${commitment.proofKind.shortLabel}" +
@@ -272,7 +290,7 @@ private fun CommitmentCard(
                 },
                 style = MetaText,
                 color = when {
-                    commitment.isRehearsal -> palette.alarm
+                    owed || commitment.isRehearsal -> palette.alarm
                     done -> palette.go
                     else -> palette.ink2
                 },
@@ -304,10 +322,31 @@ private fun CommitmentCard(
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
             Icon(
                 Icons.Filled.Close,
-                contentDescription = "Delete",
+                contentDescription = "Delete ${commitment.title}",
                 tint = palette.ink3,
                 modifier = Modifier.size(18.dp),
             )
+        }
+    }
+
+        // The route to proof that does not depend on the alarm's own button having
+        // worked. On a phone where the full-screen intent was suppressed, this row is
+        // the only way back into the proof screen -- and the user has an alarm that keeps
+        // coming back until they find it.
+        if (owed) {
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onProve,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(11.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = palette.alarm,
+                    contentColor = androidx.compose.ui.graphics.Color.White,
+                ),
+                contentPadding = PaddingValues(vertical = 13.dp),
+            ) {
+                Text("Prove you started", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            }
         }
     }
 }

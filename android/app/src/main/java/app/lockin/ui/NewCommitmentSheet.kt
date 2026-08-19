@@ -61,17 +61,28 @@ import java.time.ZoneId
 fun NewCommitmentSheet(
     onCancel: () -> Unit,
     onSave: (Commitment) -> Unit,
+    /**
+     * The commitment being changed, or null when creating one.
+     *
+     * Editing copies onto the existing record rather than building a new one, which is
+     * the whole point: a user who moves an alarm from 7:00 to 7:15 has not abandoned the
+     * habit, and rebuilding the commitment would reset the streak they are protecting.
+     * That is the one thing this app must never do by accident.
+     */
+    editing: Commitment? = null,
 ) {
     val palette = Lockin.palette
 
-    var title by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(editing?.title.orEmpty()) }
     var showTitleError by remember { mutableStateOf(false) }
-    var weekdays by remember { mutableStateOf(emptySet<Int>()) }
-    var proofKind by remember { mutableStateOf(Commitment.ProofKind.PHOTO) }
+    var weekdays by remember { mutableStateOf(editing?.repeats?.weekdays ?: emptySet()) }
+    var proofKind by remember {
+        mutableStateOf(editing?.proofKind ?: Commitment.ProofKind.PHOTO)
+    }
 
     val timeState = rememberTimePickerState(
-        initialHour = 19,
-        initialMinute = 0,
+        initialHour = editing?.hour ?: 19,
+        initialMinute = editing?.minute ?: 0,
         is24Hour = true,
     )
 
@@ -84,7 +95,7 @@ fun NewCommitmentSheet(
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
         Text(
-            "New commitment",
+            if (editing == null) "New commitment" else "Edit commitment",
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
             color = palette.ink,
@@ -178,7 +189,12 @@ fun NewCommitmentSheet(
                     return@Button
                 }
                 onSave(
-                    Commitment(
+                    editing?.copy(
+                        title = trimmed,
+                        fireAtMillis = millisFor(timeState.hour, timeState.minute),
+                        repeats = Commitment.Repeat(weekdays),
+                        proofKind = proofKind,
+                    ) ?: Commitment(
                         title = trimmed,
                         fireAtMillis = millisFor(timeState.hour, timeState.minute),
                         repeats = Commitment.Repeat(weekdays),

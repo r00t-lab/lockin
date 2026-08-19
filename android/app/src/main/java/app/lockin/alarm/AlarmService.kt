@@ -160,6 +160,9 @@ class AlarmService private constructor(context: Context) {
      */
     fun isSpent(commitmentId: UUID): Boolean = prefs.nagCount(commitmentId) >= MAX_NAGS
 
+    /** How far into the chain this commitment is. Zero means nothing is being nagged. */
+    fun nagsUsed(commitmentId: UUID): Int = prefs.nagCount(commitmentId)
+
     /** Proof accepted. Tear the chain down. */
     fun clearNags(commitmentId: UUID) {
         alarmManager.cancel(pendingIntentFor(commitmentId, isNag = true, mutate = false))
