@@ -102,6 +102,21 @@ data class Commitment(
             return Instant.ofEpochMilli(completed).atZone(zone).toLocalDate() == LocalDate.now(zone)
         }
 
+    // MARK: - Rehearsal
+    //
+    // A rehearsal is a real commitment on a compressed clock: it rings in seconds and its
+    // nags are 30 seconds apart instead of two minutes, so the whole chain plays out in
+    // under three minutes. Three reasons, all of which matter here as much as on iOS: the
+    // user can check the alarm really does beat Do Not Disturb before trusting it with a
+    // 6am, the nag chain can be verified on a device without burning ten minutes a run,
+    // and it is the only way to film the mechanic for a 30-second video.
+    //
+    // Identity is a fixed id rather than a stored flag, so no serialisation migration is
+    // needed and re-rehearsing reuses the same record instead of piling them up. The id
+    // is the same constant as iOS, on purpose: one mechanic, one identity.
+
+    val isRehearsal: Boolean get() = id == REHEARSAL_ID
+
     fun recordingProof(atMillis: Long = System.currentTimeMillis()): Commitment {
         val streak = currentStreak + 1
         return copy(
@@ -112,6 +127,23 @@ data class Commitment(
     }
 
     fun recordingMiss(): Commitment = copy(currentStreak = 0, missCount = missCount + 1)
+
+    companion object {
+
+        /** Deterministic, so [isRehearsal] needs no extra field on disk. */
+        val REHEARSAL_ID: UUID = UUID.fromString("00000000-0000-0000-0000-00000000beef")
+
+        fun rehearsal(
+            fireAtMillis: Long,
+            proofKind: ProofKind = ProofKind.FOCUS_TIMER,
+        ): Commitment = Commitment(
+            id = REHEARSAL_ID,
+            title = "Rehearsal — this is what it feels like",
+            fireAtMillis = fireAtMillis,
+            repeats = Repeat.NEVER,
+            proofKind = proofKind,
+        )
+    }
 }
 
 /** 1 = Sunday … 7 = Saturday, bridging `java.time` to the shared iOS numbering. */

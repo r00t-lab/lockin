@@ -127,12 +127,38 @@ class AlarmService private constructor(context: Context) {
 
         armAlarm(
             commitment = commitment,
-            triggerAtMillis = System.currentTimeMillis() + NAG_INTERVAL_MILLIS,
+            triggerAtMillis = System.currentTimeMillis() + nagIntervalMillis(commitment),
             isNag = true,
         )
         prefs.setNagCount(commitment.id, count + 1)
         return true
     }
+
+    /**
+     * When the rehearsal's ring goes off, and how far apart its nags are. The whole point
+     * is that a run of the real mechanic fits inside the time someone will actually stand
+     * there watching it.
+     */
+    fun rehearsalFireMillis(): Long = System.currentTimeMillis() + REHEARSAL_LEAD_IN_MILLIS
+
+    /**
+     * Arm the rehearsal at the exact instant it carries, not at its hour and minute.
+     *
+     * [schedule] resolves a commitment to the next occurrence of its clock time, which for
+     * a rehearsal armed at 21:04:20 means 21:04 *tomorrow* -- a demo button that appears to
+     * do nothing. The rehearsal is the one alarm whose fire time is an instant rather than
+     * a time of day, so it gets the one scheduling path that treats it as such.
+     */
+    fun armRehearsal(commitment: Commitment) {
+        armAlarm(commitment = commitment, triggerAtMillis = commitment.fireAtMillis, isNag = false)
+    }
+
+    /**
+     * True once a chain has run out of nags. The list uses it to stop showing "Rehearsal
+     * armed" for a rehearsal that will never ring again -- a banner promising something
+     * that is not coming is worse than no banner.
+     */
+    fun isSpent(commitmentId: UUID): Boolean = prefs.nagCount(commitmentId) >= MAX_NAGS
 
     /** Proof accepted. Tear the chain down. */
     fun clearNags(commitmentId: UUID) {
@@ -217,6 +243,13 @@ class AlarmService private constructor(context: Context) {
 
         /** How long after a dismissed-without-proof ring we come back. */
         const val NAG_INTERVAL_MILLIS = 2 * 60 * 1000L
+
+        /** The rehearsal's compressed clock. Same numbers as iOS: 20 seconds, then 30. */
+        const val REHEARSAL_LEAD_IN_MILLIS = 20 * 1000L
+        const val REHEARSAL_NAG_INTERVAL_MILLIS = 30 * 1000L
+
+        fun nagIntervalMillis(commitment: Commitment): Long =
+            if (commitment.isRehearsal) REHEARSAL_NAG_INTERVAL_MILLIS else NAG_INTERVAL_MILLIS
 
         /** Stop nagging eventually. Being unstoppable is a feature; being a bug report is not. */
         const val MAX_NAGS = 5

@@ -44,14 +44,24 @@ class CommitmentStore private constructor(context: Context) {
 
     // MARK: - Queries
 
-    val activeCount: Int get() = _commitments.value.count { it.isEnabled }
+    /**
+     * Everything the user actually committed to. The rehearsal lives in the same list so
+     * it rings through the same machinery, but it must never appear in a count: counting
+     * it would push someone into the paywall for pressing a demo button, and it would
+     * inflate the streak the whole product exists to keep honest.
+     */
+    val real: List<Commitment> get() = _commitments.value.filterNot { it.isRehearsal }
+
+    val rehearsal: Commitment? get() = _commitments.value.firstOrNull { it.isRehearsal }
+
+    val activeCount: Int get() = real.count { it.isEnabled }
 
     fun canAddAnother(isPro: Boolean): Boolean = isPro || activeCount < FREE_COMMITMENT_LIMIT
 
     fun commitment(id: UUID): Commitment? = _commitments.value.firstOrNull { it.id == id }
 
     /** Everything the stats row and the weekly report need, in one pass. */
-    fun stats(): Stats = _commitments.value.fold(Stats(0, 0, 0)) { acc, commitment ->
+    fun stats(): Stats = real.fold(Stats(0, 0, 0)) { acc, commitment ->
         Stats(
             proved = acc.proved + if (commitment.isDoneToday) 1 else 0,
             missed = acc.missed + commitment.missCount,
@@ -83,6 +93,14 @@ class CommitmentStore private constructor(context: Context) {
      * clears everything, not just the ring that is currently making noise.
      */
     suspend fun recordProof(commitmentId: UUID) {
+        // A rehearsal proves nothing about a real habit. Clear its chain, drop the row,
+        // leave every streak alone -- otherwise the demo would inflate the number the app
+        // exists to keep honest.
+        if (commitment(commitmentId)?.isRehearsal == true) {
+            endRehearsal()
+            return
+        }
+
         val updated = transform(commitmentId) { it.recordingProof() } ?: return
         alarms.clearNags(commitmentId)
 
@@ -108,7 +126,49 @@ class CommitmentStore private constructor(context: Context) {
 
     /** Called by [BootReceiver][app.lockin.alarm.BootReceiver]. */
     suspend fun rescheduleAll() {
-        _commitments.value.filter { it.isEnabled }.forEach { alarms.schedule(it) }
+        // Real commitments only. A rehearsal that survived a reboot would ring twenty
+        // seconds after the phone came back, which is a jump scare, not a demo.
+        real.filter { it.isEnabled }.forEach { alarms.schedule(it) }
+    }
+
+    // MARK: - Rehearsal
+
+    /**
+     * Arm a compressed run of the whole mechanic. See [Commitment.rehearsal].
+     *
+     * The proof kind is passed in rather than fixed: a timer rehearsal and a photo
+     * rehearsal exercise completely different screens, and the one worth showing is
+     * whichever the user is about to rely on.
+     */
+    suspend fun startRehearsal(proofKind: Commitment.ProofKind) {
+        endRehearsal()
+        val commitment = Commitment.rehearsal(
+            fireAtMillis = alarms.rehearsalFireMillis(),
+            proofKind = proofKind,
+        )
+        mutate { it + commitment }
+        alarms.armRehearsal(commitment)
+    }
+
+    /**
+     * Tear it down without touching any streak. Called when the rehearsal is proved, when
+     * a new one replaces it, and when its chain has run out.
+     */
+    suspend fun endRehearsal() {
+        val existing = rehearsal ?: return
+        mutate { list -> list.filterNot { it.isRehearsal } }
+        alarms.cancel(existing.id)
+    }
+
+    /**
+     * A rehearsal is over the moment its chain runs out, whether it was proved, dismissed
+     * five times, or ignored. Called when the list comes forward: leaving a "Rehearsal
+     * armed" banner on a rehearsal that will never ring again is worse than never having
+     * shown one.
+     */
+    suspend fun reconcileRehearsal() {
+        val existing = rehearsal ?: return
+        if (alarms.isSpent(existing.id)) endRehearsal()
     }
 
     private suspend fun transform(
