@@ -9,11 +9,18 @@ on:
       - "android/**"
       - "gradle/**"
       - ".github/workflows/android.yml"
+    # apk-* publishes the debug build as a release asset the testers can download
+    # without a GitHub account. v* is the signed Play upload; the two are different
+    # tags on purpose, because handing twelve people a link is not shipping.
+    tags: ["apk-*", "v*"]
   workflow_dispatch:
 
 concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -90,3 +97,25 @@ jobs:
           name: lockin-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
+
+      # A download link that works for someone who has never seen GitHub. Artifacts
+      # require a logged-in session, which is fine for the developer and useless for a
+      # test group -- and a test group that cannot install the build is not a test group.
+      - name: Publish the APK where testers can reach it
+        if: startsWith(github.ref, 'refs/tags/apk-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/debug/*.apk
+          name: "Nagg test build ${{ github.ref_name }}"
+          body: |
+            Debug build for testing. Not the Play build.
+
+            Install: allow "install unknown apps" for your browser or file manager, then
+            open the APK. It installs alongside a Play copy rather than replacing it.
+
+            Start with **Rehearse the alarm** at the bottom of the list: it rings in 20
+            seconds and nags every 30, so the whole mechanic plays out in three minutes.
+            Put the phone down and prove nothing -- that is the part worth watching.
+
+            The paywall is empty on purpose; subscriptions are not wired up yet.
+          prerelease: true
