@@ -154,7 +154,12 @@ jobs:
       - name: Why it failed
         if: failure()
         run: |
-          echo "───────── last 60 lines ─────────"
-          tail -60 build.log > /tmp/tail.txt || echo 'no build.log' > /tmp/tail.txt
-          cat /tmp/tail.txt
-          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/tail.txt
+          # Gradle prints the cause under 'What went wrong' and then two hundred
+          # lines of stack frames. A plain tail catches only the frames, which say
+          # where the failure was reported and never what it was.
+          {
+            grep -m1 -A 25 "What went wrong" build.log
+            grep -E "^e: |error: |Caused by:|Execution failed|eystore|igning|password" build.log | head -20
+          } > /tmp/why.txt 2>/dev/null || echo 'nothing matched in build.log' > /tmp/why.txt
+          cat /tmp/why.txt
+          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/why.txt
