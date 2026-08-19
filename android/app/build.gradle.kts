@@ -13,7 +13,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "app.lockin"
+        // The published identity, and permanent: Play binds it to the listing on first
+        // upload and it can never be changed. `app.lockin` was taken by somebody else, so
+        // this follows the iOS bundle id's owner instead. The *namespace* above stays
+        // app.lockin -- that is the code's package, nobody outside sees it, and renaming
+        // it would move every source file for no gain.
+        applicationId = "com.r00tlab.nagg"
         minSdk = 26
         targetSdk = 36
         // Play refuses an upload whose versionCode it has seen before, and says so only

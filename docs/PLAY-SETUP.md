@@ -36,8 +36,12 @@ Play Console ▸ **Create app**
 cevap. Paid seçilirse abonelik modeli çöker ve düzeltmenin yolu yeni bir uygulama kaydı
 açmaktır.
 
-Paket adı burada sorulmuyor; ilk AAB yüklendiğinde `app.lockin` olarak sabitleniyor ve bir
-daha değişmiyor.
+| Package name | **`com.r00tlab.nagg`** |
+
+⚠️ **Paket adı da geri alınamaz** ve koddaki `applicationId` ile birebir eşleşmeli.
+`app.lockin` başkası tarafından alınmış çıktı; bu yüzden iOS bundle id'sinin sahiplik
+desenine (`com.r00tlab.lockin`) uyduruldu. Koddaki `namespace` hâlâ `app.lockin` —
+o kodun paketi, dışarıdan görünmüyor ve değiştirmek her kaynak dosyayı taşımak olurdu.
 
 ## 2. Upload key 🧑
 
@@ -150,7 +154,7 @@ entitlement'ına bağlıyor, kod sadece entitlement'a bakıyor.
 
 ## 8. RevenueCat 🧑 bağlar, 🤖 koda gömer
 
-1. RevenueCat ▸ **+ New app** → Google Play, paket adı `app.lockin`
+1. RevenueCat ▸ **+ New app** → Google Play, paket adı `com.r00tlab.nagg`
 2. Play service account JSON'ını RevenueCat'e de yükle (sunucu bildirimleri için)
 3. İki ürünü içeri al, **aynı `pro` entitlement'ına** bağla
 4. Offering `default` içine `$rc_monthly` ve `$rc_annual` paketleri — **aylık üstte**
