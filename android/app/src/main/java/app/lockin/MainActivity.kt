@@ -31,6 +31,7 @@ import app.lockin.system.SystemPrompts
 import app.lockin.ui.AlarmWarning
 import app.lockin.ui.CommitmentListScreen
 import app.lockin.ui.DeskCodeScreen
+import app.lockin.ui.DiagnosticsScreen
 import app.lockin.ui.WeeklyReportScreen
 import app.lockin.ui.NewCommitmentSheet
 import app.lockin.ui.OnboardingScreen
@@ -96,6 +97,7 @@ private sealed interface Screen {
     data class Proof(val commitmentId: UUID) : Screen
     data class DeskCode(val commitmentId: UUID) : Screen
     data object Report : Screen
+    data object Diagnostics : Screen
 }
 
 @Composable
@@ -173,6 +175,7 @@ private fun LockinApp(
                 onOpenProof = { commitment -> screen = Screen.Proof(commitment.id) },
                 onOpenDeskCode = { commitment -> screen = Screen.DeskCode(commitment.id) },
                 onOpenReport = { screen = Screen.Report },
+                onOpenDiagnostics = { screen = Screen.Diagnostics },
                 onRehearse = {
                     scope.launch {
                         // The timer rehearsal is the one that finishes without asking for
@@ -220,6 +223,11 @@ private fun LockinApp(
         Screen.Paywall -> PaywallScreen(
             subscriptions = subscriptions,
             onDismiss = { screen = Screen.List },
+        )
+
+        Screen.Diagnostics -> DiagnosticsScreen(
+            commitments = commitments,
+            onClose = { screen = Screen.List },
         )
 
         Screen.Report -> WeeklyReportScreen(

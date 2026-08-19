@@ -43,6 +43,16 @@ class LockinPreferences private constructor(context: Context) {
         prefs.edit { putString(KEY_PENDING_PROOF, commitmentId.toString()) }
     }
 
+    /**
+     * Read without consuming. Only the diagnostics screen wants this: a debug view that
+     * clears the hand-off it was opened to explain would destroy the evidence it exists
+     * to show, and the bug would vanish the moment anyone looked at it.
+     */
+    fun peekPendingProof(): UUID? {
+        val raw = prefs.getString(KEY_PENDING_PROOF, null) ?: return null
+        return runCatching { UUID.fromString(raw) }.getOrNull()
+    }
+
     fun takePendingProof(): UUID? {
         val raw = prefs.getString(KEY_PENDING_PROOF, null) ?: return null
         prefs.edit { remove(KEY_PENDING_PROOF) }
