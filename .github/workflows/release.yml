@@ -34,7 +34,18 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Lockin.xcodeproj
-        run: xcodegen generate --spec project.yml
+        # The build number is written into the spec before generation, not only passed to
+        # xcodebuild. Two uploads were both build 1 with run numbers 23 and 24 because a
+        # generated Info.plist carried its own literal, and Apple only says so after the
+        # archive, the signing and the upload have all succeeded.
+        run: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \"[0-9]*\"/CURRENT_PROJECT_VERSION: \"$GITHUB_RUN_NUMBER\"/g" project.yml
+          grep -n CURRENT_PROJECT_VERSION project.yml
+          # Fail loudly rather than upload the wrong number quietly. A build that
+          # ships with a stale build number is only rejected after the archive, the
+          # signing and the upload have all succeeded -- twenty minutes to learn it.
+          test "$(grep -c "CURRENT_PROJECT_VERSION: \"$GITHUB_RUN_NUMBER\"" project.yml)" -ge 1 || { echo "::error::build number $GITHUB_RUN_NUMBER never reached project.yml"; exit 1; }
+          xcodegen generate --spec project.yml
 
       - uses: ruby/setup-ruby@v1
         with:

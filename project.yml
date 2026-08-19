@@ -98,6 +98,12 @@ targets:
       path: ios/Lockin/Info.plist
       properties:
         CFBundleDisplayName: Nagg
+        # Reference the build settings, never a number. A literal in here wins over
+        # `xcodebuild CURRENT_PROJECT_VERSION=...`, so the run number silently stopped
+        # reaching the binary the day this file became a real Info.plist -- and the only
+        # symptom was "Redundant Binary Upload" from Apple, one upload too late.
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
         NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
         NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
         # The camera picker falls back to the photo library when no camera is
@@ -148,6 +154,10 @@ targets:
       path: ios/LockinWidget/Info.plist
       properties:
         CFBundleDisplayName: Nagg
+        # Same for the extension: an app whose widget disagrees about the build number
+        # is rejected at upload, not at review.
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
