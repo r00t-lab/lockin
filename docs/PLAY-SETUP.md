@@ -196,3 +196,27 @@ Bu süre boyunca yeni build atmak serbest, saat sıfırlanmıyor.
 8. 🧑 RevenueCat → 🤖 `goog_` anahtarı koda *(8)*
 9. 🤖 Mağaza görselleri → 🧑 yükler *(9)*
 10. 🧑 Closed testing + 12 testçi → 14 gün → production başvurusu *(10)*
+
+---
+
+## Durum — 19 Ağustos 2026
+
+**Internal track canlı.** Paket `com.r00tlab.nagg`, versionCode **30**, imzalı AAB API'den
+yüklendi ve yayınlandı.
+
+Yol boyunca çıkan üç şey, üçü de bir daha aranmasın diye:
+
+- **Upload key'in Android geliştirici doğrulamasına kaydedilmesi gerekiyor.** Yeni bir
+  imza anahtarıyla yapılan ilk yükleme `commit` aşamasında *"all keys should be registered"*
+  diye reddediliyor. Anahtarın SHA-256 parmak izi **Android geliştirici doğrulaması ▸
+  paket ▸ Anahtar ekle** ile eklenince geçiyor. Parmak izi:
+  `keytool -list -v -keystore <jks> -alias upload`
+- **Hizmet hesabı GitHub secret'ı gerektirmiyor.** CI imzalı AAB'yi herkese açık release
+  olarak yayınlıyor, yükleme Play API'sinden yapılıyor. Yetki: *test kanallarına yayınlama*
+  + *test kanallarını yönetme*.
+- **Mağaza metinleri API'den yazılamıyor** — *mağazadaki varlığı yönetme* yetkisi hesap
+  düzeyinden geliyor ve hizmet hesabında etkili değil. Metinler konsoldan girilecek.
+
+**Closed testing henüz açılamıyor:** taslak uygulamada kapalı test sürümü ancak `draft`
+statüsüyle oluşturulabiliyor; gerçek yayın için önce **App content** formlarının bitmesi
+gerekiyor. Yani 14 günlük saat, formlar tamamlanmadan başlamıyor.
