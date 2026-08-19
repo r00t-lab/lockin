@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.lockin.billing.SubscriptionService
+import app.lockin.ui.theme.EyebrowText
 import app.lockin.ui.theme.Lockin
 import com.revenuecat.purchases.Package
 import kotlinx.coroutines.launch
@@ -113,7 +114,33 @@ fun PaywallScreen(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            offering?.availablePackages.orEmpty().forEach { pkg ->
+            val packages = offering?.availablePackages.orEmpty()
+
+            // An empty paywall is the worst version of this screen: the user taps the
+            // button, nothing happens, and they conclude the app is broken rather than
+            // unfinished. Say which it is. On Android this is not hypothetical -- the
+            // RevenueCat key is a placeholder until the Play products exist, so this is
+            // exactly what every tester will see first.
+            if (packages.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(palette.surface, RoundedCornerShape(14.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("NOTHING TO SELL YET", style = EyebrowText, color = palette.ink3)
+                    Text(
+                        "Subscriptions aren't set up on this build. Everything else works "
+                            + "— you just can't go past two commitments.",
+                        fontSize = 14.sp,
+                        lineHeight = 21.sp,
+                        color = palette.ink2,
+                    )
+                }
+            }
+
+            packages.forEach { pkg ->
                 PackageRow(
                     packageToPurchase = pkg,
                     selected = selected?.identifier == pkg.identifier,

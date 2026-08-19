@@ -27,6 +27,31 @@ Android'in 14 günlük saati var, iOS'un 24-48 saatlik incelemesi. Yani:
 **Bugün yapılacak tek şey: 12 testçiyi bul.** Kod ondan sonra gelir — saat testçi
 sayısı 12'ye ulaştığında başlıyor.
 
+## Durum — 19 Ağustos 2026
+
+**Kod derleniyor** (CI'da yeşil) ve iOS ile **birebir eşitlendi**. Doküman bir süre "bu
+kod hiç derlenmedi" dedi; artık doğru değil.
+
+O tur kapanan farklar:
+
+| | Neydi |
+|---|---|
+| Masa kodu | Üretici vardı, **onu gösteren ekran yoktu** — kullanıcı okutması istenen kodu hiçbir yerde göremiyordu. iOS'ta kapatılan aynı çıkışsız kapı. |
+| Prova | Yoktu. 20 sn + 30 sn'lik sıkıştırılmış zincir olmadan mekaniği bir cihazda doğrulamak her denemede on dakika. |
+| Kutlama ekranı | Yoktu; kanıt düşüyor, ekran kapanıyordu. |
+| Haftalık rapor | Onboarding ve paywall söz veriyordu, uygulamada yoktu. |
+| Tanı ekranı | Yoktu. On iki testçi, on iki üretici demek. |
+| Düzenleme | Kart dokunuşu kanıta gidiyordu; saati değiştirmenin tek yolu silip yeniden kurmaktı, **yani streak'i çöpe atmak**. |
+| "Prove you started" kartı | Yoktu. Full-screen intent bastırılırsa kanıta dönüş yolu kalmıyordu. |
+| İsim | Launcher'da ve wordmark'ta hâlâ **Lockin** yazıyordu. |
+
+**Bilerek farklı kalan tek şey:** fotoğraf reddi metinleri. Android karanlık / parlama /
+"masa değil" ayrımı yapıyor, iOS tek bir "boş kare" kontrolü. Android'inki daha iyi;
+eşitleme yönü iOS'u yükseltmek olmalı, Android'i düşürmek değil.
+
+**Kod tarafında kalan:** `goog_REPLACE_ME`. Play ürünleri oluşup RevenueCat'e bağlanana
+kadar paywall boş gelir — bu yüzden paywall artık boş olduğunu **söylüyor**.
+
 ## Teknik: Android'de bu uygulama daha kolay
 
 ## Teknik: Android'de bu uygulama daha kolay
