@@ -16,10 +16,34 @@ android {
         applicationId = "app.lockin"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // Play refuses an upload whose versionCode it has seen before, and says so only
+        // after the bundle is built, signed and sent. CI passes the run number; a local
+        // build falls back to 1, which never reaches Play.
+        versionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInt()
+        // Matches iOS. Two stores showing different numbers for the same release is a
+        // support question nobody should have to answer.
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // The upload key. Google holds the real app signing key under Play App Signing; this
+    // one only proves the bundle came from us. Absent locally, which is why the config is
+    // built conditionally rather than declared and left half-empty: a signingConfig
+    // pointing at a keystore that is not there fails every local build, including the
+    // debug one nobody was trying to sign.
+    val keystore = rootProject.file("upload.jks")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+
+    signingConfigs {
+        if (keystore.exists() && keystorePassword != null) {
+            create("upload") {
+                storeFile = keystore
+                storePassword = keystorePassword
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -28,6 +52,11 @@ android {
             isMinifyEnabled = false
         }
         release {
+            // Unsigned when the keystore is absent. `gradle bundleRelease` then still
+            // succeeds locally and produces something Play will reject -- which is the
+            // right trade: the alternative is a build file that cannot be run at all
+            // without a secret, and nobody can check their work.
+            signingConfig = signingConfigs.findByName("upload")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
