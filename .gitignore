@@ -44,6 +44,9 @@ ios/Lockin/Info.plist
 # Raw device captures — the finished store images are regenerated from them.
 design/shots/*.png
 design/store/
+# Play assets are derived too: the icon from the source art, the screenshots from the
+# ones already on the App Store. tools/make_play_assets.py rebuilds all of it.
+design/play/
 
 # Python bytecode: a compiled copy of a tool is not a tool
 __pycache__/

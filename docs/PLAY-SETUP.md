@@ -169,7 +169,8 @@ Bu anahtar girilene kadar paywall boş görünüyor ve bunu ekranda söylüyor.
 |---|---|---|
 | App icon | 512 × 512 | 🤖 |
 | Feature graphic | **1024 × 500** | 🤖 — Play'e özel, iOS'ta karşılığı yok |
-| Telefon ekran görüntüleri | en az 2, 16:9 veya 9:16 | 🤖 (iOS kareleri Play ölçüsüne çevrilir) |
+| Telefon ekran görüntüleri | en az 2 | 🤖 App Store'daki kareler, Play ölçüsünde |
+| 7" ve 10" tablet kareleri | 9:16 | 🤖 aynı kareler 1080 × 1920 kesimle |
 | Short description | 80 karakter | `It comes back until you start.` |
 | Full description | 4000 karakter | [STORE.md](STORE.md)'deki açıklama |
 
@@ -220,3 +221,20 @@ Yol boyunca çıkan üç şey, üçü de bir daha aranmasın diye:
 **Closed testing henüz açılamıyor:** taslak uygulamada kapalı test sürümü ancak `draft`
 statüsüyle oluşturulabiliyor; gerçek yayın için önce **App content** formlarının bitmesi
 gerekiyor. Yani 14 günlük saat, formlar tamamlanmadan başlamıyor.
+
+### Mağaza görselleri nereden geliyor
+
+`tools/make_play_assets.py` üçünü de üretiyor ve hepsi türetilmiş — repoda tutulmuyor,
+her seferinde yeniden yapılabiliyor:
+
+- **İkon** uygulamanın kendi 1024'lük ikonundan 512'ye
+- **Feature graphic** (1024 × 500) Play'e özel; App Store'da karşılığı yok, o yüzden
+  wordmark ve tek satırla çizildi — arama sonucunda pul boyutunda görünüyor, oraya
+  küçültülmüş bir ekran görüntüsü koymak leke demek
+- **Ekran görüntüleri** doğrudan **App Store'da yayında olan karelerden** indiriliyor
+  (ASC API, `imageAsset.templateUrl`). İki mağazada farklı görsel olması, aynı ürünün iki
+  ayrı sürümü gibi görünmesi demekti.
+
+Tek dönüşüm boyut: Apple kareleri 1260 × 2736, yani 2.17:1. **Play uzun kenarın kısa
+kenarın iki katını aşmasına izin vermiyor**, o yüzden genişliğe ölçeklenip alttan
+kırpılıyor (1080 × 2160). Tabletler 9:16 istediği için onlara 1080 × 1920 kesim gidiyor.
