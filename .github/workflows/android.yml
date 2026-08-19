@@ -159,10 +159,10 @@ jobs:
           # where the failure was reported and never what it was.
           {
             grep -m1 -A 25 "What went wrong" build.log
-            grep -E "^e: |error: |Caused by:|Execution failed|eystore|igning|password" build.log | head -20
+            grep -iE "^e: |error:|warning:.*\[|Caused by:|Execution failed|eystore|igning|password" build.log | head -30
           } > /tmp/why.txt 2>/dev/null || echo 'nothing matched in build.log' > /tmp/why.txt
           # Lint writes its findings to a file, not to the log it just failed in.
-          for r in app/build/reports/lint-results-*.txt; do
+          for r in app/build/reports/lint*results*.txt app/build/reports/lint*.txt; do
             [ -f "$r" ] && { echo "── $r"; head -60 "$r"; } >> /tmp/why.txt
           done
           cat /tmp/why.txt
