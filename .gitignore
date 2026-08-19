@@ -18,7 +18,11 @@ android/build/
 android/app/build/
 android/local.properties
 *.jks
+*.jks.b64
 *.keystore
+# The base64 of a keystore is the keystore. It was not covered by *.jks, and a stray
+# `git add -A` would have committed the signing key as a text file.
+upload.jks*
 
 # Secrets — every one of these belongs in GitHub Secrets, never in the repo
 *.p8
