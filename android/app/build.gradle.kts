@@ -87,6 +87,13 @@ android {
         buildConfig = true
     }
 
+    lint {
+        // lintVitalRelease fails the release build and prints only that it failed; the
+        // issues themselves go to a report file nobody on CI ever opens. Printing them to
+        // stdout is the difference between one round trip and four.
+        textReport = true
+    }
+
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
