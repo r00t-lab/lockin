@@ -182,6 +182,16 @@ private fun LockinApp(
                 needsProof = { commitment ->
                     !commitment.isDoneToday && alarms.nagsUsed(commitment.id) > 0
                 },
+                // Should have a live alarm and does not. A one-off whose time has passed
+                // is not unarmed, it is finished — and a rehearsal is neither.
+                unarmed = { commitment ->
+                    commitment.isEnabled &&
+                        !commitment.isRehearsal &&
+                        !alarms.isArmed(commitment.id) &&
+                        (commitment.repeats.isRecurring ||
+                            commitment.fireAtMillis > System.currentTimeMillis())
+                },
+                onRearm = { commitment -> scope.launch { store.update(commitment) } },
                 onRehearse = {
                     scope.launch {
                         // The timer rehearsal is the one that finishes without asking for

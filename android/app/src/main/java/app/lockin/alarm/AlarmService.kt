@@ -163,6 +163,26 @@ class AlarmService private constructor(context: Context) {
     /** How far into the chain this commitment is. Zero means nothing is being nagged. */
     fun nagsUsed(commitmentId: UUID): Int = prefs.nagCount(commitmentId)
 
+    /**
+     * Whether the system currently holds an alarm for this commitment.
+     *
+     * Asked of the platform rather than of our own records, because the failure this
+     * detects is precisely the one where the two disagree: a reboot where the boot
+     * receiver never ran, an OEM task killer that cleared the app's alarms, a restore onto
+     * a new phone. The row keeps looking perfectly healthy while being, in the only sense
+     * that matters, switched off — and the user finds out by oversleeping.
+     *
+     * FLAG_NO_CREATE returns null when no matching PendingIntent exists. Identity is the
+     * request code plus the intent's action and component, so the probe must build the
+     * same intent the scheduler did, minus the extras, which are ignored.
+     */
+    fun isArmed(commitmentId: UUID): Boolean = PendingIntent.getBroadcast(
+        appContext,
+        requestCode(commitmentId, isNag = false),
+        Intent(appContext, AlarmReceiver::class.java).apply { action = AlarmReceiver.ACTION_RING },
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_NO_CREATE,
+    ) != null
+
     /** Proof accepted. Tear the chain down. */
     fun clearNags(commitmentId: UUID) {
         alarmManager.cancel(pendingIntentFor(commitmentId, isNag = true, mutate = false))

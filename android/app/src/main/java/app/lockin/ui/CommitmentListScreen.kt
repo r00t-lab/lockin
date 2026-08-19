@@ -69,6 +69,8 @@ fun CommitmentListScreen(
     onOpenProof: (Commitment) -> Unit,
     onEdit: (Commitment) -> Unit = {},
     needsProof: (Commitment) -> Boolean = { false },
+    unarmed: (Commitment) -> Boolean = { false },
+    onRearm: (Commitment) -> Unit = {},
     onOpenDeskCode: (Commitment) -> Unit = {},
     onOpenReport: () -> Unit = {},
     onOpenDiagnostics: () -> Unit = {},
@@ -144,6 +146,8 @@ fun CommitmentListScreen(
                 CommitmentCard(
                     commitment = commitment,
                     owed = needsProof(commitment),
+                    unarmed = unarmed(commitment),
+                    onRearm = { onRearm(commitment) },
                     onClick = { onEdit(commitment) },
                     onProve = { onOpenProof(commitment) },
                     onDelete = { onDelete(commitment) },
@@ -236,6 +240,8 @@ private fun Stat(value: String, label: String, modifier: Modifier = Modifier) {
 private fun CommitmentCard(
     commitment: Commitment,
     owed: Boolean,
+    unarmed: Boolean = false,
+    onRearm: () -> Unit = {},
     onClick: () -> Unit,
     onProve: () -> Unit,
     onDelete: () -> Unit,
@@ -254,7 +260,7 @@ private fun CommitmentCard(
             .border(
                 width = 1.dp,
                 color = when {
-                    owed -> palette.alarm
+                    owed || unarmed -> palette.alarm
                     done -> palette.goBg
                     else -> palette.line
                 },
@@ -280,7 +286,12 @@ private fun CommitmentCard(
             )
             Spacer(Modifier.height(3.dp))
             Text(
-                text = if (owed) {
+                // A row that looks healthy while being switched off is the single most
+                // dangerous thing this list can show, so "no alarm" outranks everything
+                // else it could say.
+                text = if (unarmed) {
+                    "No alarm set — this will not ring"
+                } else if (owed) {
                     "Ringing — you haven't proved it"
                 } else if (commitment.isRehearsal) {
                     "REHEARSAL  ·  ${commitment.proofKind.shortLabel}"
@@ -290,7 +301,7 @@ private fun CommitmentCard(
                 },
                 style = MetaText,
                 color = when {
-                    owed || commitment.isRehearsal -> palette.alarm
+                    owed || unarmed || commitment.isRehearsal -> palette.alarm
                     done -> palette.go
                     else -> palette.ink2
                 },
@@ -333,10 +344,10 @@ private fun CommitmentCard(
         // worked. On a phone where the full-screen intent was suppressed, this row is
         // the only way back into the proof screen -- and the user has an alarm that keeps
         // coming back until they find it.
-        if (owed) {
+        if (owed || unarmed) {
             Spacer(Modifier.height(12.dp))
             Button(
-                onClick = onProve,
+                onClick = if (owed) onProve else onRearm,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(11.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -345,7 +356,11 @@ private fun CommitmentCard(
                 ),
                 contentPadding = PaddingValues(vertical = 13.dp),
             ) {
-                Text("Prove you started", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    if (owed) "Prove you started" else "Set the alarm again",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }
