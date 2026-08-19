@@ -11,6 +11,9 @@ on:
     tags: ["ipa-*"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   ipa:
     runs-on: macos-26
@@ -93,10 +96,33 @@ jobs:
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
           exit 0
 
+      # Every ad-hoc build used to come out as Nagg.ipa, so a throwaway build made
+      # with the commitment ceiling removed -- for screenshots -- was indistinguishable
+      # on disk from the real thing, and got installed as the real thing. The tag is
+      # the only thing that says which is which, so it goes in the filename.
+      - name: Name the IPA after its tag
+        run: |
+          for f in *.ipa; do mv "$f" "Nagg-${{ github.ref_name }}.ipa"; done
+          ls -la *.ipa
+
       - name: Publish the IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Nagg-ipa
+          name: Nagg-ipa-${{ github.ref_name }}
           path: "*.ipa"
           if-no-files-found: error
           retention-days: 14
+
+      # A link that works from the phone, without a GitHub session. Artifacts need
+      # one; a release asset does not, and the phone is where this file has to end up.
+      - name: Publish where a phone can reach it
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.ipa"
+          name: "Nagg ad-hoc ${{ github.ref_name }}"
+          body: |
+            Ad-hoc build from `${{ github.ref_name }}`. Install with 3uTools.
+
+            This one is built from main: the two-commitment free limit is in place,
+            so the third commitment opens the paywall.
+          prerelease: true
