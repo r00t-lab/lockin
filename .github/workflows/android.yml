@@ -70,7 +70,11 @@ jobs:
         run: |
           echo "───────── errors ─────────"
           grep -E "^e: |error:|FAILURE:|What went wrong|Could not |Unresolved reference|Caused by:" build.log \
-            | sort -u | head -40 | tee /tmp/errs.txt
+            | sort -u | head -40 | tee /tmp/errs.txt || true
+          # A failure matching none of those patterns used to vanish entirely.
+          # An ugly log beats a log nobody can read.
+          echo "───────── last lines ─────────"
+          tail -40 build.log | tee -a /tmp/errs.txt
           while IFS= read -r line; do echo "::error::${line}"; done < /tmp/errs.txt
 
       - name: Decode upload keystore
@@ -86,7 +90,11 @@ jobs:
           # Monotonic and free, same as the iOS build number. Play rejects a repeat.
           ANDROID_VERSION_CODE: ${{ github.run_number }}
         run: |
-          gradle bundleRelease --stacktrace
+          set -o pipefail
+          # Tee, like the debug build does. Without it a release failure produced
+          # an "exit code 1" annotation and nothing else -- the log the next step
+          # greps was still the one from assembleDebug, which had succeeded.
+          gradle bundleRelease --stacktrace 2>&1 | tee -a build.log
           # An unsigned bundle uploads fine and is rejected on the far side with a message
           # about the certificate, hours later. Catch it here instead.
           unzip -l app/build/outputs/bundle/release/app-release.aab | grep -q "META-INF/.*\.RSA\|META-INF/.*\.EC"             || { echo "::error::release bundle is not signed -- check the keystore secrets"; exit 1; }
