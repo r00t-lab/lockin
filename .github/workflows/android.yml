@@ -146,3 +146,15 @@ jobs:
 
             The paywall is empty on purpose; subscriptions are not wired up yet.
           prerelease: true
+
+      # Last, on purpose. The original sat between the debug compile and the release
+      # build, so a release failure skipped it -- `if: failure()` on a step the job
+      # never reached is a diagnostic that runs only when it is not needed. Anything
+      # placed after every step that can fail catches all of them.
+      - name: Why it failed
+        if: failure()
+        run: |
+          echo "───────── last 60 lines ─────────"
+          tail -60 build.log > /tmp/tail.txt || echo 'no build.log' > /tmp/tail.txt
+          cat /tmp/tail.txt
+          while IFS= read -r line; do echo "::error::${line}"; done < /tmp/tail.txt
