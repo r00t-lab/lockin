@@ -69,11 +69,24 @@ import java.util.Locale
 @Composable
 fun ProofScreen(
     commitment: Commitment,
-    onProved: () -> Unit,
+    onProve: suspend () -> Int,
     onBailed: () -> Unit,
+    onFinish: () -> Unit,
 ) {
     val palette = Lockin.palette
+    val scope = rememberCoroutineScope()
     var rejection by remember { mutableStateOf<String?>(null) }
+
+    // Set once proof has landed and the user is done watching whatever they were watching.
+    var provenStreak by remember { mutableStateOf<Int?>(null) }
+    // Earned at the moment the timer starts, shown when they say they are finished.
+    var heldStreak by remember { mutableStateOf<Int?>(null) }
+    var timerRunning by remember { mutableStateOf(false) }
+
+    provenStreak?.let { streak ->
+        ProofAccepted(streak = streak, onFinish = onFinish)
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -108,15 +121,22 @@ fun ProofScreen(
             when (commitment.proofKind) {
                 Commitment.ProofKind.PHOTO -> PhotoProof(
                     onRejected = { rejection = it },
-                    onAccepted = onProved,
+                    onAccepted = { scope.launch { provenStreak = onProve() } },
                 )
 
-                Commitment.ProofKind.FOCUS_TIMER -> TimerProof(onStarted = onProved)
+                Commitment.ProofKind.FOCUS_TIMER -> TimerProof(
+                    running = timerRunning,
+                    onStarted = {
+                        timerRunning = true
+                        scope.launch { heldStreak = onProve() }
+                    },
+                    onDone = { provenStreak = heldStreak ?: 0 },
+                )
 
                 Commitment.ProofKind.DESK_CODE -> DeskCodeProof(
                     expectedPayload = commitment.id.toString(),
                     onRejected = { rejection = it },
-                    onAccepted = onProved,
+                    onAccepted = { scope.launch { provenStreak = onProve() } },
                 )
             }
         }
@@ -133,13 +153,72 @@ fun ProofScreen(
             )
         }
 
-        TextButton(
-            onClick = onBailed,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("I'm not doing it", fontSize = 13.sp, color = palette.ink3)
+        // Gone once the timer is running. Proof has already landed by then, and a button
+        // that records an excuse against a day the user showed up is worse than no button:
+        // it is the app calling them a liar for staying on the screen.
+        if (!timerRunning) {
+            TextButton(
+                onClick = onBailed,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("I'm not doing it", fontSize = 13.sp, color = palette.ink3)
+            }
         }
     }
+}
+
+/**
+ * The payoff.
+ *
+ * Not decoration. CONTENT.md lists "a celebration beat at the end" as one of the five
+ * things every video in this category has in common, and without it proof lands and the
+ * screen simply closes — a video with no last second. It is also the only moment Nagg ever
+ * gives anything back, in an app whose entire job is to be unpleasant at 7am.
+ *
+ * It dismisses itself. A tap-to-continue would put a decision in front of someone who has
+ * just earned the opposite.
+ */
+@Composable
+private fun ProofAccepted(streak: Int, onFinish: () -> Unit) {
+    val palette = Lockin.palette
+
+    LaunchedEffect(Unit) {
+        // Long enough to read and to film, short enough that nobody has to dismiss it.
+        delay(1900)
+        onFinish()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(palette.ground)
+            .systemBarsPadding()
+            .padding(horizontal = 40.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = if (streak > 0) streak.toString() else "done",
+            style = CountdownNumber.copy(fontSize = 96.sp),
+            color = palette.go,
+        )
+        Spacer(Modifier.height(14.dp))
+        Text(
+            text = payoffLine(streak),
+            fontSize = 16.sp,
+            lineHeight = 23.sp,
+            color = palette.ink2,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/** The copy does the work the number cannot. Day one has nothing to boast about yet. */
+private fun payoffLine(streak: Int): String = when (streak) {
+    0 -> "Started. That was the whole point."
+    1 -> "Day one. The alarm has nothing on you."
+    in 2..6 -> "$streak days straight."
+    else -> "$streak days. Nagg has stopped arguing with you."
 }
 
 // MARK: - Photo
@@ -204,7 +283,7 @@ private fun PhotoProof(
             captureUri = context.newCaptureUri()
             captureUri?.let(takePicture::launch)
         } else {
-            onRejected("Lockin needs the camera to check you're actually at your desk.")
+            onRejected("Nagg needs the camera to check you're actually at your desk.")
         }
     }
 
@@ -277,10 +356,13 @@ private fun PhotoProof(
 // MARK: - Focus timer
 
 @Composable
-private fun TimerProof(onStarted: () -> Unit) {
+private fun TimerProof(
+    running: Boolean,
+    onStarted: () -> Unit,
+    onDone: () -> Unit,
+) {
     val palette = Lockin.palette
     var remaining by remember { mutableStateOf(25 * 60) }
-    var running by remember { mutableStateOf(false) }
 
     LaunchedEffect(running) {
         if (!running) return@LaunchedEffect
@@ -288,6 +370,8 @@ private fun TimerProof(onStarted: () -> Unit) {
             delay(1000)
             remaining -= 1
         }
+        // Sat through the whole thing without being asked to. That earns the beat.
+        onDone()
     }
 
     Column(
@@ -298,12 +382,11 @@ private fun TimerProof(onStarted: () -> Unit) {
         Text(
             text = String.format(Locale.US, "%02d:%02d", remaining / 60, remaining % 60),
             style = CountdownNumber,
-            color = palette.ink,
+            color = if (running) palette.go else palette.ink,
         )
         Spacer(Modifier.height(24.dp))
         Button(
             onClick = {
-                running = true
                 // Starting is the proof. Finishing is between them and their degree.
                 onStarted()
             },
@@ -321,6 +404,25 @@ private fun TimerProof(onStarted: () -> Unit) {
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
             )
+        }
+
+        // The clock is the only part of this proof the user can watch, and the payoff
+        // screen used to take over on the same tap and destroy it before a second ticked.
+        // So the payoff waits: until the timer runs out, or until they say they are done.
+        if (running) {
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "The alarm is off. The next 25 minutes are yours.",
+                fontSize = 14.sp,
+                lineHeight = 21.sp,
+                color = palette.ink2,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
+                Text("Done", fontSize = 15.sp, color = palette.ink2)
+            }
         }
     }
 }
@@ -341,7 +443,7 @@ private fun DeskCodeProof(
         ActivityResultContracts.RequestPermission(),
     ) { result ->
         granted = result
-        if (!result) onRejected("Lockin needs the camera to read your desk code.")
+        if (!result) onRejected("Nagg needs the camera to read your desk code.")
     }
 
     LaunchedEffect(Unit) {

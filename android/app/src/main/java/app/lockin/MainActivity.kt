@@ -31,6 +31,7 @@ import app.lockin.system.SystemPrompts
 import app.lockin.ui.AlarmWarning
 import app.lockin.ui.CommitmentListScreen
 import app.lockin.ui.DeskCodeScreen
+import app.lockin.ui.WeeklyReportScreen
 import app.lockin.ui.NewCommitmentSheet
 import app.lockin.ui.OnboardingScreen
 import app.lockin.ui.PaywallScreen
@@ -94,6 +95,7 @@ private sealed interface Screen {
     data object Paywall : Screen
     data class Proof(val commitmentId: UUID) : Screen
     data class DeskCode(val commitmentId: UUID) : Screen
+    data object Report : Screen
 }
 
 @Composable
@@ -170,6 +172,7 @@ private fun LockinApp(
                 onDelete = { commitment -> scope.launch { store.delete(commitment) } },
                 onOpenProof = { commitment -> screen = Screen.Proof(commitment.id) },
                 onOpenDeskCode = { commitment -> screen = Screen.DeskCode(commitment.id) },
+                onOpenReport = { screen = Screen.Report },
                 onRehearse = {
                     scope.launch {
                         // The timer rehearsal is the one that finishes without asking for
@@ -219,6 +222,11 @@ private fun LockinApp(
             onDismiss = { screen = Screen.List },
         )
 
+        Screen.Report -> WeeklyReportScreen(
+            commitments = commitments,
+            onFinish = { screen = Screen.List },
+        )
+
         is Screen.DeskCode -> {
             val commitment: Commitment? = commitments.firstOrNull { it.id == current.commitmentId }
             if (commitment == null) {
@@ -235,11 +243,13 @@ private fun LockinApp(
             } else {
                 ProofScreen(
                     commitment = commitment,
-                    onProved = {
-                        scope.launch {
-                            store.recordProof(commitment.id)
-                            screen = Screen.List
-                        }
+                    // Returns the streak the proof just earned, so the payoff screen has a
+                    // number to show. A rehearsal drops its own row on proof, so there is
+                    // nothing to read back and the screen says "done" instead of a count —
+                    // which is correct: a rehearsal earns no streak.
+                    onProve = {
+                        store.recordProof(commitment.id)
+                        store.commitment(commitment.id)?.currentStreak ?: 0
                     },
                     onBailed = {
                         scope.launch {
@@ -247,6 +257,7 @@ private fun LockinApp(
                             screen = Screen.List
                         }
                     },
+                    onFinish = { screen = Screen.List },
                 )
             }
         }

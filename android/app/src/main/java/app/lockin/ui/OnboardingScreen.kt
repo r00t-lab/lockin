@@ -61,7 +61,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     0 -> Slide(
                         icon = Icons.Filled.NotificationsActive,
                         title = "It rings through silent",
-                        body = "Do Not Disturb, vibrate only, volume at zero. Lockin doesn't care.",
+                        body = "Do Not Disturb, vibrate only, volume at zero. Nagg doesn't care.",
                     )
 
                     1 -> Slide(
