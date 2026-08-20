@@ -175,10 +175,16 @@ atlanıyor** ve koşu yeşil görünüyor — internal kanaldaki her versionCode
 yüklenmiş. Workflow artık bu durumda `::warning::` basıyor.
 
 İki seçenek:
-- **Elle:** imzalı AAB her `play-*` sürümünde hazır —
-  `https://github.com/r00t-lab/lockin/releases/download/play-9/app-release.aab`
+- **Konsol açmadan, elle:** `tools/play_upload.py` bunun için yazıldı.
+
+  ```bash
+  curl -LO https://github.com/r00t-lab/lockin/releases/download/play-9/app-release.aab
+  python tools/play_upload.py app-release.aab internal
+  ```
+
+  `production`'ı bilerek kabul etmiyor; terfi bir karar, bayrak değil.
 - **Bir kez otomatikleştir:** Settings ▸ Secrets ▸ Actions ▸ `PLAY_SERVICE_ACCOUNT_JSON`,
-  içeriğe o JSON'ın tamamını yapıştır. Sonraki `play-*` kendi yükler.
+  içeriğe o JSON'ın tamamını yapıştır. Sonraki `play-*` kendi yükler ve bu adım gereksizleşir.
 
 Ad-hoc IPA'nın dosya adında artık etiket geçiyor. Bir kez, mağaza kareleri için sınırı
 kaldırılmış atılabilir bir build gerçek build sanılıp kuruldu; paywall'ın gelmemesi hata
@@ -189,6 +195,7 @@ sanıldı ve iki dosyanın adı da `Nagg.ipa` olduğu için ayırt edilemedi.
 ```text
 tools/asc_metadata.py             App Store alanları — --check okur, --apply yazar
 tools/play_status.py              Play durumu — kanal, liste, görseller tek ekranda
+tools/play_upload.py              imzalı .aab'yi test kanalına yükler (production'a değil)
 tools/make_store_screenshots.py   iOS mağaza kareleri (durum çubuğunu da temizler)
 tools/make_play_assets.py         Play görselleri — App Store karelerinden türetilir
 tools/make_icon.py                ikon
