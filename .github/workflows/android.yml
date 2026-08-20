@@ -81,12 +81,21 @@ jobs:
         run: |
           python3 - <<'PYEOF'
           import glob, xml.etree.ElementTree as ET
-          for path in sorted(glob.glob("android/app/build/test-results/**/*.xml", recursive=True)):
+          paths = sorted(glob.glob("app/build/test-results/**/*.xml", recursive=True))
+          if not paths:
+              # Said out loud, because a step that silently finds nothing looks identical
+              # to a step that found nothing wrong.
+              print("::error::no test XML under app/build/test-results -- did the tests run?")
+          found = False
+          for path in paths:
               for case in ET.parse(path).getroot().iter("testcase"):
                   for bad in list(case.iter("failure")) + list(case.iter("error")):
+                      found = True
                       name = "%s.%s" % (case.get("classname", "?"), case.get("name", "?"))
                       first = (bad.get("message") or bad.text or "").strip().splitlines()
                       print("::error::%s -- %s" % (name, first[0] if first else "failed"))
+          if paths and not found:
+              print("::error::tests reported no failure, so the step failed for another reason")
           PYEOF
 
       # Same trick as the iOS job: raw logs need a signed-in session, but the
