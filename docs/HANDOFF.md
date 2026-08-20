@@ -164,9 +164,21 @@ Hata ne anahtarı ne de yeri söylüyor.
 ```text
 ipa-*    ad-hoc iOS build, herkese açık release olarak yayınlanır
 apk-*    test APK'sı, herkese açık indirme linki
-play-*   Android'i Play'e yükler, iOS'u tetiklemeden
+play-*   Android'i derler ve imzalar; Play'e yükleme aşağıdaki nedenle ELLE
 v*       iki mağaza birden — aynı gün lansman için
 ```
+
+**`play-*` Play'e yüklemiyor — hiç yüklemedi.** `PLAY_SERVICE_ACCOUNT_JSON` **GitHub
+secret'ı yok** (service account JSON'ı yalnızca `~/Downloads`'ta, `tools/play_status.py`
+onu oradan okuyor). Secret olmayınca "Upload to Play closed testing" adımı **sessizce
+atlanıyor** ve koşu yeşil görünüyor — internal kanaldaki her versionCode aslında elle
+yüklenmiş. Workflow artık bu durumda `::warning::` basıyor.
+
+İki seçenek:
+- **Elle:** imzalı AAB her `play-*` sürümünde hazır —
+  `https://github.com/r00t-lab/lockin/releases/download/play-9/app-release.aab`
+- **Bir kez otomatikleştir:** Settings ▸ Secrets ▸ Actions ▸ `PLAY_SERVICE_ACCOUNT_JSON`,
+  içeriğe o JSON'ın tamamını yapıştır. Sonraki `play-*` kendi yükler.
 
 Ad-hoc IPA'nın dosya adında artık etiket geçiyor. Bir kez, mağaza kareleri için sınırı
 kaldırılmış atılabilir bir build gerçek build sanılıp kuruldu; paywall'ın gelmemesi hata
