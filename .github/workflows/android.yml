@@ -138,6 +138,19 @@ jobs:
       # Skipped rather than failed when the service account is not set up yet, so a tag
       # pushed to check the signing half does not come back red for the half that was
       # never claimed to be ready.
+      # Skipping quietly is how a green play-* run convinced everyone the bundle had
+      # reached Play when nothing had been uploaded since the track was created. The step
+      # below still skips rather than fails -- that part was deliberate -- but it no longer
+      # does it silently.
+      - name: Say if Play upload is not wired up
+        if: |
+          (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/play-'))
+          && env.HAS_PLAY_JSON != 'true'
+        run: |
+          echo "::warning::PLAY_SERVICE_ACCOUNT_JSON is not set, so nothing was uploaded to Play."
+          echo "::warning::The signed .aab is attached to the ${{ github.ref_name }} release; upload it by hand,"
+          echo "::warning::or add the secret (Settings > Secrets > Actions) to have this step do it."
+
       - name: Upload to Play closed testing
         if: |
           (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/play-'))

@@ -116,6 +116,15 @@ opt-in olduğunda başlıyor; o güne kadar geçen her gün doğrudan lansman g�
   Yeni `PaywallGateTest` "+" tuşunun kararını sabitliyor.
 - **Tanı ekranına Subscription bölümü**: anahtar konmuş mu, raf durumu, paket sayısı, Pro.
   "Paywall boş" ile "paywall yüklenemedi" telefonda aynı görünüyor ve sebepleri zıt.
+- **`AlarmScheduleTest` ilk koşusunda beş testten beşi patladı** ve bu testin hatasıydı,
+  ürünün değil: `Commitment.hour` `fireAtMillis`'i **sistem** saat diliminde çözüyor (doğru
+  olan bu — 07:00 diyen kişi bulunduğu yerdeki 07:00'ı kastediyor), test ise onu
+  Istanbul'da kuruyordu. Yazıldığı makinede fark sıfır, UTC runner'da üç saat. *Bir yıl
+  boyunca yeşildiler çünkü hiç koşmadılar.*
+- **`nagg.pro/delete-data` yayında** ve site artık tek platform varsaymıyor. Terms "ödeme
+  Apple Account'a yansır" diyordu, Support "hangi iPhone" diye soruyordu; Play aynı
+  sayfaları linkliyor ve Android'de faturayı Google kesiyor. `index.html`'e dokunulmadı —
+  "iPhone gerektirir" Android production'a çıkana kadar doğru.
 
 ## Kod tarafında 19 Ağustos'ta kapananlar
 
@@ -189,6 +198,7 @@ bağlı olamaz. Bu üç kez ısırdı.
   Apple'da. Gerekçe [PRODUCT.md](PRODUCT.md).
 - **İkinci alarm karesi** — mağaza görselinde "Dismiss doesn't work" başlığının altındaki
   kare hâlâ *ilk* alarm. Butonu "Still not started" yazan kareyi çekmek bir prova turu.
-- **`nagg.pro/delete-data`** — Play'in veri silme rozetini açar, zorunlu değil.
+- ~~`nagg.pro/delete-data`~~ — **yayında.** Play ▸ App content ▸ Data safety'deki veri
+  silme URL'sine `https://nagg.pro/delete-data` girilebilir.
 - **Abonelikler `MISSING_METADATA` (iOS)** — iki kez araştırıldı, ürünlerde eksik alan yok;
   ilk sürümle birlikte gönderildi. Panelde düzeltilecek bir şey aramak zaman kaybı.
