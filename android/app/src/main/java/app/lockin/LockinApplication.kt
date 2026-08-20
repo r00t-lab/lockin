@@ -25,6 +25,6 @@ class LockinApplication : Application() {
          * Note the prefix differs from iOS: the Play key is `goog_…`, the App Store key
          * is `appl_…`, and they are not interchangeable.
          */
-        const val REVENUECAT_API_KEY = "goog_REPLACE_ME"
+        const val REVENUECAT_API_KEY = "goog_VuGmfmntKCuLaSfWpgedvdhlHxE"
     }
 }
