@@ -30,8 +30,14 @@ class AlarmScheduleTest {
     ) = Commitment(
         title = "Write the essay intro",
         // Only hour/minute are read for the recurrence; anchor the date anywhere.
+        //
+        // Built in the *system* zone, not [zone], because that is how Commitment.hour
+        // reads it back — and it should: someone who sets 07:00 means 07:00 where they
+        // are standing. Anchoring this to Istanbul made every assertion here off by the
+        // offset between Istanbul and the runner, which is how these tests passed on the
+        // machine they were written on and failed the first time CI ran them.
         fireAtMillis = LocalDateTime.of(2026, 1, 1, hour, minute)
-            .atZone(zone).toInstant().toEpochMilli(),
+            .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
         repeats = Commitment.Repeat(weekdays),
     )
 
