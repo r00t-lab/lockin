@@ -126,14 +126,14 @@ fun PaywallScreen(
             // RevenueCat confirms there is nothing to sell, the + button stops sending
             // anyone here at all.
             if (packages.isEmpty()) {
-                val (eyebrow, explanation) = if (sellState == SellState.UNKNOWN) {
-                    "CAN'T REACH THE STORE" to
-                        "We couldn't load the subscriptions just now — usually the network. "
-                        + "Everything already on your phone keeps working; try this screen again later."
+                val unreachable = sellState == SellState.UNKNOWN
+                val eyebrow = if (unreachable) "CAN'T REACH THE STORE" else "NOTHING TO SELL YET"
+                val explanation = if (unreachable) {
+                    "We couldn't load the subscriptions just now — usually the network. " +
+                        "Everything already on your phone keeps working; try again later."
                 } else {
-                    "NOTHING TO SELL YET" to
-                        "Subscriptions aren't set up on this build, so there's nothing to buy "
-                        + "and nothing to pay for. The two-commitment limit is off until there is."
+                    "Subscriptions aren't set up on this build, so there's nothing to buy " +
+                        "and nothing to pay for. The two-commitment limit is off until there is."
                 }
                 Column(
                     modifier = Modifier

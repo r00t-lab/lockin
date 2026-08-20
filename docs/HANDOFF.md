@@ -1,4 +1,4 @@
-# Devir teslim — 19 Ağustos 2026
+# Devir teslim — 20 Ağustos 2026
 
 Yeni bir oturuma geçerken buradan devam et. Bu dosya "ne durumdayız ve sırada ne var"
 sorusunun cevabı; kararların gerekçeleri kendi dosyalarında.
@@ -9,6 +9,12 @@ sorusunun cevabı; kararların gerekçeleri kendi dosyalarında.
 
 **iOS App Store'da inceleme sırasında.** Android internal kanalda canlı ve mağaza sayfası
 dolu; önündeki tek engel bir video ve bir banka hesabı. Kalan işin tamamı kod değil.
+
+**20 Ağustos'ta değişenler:** RevenueCat'in Android anahtarı kondu ve doğrulandı, ama Play
+tarafında **hâlâ hiç abonelik ürünü yok** — anahtar tek başına bir şey satmıyor. Bu ikisinin
+arasındaki boşluk Android'de çıkışsız bir kapı yaratıyordu; kapatıldı. `nagg.pro/delete-data`
+yayında ve site artık iki platformdan bahsediyor. Android'in birim testleri ilk kez CI'da
+koşuyor.
 
 ## iOS — gönderildi
 
@@ -47,8 +53,8 @@ veriyor, Apple başvuru istiyor; başvuru birkaç dakika.
 | Internal kanal | **canlı**, versionCode 30, imzalı |
 | Mağaza sayfası | ad, açıklamalar, ikon, feature graphic, 5 telefon + 5 tablet ×2 — **App Store'dakilerin aynısı** |
 | App content | 11 formdan **10'u bitti** |
-| Abonelik ürünleri | **yok** |
-| RevenueCat | `goog_REPLACE_ME` |
+| Abonelik ürünleri | **yok** — API'den doğrulandı, `subscriptions: 0` |
+| RevenueCat | anahtar **konuldu ve geçerli** (`goog_VuGm…`), ama offering'de **0 paket** |
 | Kapalı test | App content bitmeden **kilitli** |
 
 Durum: `python tools/play_status.py`
@@ -65,15 +71,53 @@ ham malzemesi.
 **2. Ödeme profili.** Ayarlar ▸ Ödeme profili, banka + vergi. Bu olmadan abonelik ürünleri
 oluşturulamıyor: API'den denendi, `PERMISSION_DENIED` dönüyor ve bu bir yetki sorunu
 **değil** — Play para uçlarını satıcı hesabı olmadan hiç açmıyor, ama hata mesajı bunu
-söylemiyor.
+söylemiyor. (Ürünleri *listeleme* ucu artık 200 dönüyor; kapalı olan yazma tarafı.)
 
-**3. RevenueCat.** Play uygulamasını ekle (`com.r00tlab.nagg`), iki ürünü `pro`
-entitlement'ına bağla, `goog_` anahtarını `LockinApplication.kt`'ye göm, yeni build çıkar.
+**3. RevenueCat — anahtar tamam, ürünler değil.** `goog_` anahtarı `LockinApplication.kt`'de
+ve 20 Ağustos'ta doğrudan RevenueCat'e sorularak doğrulandı: anahtar geçerli, Android
+uygulaması projeye ekli. Eksik olan tek şey ürünler:
+
+```text
+iOS      default offering → 2 paket → $rc_monthly, $rc_annual → App Store ürünleri
+Android  default offering → 0 paket
+```
+
+Yani **yeni bir offering açman gerekmiyor.** Play'de iki ürün oluşunca, RevenueCat'te
+*mevcut* `$rc_monthly` / `$rc_annual` paketlerine Android ürünü olarak eklenecekler. Sonra
+bir `play-*` etiketi: Play'deki versionCode 30 anahtardan önce derlendi, yani mağazadaki
+build'de anahtar **yok**.
+
+Doğrulamak için (public SDK anahtarı, okuma):
+
+```bash
+curl -s -H "Authorization: Bearer goog_VuGmfmntKCuLaSfWpgedvdhlHxE" -H "X-Platform: android"   https://api.revenuecat.com/v1/subscribers/probe/offerings
+```
 
 Sonra: **12 testçi opt-in → 14 gün kesintisiz → production başvurusu.** Saat testçiler
 opt-in olduğunda başlıyor; o güne kadar geçen her gün doğrudan lansman gününe ekleniyor.
 
-## Kod tarafında bugün kapananlar
+## Kod tarafında 20 Ağustos'ta kapananlar
+
+- **Çıkışsız kapı, Android sürümü.** Play'de ürün yok → RevenueCat paket sunmuyor → paywall
+  boş; ama ücretsiz sınır yine de uygulanıyordu. İki taahhüdü olan bir testçi ne üçüncüyü
+  ekleyebiliyor ne de ödeyip geçebiliyordu. iOS'ta bunun kaçışı vardı (`canAddAnother`,
+  RevenueCat hiç yapılandırılmadıysa `true` döner); Android'de yoktu — **ve o kontrolü
+  birebir kopyalamak işe yaramazdı**, çünkü Android anahtarı artık gerçek. Eksik olan anahtar
+  değil, ürünler. Kapı artık doğru soruyu soruyor: *satacak bir şey var mı?*
+  - `SellState` üç durumlu: `UNKNOWN` / `NOTHING_TO_SELL` / `READY`. Sınırı **yalnızca**
+    gerçekten aldığımız bir cevap kaldırıyor; başarısız sorgu `UNKNOWN` kalıp sınırı
+    koruyor, yoksa ağdan hızlı davranan herkes bedava taahhüt kazanırdı.
+  - Ürünler oluşturulduğu an sınır kendiliğinden geri geliyor; sonra ayrıca bir iş yok.
+- **Placeholder anahtar artık reddediliyor** (iOS'taki gibi). Onunla `configure` etmek
+  gürültüyle değil, *döngüyle* başarısız oluyor.
+- **Android'in birim testleri hiçbir şey tarafından koşulmuyordu.** `AlarmScheduleTest`
+  repoda duruyordu ve tekrarlama matematiğini kimseye kanıtlamıyordu. CI artık `gradle test`
+  koşuyor ve **hangi assertion'ın patladığını** annotation olarak yazıyor — tarayıcı açmadan.
+  Yeni `PaywallGateTest` "+" tuşunun kararını sabitliyor.
+- **Tanı ekranına Subscription bölümü**: anahtar konmuş mu, raf durumu, paket sayısı, Pro.
+  "Paywall boş" ile "paywall yüklenemedi" telefonda aynı görünüyor ve sebepleri zıt.
+
+## Kod tarafında 19 Ağustos'ta kapananlar
 
 - **Odak sayacı görünmüyordu.** Kanıt tuşa basıldığı an kaydediliyor ve kutlama ekranı
   aynı çalıştırmada devralıp geri sayımı yok ediyordu. Artık kutlama, sayaç bitene ya da
