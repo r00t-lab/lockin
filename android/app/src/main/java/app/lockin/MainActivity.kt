@@ -279,7 +279,16 @@ private fun LockinApp(
         }
 
         is Screen.Proof -> {
-            val commitment: Commitment? = commitments.firstOrNull { it.id == current.commitmentId }
+            // Captured on entry, not re-derived from the list on every recomposition.
+            //
+            // A rehearsal deletes its own row the moment proof lands, and a re-derived
+            // lookup then returns null and sends this screen back to the list -- during a
+            // rehearsal that happened on the same frame the timer started, so the
+            // countdown was destroyed before it ticked once and the payoff never showed.
+            // The screen owns its commitment until it says it is finished.
+            val commitment: Commitment? = remember(current.commitmentId) {
+                commitments.firstOrNull { it.id == current.commitmentId }
+            }
             if (commitment == null) {
                 LaunchedEffect(current) { screen = Screen.List }
             } else {
