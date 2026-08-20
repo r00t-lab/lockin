@@ -1,4 +1,4 @@
-# Devir teslim — 18 Ağustos 2026
+# Devir teslim — 19 Ağustos 2026
 
 Yeni bir oturuma geçerken buradan devam et. Bu dosya "ne durumdayız ve sırada ne var"
 sorusunun cevabı; kararların gerekçeleri kendi dosyalarında.
@@ -7,92 +7,144 @@ sorusunun cevabı; kararların gerekçeleri kendi dosyalarında.
 
 ## Tek cümlede
 
-Sürüm gönderime hazır duruyor: build bağlı, kareler yüklü, formlar dolu. Kalan üç şey
-kod değil: **gizlilik etiketi** (panelde, API'de yok), **zincir testi** (cihazda, üç
-dakika) ve **Gönder düğmesi**.
+**iOS App Store'da inceleme sırasında.** Android internal kanalda canlı ve mağaza sayfası
+dolu; önündeki tek engel bir video ve bir banka hesabı. Kalan işin tamamı kod değil.
 
-## Bugün kapanan hatalar
+## iOS — gönderildi
 
-Hepsi cihazda doğrulandı ya da testlerle korunuyor:
-
-- **Nag zinciri hiç çalışmıyordu.** AlarmKit'in Stop'u uygulamayı uyandırmıyor; zincir
-  tepkiseldi, yani hiç kurulmuyordu. Artık alarm kurulurken 5 nag da yazılıyor.
-- **Streak hiç kırılmıyordu.** Kaçırma bildirilemediği için takvimden türetiliyor.
-- **Masa kodu kullanıcıyı kilitliyordu** — QR'ı üreten ekran yoktu.
-- **Kamera açılmıyordu.** Sheet içinden sheet sunmak sessizce başarısız oluyordu; kamera
-  artık gömülü `AVCaptureSession`.
-- **"+" uygulamayı çökertiyordu.** `@Environment` uygulamadan tamamen çıkarıldı.
-- **Ekleme kilitliydi.** Satacak ürün yokken ücretsiz sınır uygulanıyordu.
-- **CI sertifika kotasını dolduruyordu.** Boru hattı artık kendi çöpünü topluyor.
-
-**Değişmez kural:** çalan alarm ile kanıt arasındaki hiçbir şey bir SwiftUI sunumuna
-bağlı olamaz. Bu üç kez ısırdı.
-
-## Kurulmuş altyapı
-
-| | Durum |
-|---|---|
-| Abonelik ürünleri | ✅ `com.r00tlab.lockin.pro.monthly` $7.99 · `.annual` $44.99, 3 gün deneme |
-| RevenueCat | ✅ entitlement `pro`, iki ürün bağlı, `default` offering |
-| Alan adı | ✅ `nagg.pro`, Cloudflare Workers, kaynak `gh-pages` dalı |
-| Hukuki sayfalar | ✅ `/terms` `/privacy` `/support` — **`.html` yazma**, host uzantıyı kırpıyor |
-| Mağaza metinleri | ✅ isim, subtitle, açıklama, anahtar kelimeler, üç URL |
-| Testler | ✅ 17 birim testi, her push'ta CI'da |
-
-## Sırada — önem sırasıyla
-
-**1. Zincir testi.** [PRESUBMIT.md](PRESUBMIT.md) bölüm A, üç dakika, telefon sessizde ve
-bir Focus açıkken. **Hâlâ yapılmadı** ve gönderimden önce geçmesi gereken tek şey bu:
-beşinci tekrardan sonra alarm duruyor mu. Durmayan alarm tek yıldız yağmuru demek.
-
-**2. App Privacy etiketi.** Panelde, [ASC-FORMS.md](ASC-FORMS.md) bölüm 2'deki tabloyu
-satır satır. API'de yok (`appDataUsages` bu sürümde 404), o yüzden tek elle iş bu.
-
-**3. Gönder.** Panelde "Add for Review": sürüm + iki abonelik aynı gönderime giriyor.
-Abonelikler `MISSING_METADATA` görünmeye devam ediyor ve panelde doldurulacak alanları
-yok — ilk kez bir sürümle gönderilince çözülüyor.
-
-**4. Yirmi video.** [CONTENT.md](CONTENT.md). Kod üç hafta sürdü, bu on iki ay.
-
-### 19 Ağustos gecesi kapananlar
-
-`python tools/asc_metadata.py --check` her zaman güncel hâli basar. O gece yazılanlar:
+**19 Ağustos 18:18 UTC, durum `WAITING_FOR_REVIEW`.**
 
 | | |
 |---|---|
-| Yaş derecelendirmesi | 25 soru → **4+** (Brezilya L). 2025'te eklenen altı alan olmadan API PATCH'i reddediyor |
-| **Kategori** | **hiç ayarlanmamıştı** — kategorisiz uygulama gönderilemez. Productivity + Utilities |
-| Sürüm numarası | `1.0` → **`1.0.0`**. Build ancak numarası aynı olan sürüme bağlanır; seçici sebepsiz boş görünecekti |
-| Yayın tipi | **Manual** — onay günü değil, yirmi video hazır olduğu gün |
-| İçerik hakları | üçüncü taraf içerik yok |
-| App Review notu + iletişim | [STORE.md](STORE.md)'deki metin, telefon ve e-posta |
-| Build | `v1.0.0` etiketi → TestFlight → **sürüme bağlandı** (build 1, `usesNonExemptEncryption` false) |
-| Mağaza kareleri | 6,9" ve 6,5" yuvaları dolu, beşer kare, `COMPLETE` |
+| Sürüm | 1.0.0, **build 25** bağlı |
+| Yayın tipi | **Manual** — onay gelse bile sen basmadan yayınlanmaz |
+| Kategori | Productivity + Utilities |
+| Yaş derecelendirmesi | 4+ (25 soru) |
+| Gizlilik etiketi | yayınlandı |
+| Ekran görüntüleri | 6,9" ve 6,5", beşer kare |
+| Zincir testi | cihazda geçti |
+| Satın alma | sandbox'ta test edildi |
 
-## Bekleyen
+Durum: `python tools/asc_metadata.py --check`
 
-- **Family Controls entitlement** — odak oturumunda uygulama engelleme (v1.1). Başvuru
-  Apple'da, birkaç gün–birkaç hafta. Geliştirme entitlement'ı onaysız çalışıyor, yani
-  beklerken yazılabilir. Gerekçe `docs/PRODUCT.md`.
-- **Abonelik ürünleri `MISSING_METADATA`.** İki teori de yanlış çıktı: alanlar dolu ve
-  **inceleme görüntüsü de yüklü** (API'den okundu, ikisinde de `COMPLETE`). Kalan tek
-  açıklama, aboneliklerin ilk kez bir uygulama sürümüyle gönderilmeyi bekliyor olması.
-  Panelde aranacak eksik alan yok — [ASC-FORMS.md](ASC-FORMS.md) bölüm 3.
+**Onay gelince hemen yayınlama.** [CONTENT.md](CONTENT.md)'deki 20 video hazır olduğu gün
+bas. Onaylanmış ama yayınlanmamış beklemek bedava; hazırlıksız yayınlanmak ilk dalgayı
+yakmak.
+
+**Red gelirse** Resolution Center'daki mesajı oku. En olası itiraz "kullanıcı alarmı
+kapatamıyor" — inceleme notunda cevabı yazılı: Stop butonu her zaman var, zincir beşte
+duruyor.
+
+**Yapılmamış ve doğrudan para kaybettiren tek şey:** Apple **Small Business Program**
+başvurusu. Yıllık 1M doların altında komisyon %30 yerine %15. Google Play bunu otomatik
+veriyor, Apple başvuru istiyor; başvuru birkaç dakika.
+
+## Android — üç engel, üçü de kod değil
+
+| | |
+|---|---|
+| Paket | `com.r00tlab.nagg` |
+| Internal kanal | **canlı**, versionCode 30, imzalı |
+| Mağaza sayfası | ad, açıklamalar, ikon, feature graphic, 5 telefon + 5 tablet ×2 — **App Store'dakilerin aynısı** |
+| App content | 11 formdan **10'u bitti** |
+| Abonelik ürünleri | **yok** |
+| RevenueCat | `goog_REPLACE_ME` |
+| Kapalı test | App content bitmeden **kilitli** |
+
+Durum: `python tools/play_status.py`
+
+### Sıradaki üç iş, bu sırayla
+
+**1. Ön plan hizmeti videosu.** App content'teki son madde; kapalı test kilidini bu açıyor.
+Android cihazda, kesmesiz, 30-60 saniye: uygulamayı aç → **Rehearse** → uygulamayı kapat ve
+kilitle → alarm çalsın → **bildirim gölgesini aç, ön plan bildirimi görünsün** (inceleyicinin
+aradığı tek kare bu) → kanıtla sustur → bildirim kaybolsun. YouTube'a **liste dışı** yükle,
+linki forma yapıştır. Aynı kayıt [CONTENT.md](CONTENT.md)'deki 3 numaralı TikTok videosunun
+ham malzemesi.
+
+**2. Ödeme profili.** Ayarlar ▸ Ödeme profili, banka + vergi. Bu olmadan abonelik ürünleri
+oluşturulamıyor: API'den denendi, `PERMISSION_DENIED` dönüyor ve bu bir yetki sorunu
+**değil** — Play para uçlarını satıcı hesabı olmadan hiç açmıyor, ama hata mesajı bunu
+söylemiyor.
+
+**3. RevenueCat.** Play uygulamasını ekle (`com.r00tlab.nagg`), iki ürünü `pro`
+entitlement'ına bağla, `goog_` anahtarını `LockinApplication.kt`'ye göm, yeni build çıkar.
+
+Sonra: **12 testçi opt-in → 14 gün kesintisiz → production başvurusu.** Saat testçiler
+opt-in olduğunda başlıyor; o güne kadar geçen her gün doğrudan lansman gününe ekleniyor.
+
+## Kod tarafında bugün kapananlar
+
+- **Odak sayacı görünmüyordu.** Kanıt tuşa basıldığı an kaydediliyor ve kutlama ekranı
+  aynı çalıştırmada devralıp geri sayımı yok ediyordu. Artık kutlama, sayaç bitene ya da
+  kullanıcı "Done" diyene kadar bekliyor. **Aynı hata Android'de de vardı.**
+- **Kanıttan sonra "I'm not doing it" ekranda kalıyordu** ve o buton bahane kaydediyor —
+  tek dokunuşla, o gün gerçekten başlamış birinin hanesine kaçırma yazılabiliyordu.
+- **Android iOS ile birebir eşitlendi:** prova modu, masa kodu ekranı (üretici vardı,
+  gösteren ekran yoktu), kutlama ekranı, haftalık rapor, tanı ekranı, taahhüt düzenleme
+  (streak korunarak), "Prove you started" kartı, "No alarm set" uyarısı, paywall boş-durum
+  metni, ve launcher adı `Lockin` → **Nagg**.
+- **Build numarası binary'ye ulaşmıyordu.** Üretilen Info.plist kendi `CFBundleVersion`'ını
+  taşıyor ve komut satırındaki ayarı yeniyordu; iki yükleme de "build 1" çıktı. Plist artık
+  ayara referans veriyor, workflow numarayı spec'e yazıyor ve yazdığını doğruluyor.
+- **Android release imzalanmıyordu** — workflow keystore'u çözüyor, Gradle kullanmıyordu.
+
+## Erişimler — nerede ne var
+
+| | |
+|---|---|
+| ASC API anahtarı | `~/Downloads/AuthKey_JJCLLBWGL7.p8` |
+| Play service account | `~/Downloads/project-03b3d6d8-d75b-446e-aaf-1bde7f7299b1.json` |
+| Upload keystore | `~/nagg-upload.jks`, parolası `~/nagg-github-secrets.txt` |
+| Play hesabı | Vexnova, kişisel, `kibolar04kibolar@gmail.com`, konsol `/u/7` |
+
+Play service account'ına Nagg için *test kanalına yayınlama*, *test kanallarını yönetme*
+ve **hesap düzeyinde** *mağazadaki varlığı yönetme* verildi. Uygulama düzeyindeki aynı
+isimli kutu gri görünüyor ve **yetmiyor** — ikisi ayrı yetki, tek isim.
+
+**Yeni imza anahtarıyla ilk yükleme,** anahtarın SHA-256 parmak izi **Android geliştirici
+doğrulaması ▸ paket ▸ Anahtar ekle** ile kaydedilmeden `commit` aşamasında reddediliyor.
+Hata ne anahtarı ne de yeri söylüyor.
+
+## Etiketler — hangisi ne yapıyor
+
+```text
+ipa-*    ad-hoc iOS build, herkese açık release olarak yayınlanır
+apk-*    test APK'sı, herkese açık indirme linki
+play-*   Android'i Play'e yükler, iOS'u tetiklemeden
+v*       iki mağaza birden — aynı gün lansman için
+```
+
+Ad-hoc IPA'nın dosya adında artık etiket geçiyor. Bir kez, mağaza kareleri için sınırı
+kaldırılmış atılabilir bir build gerçek build sanılıp kuruldu; paywall'ın gelmemesi hata
+sanıldı ve iki dosyanın adı da `Nagg.ipa` olduğu için ayırt edilemedi.
 
 ## Araçlar
 
 ```text
-tools/asc_metadata.py             App Store Connect alanları — --check okur, --apply yazar
-tools/make_icon.py                ikon (design/icon-clock-source.png'den)
-tools/make_store_screenshots.py   mağaza görselleri (durum çubuğunu da temizler)
-docs/PRESUBMIT.md                 gönderim öncesi tur — test + dört görüntü
-docs/ASC-FORMS.md                 yaş derecelendirmesi, gizlilik etiketi, ürün görüntüsü
+tools/asc_metadata.py             App Store alanları — --check okur, --apply yazar
+tools/play_status.py              Play durumu — kanal, liste, görseller tek ekranda
+tools/make_store_screenshots.py   iOS mağaza kareleri (durum çubuğunu da temizler)
+tools/make_play_assets.py         Play görselleri — App Store karelerinden türetilir
+tools/make_icon.py                ikon
+docs/PRESUBMIT.md                 cihaz turu
+docs/ASC-FORMS.md, PLAY-SETUP.md  panel formlarının cevapları, gerekçeleriyle
 ```
 
-**Tanı ekranı:** uygulamada wordmark'a uzun bas. Kamera izni, capture session kurulabiliyor
-mu, zincirde kaç alarm var (**6 sağlıklı, 1 = zincir yok**), App Group erişilebilir mi.
+**Tanı ekranı:** iki uygulamada da wordmark'a uzun bas. Android'de ayrıca **pil muafiyeti**
+satırı var — bir Android alarmının sessizce hiç çalmamasının en yaygın sebebi.
 
-**Log:** 3uTools gerçek zamanlı log, filtre `NAGG`.
+**Log:** iOS'ta 3uTools, filtre `NAGG`.
 
-**CI hatası:** `api.github.com/repos/r00t-lab/lockin/check-runs/<id>/annotations` — public,
-giriş gerektirmiyor.
+**Değişmez kural:** çalan alarm ile kanıt arasındaki hiçbir şey bir SwiftUI sunumuna
+bağlı olamaz. Bu üç kez ısırdı.
+
+## Bekleyen
+
+- **Family Controls entitlement** — odak oturumunda uygulama engelleme (v1.1). Başvuru
+  Apple'da. Gerekçe [PRODUCT.md](PRODUCT.md).
+- **İkinci alarm karesi** — mağaza görselinde "Dismiss doesn't work" başlığının altındaki
+  kare hâlâ *ilk* alarm. Butonu "Still not started" yazan kareyi çekmek bir prova turu.
+- **`nagg.pro/delete-data`** — Play'in veri silme rozetini açar, zorunlu değil.
+- **Abonelikler `MISSING_METADATA` (iOS)** — iki kez araştırıldı, ürünlerde eksik alan yok;
+  ilk sürümle birlikte gönderildi. Panelde düzeltilecek bir şey aramak zaman kaybı.
