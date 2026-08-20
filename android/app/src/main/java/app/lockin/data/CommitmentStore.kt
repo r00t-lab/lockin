@@ -2,6 +2,7 @@ package app.lockin.data
 
 import android.content.Context
 import app.lockin.alarm.AlarmService
+import app.lockin.billing.SellState
 import app.lockin.model.Commitment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,7 +57,9 @@ class CommitmentStore private constructor(context: Context) {
 
     val activeCount: Int get() = real.count { it.isEnabled }
 
-    fun canAddAnother(isPro: Boolean): Boolean = isPro || activeCount < FREE_COMMITMENT_LIMIT
+    /** This store's commitments, run through [mayAddAnother]. */
+    fun canAddAnother(isPro: Boolean, sellState: SellState): Boolean =
+        mayAddAnother(activeCount, isPro, sellState)
 
     fun commitment(id: UUID): Commitment? = _commitments.value.firstOrNull { it.id == id }
 
@@ -218,6 +221,26 @@ class CommitmentStore private constructor(context: Context) {
          * do not soften it. Two is enough to feel the mechanic, not enough to live on.
          */
         const val FREE_COMMITMENT_LIMIT = 2
+
+        /**
+         * Whether the + button opens the editor or the paywall.
+         *
+         * A paywall that cannot sell anything is not a paywall, it is a locked door. When
+         * RevenueCat has told us the shelf is empty — no Play products yet, or no key in
+         * this build — the free limit does not apply, because the only way past it would
+         * be a purchase the user is not being offered. This does not soften the number:
+         * [FREE_COMMITMENT_LIMIT] is still two the moment there is something to buy.
+         *
+         * [SellState.UNKNOWN] keeps the limit. Not having heard back yet is not evidence
+         * the shelf is empty, and guessing the generous way there gives a free commitment
+         * to anyone who taps + faster than the network answers.
+         *
+         * Free of the instance so it can be tested without an Android Context.
+         */
+        fun mayAddAnother(activeCount: Int, isPro: Boolean, sellState: SellState): Boolean {
+            if (sellState == SellState.NOTHING_TO_SELL) return true
+            return isPro || activeCount < FREE_COMMITMENT_LIMIT
+        }
 
         @Volatile
         private var instance: CommitmentStore? = null

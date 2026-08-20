@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import app.lockin.alarm.AlarmService
+import app.lockin.billing.SellState
+import app.lockin.billing.SubscriptionService
 import app.lockin.data.LockinPreferences
 import app.lockin.model.Commitment
 import app.lockin.ui.theme.EyebrowText
@@ -57,6 +59,9 @@ import app.lockin.ui.theme.MetaText
 @Composable
 fun DiagnosticsScreen(
     commitments: List<Commitment>,
+    isPro: Boolean,
+    sellState: SellState,
+    packageCount: Int,
     onClose: () -> Unit,
 ) {
     val palette = Lockin.palette
@@ -115,6 +120,24 @@ fun DiagnosticsScreen(
                     if (commitment.isRehearsal) DiagnosticRow("  rehearsal", "yes")
                 }
             }
+        }
+
+        // "The paywall is empty" and "the paywall did not load" look identical on a
+        // phone and have opposite causes: one is us not having created the Play products,
+        // the other is that tester's network. These three lines separate them, and they
+        // also say whether the free limit is currently being enforced at all.
+        Section("Subscription") {
+            DiagnosticRow("Key", if (SubscriptionService.isConfigured) "configured" else "PLACEHOLDER")
+            DiagnosticRow(
+                "Shelf",
+                when (sellState) {
+                    SellState.UNKNOWN -> "no answer yet"
+                    SellState.NOTHING_TO_SELL -> "nothing to sell (limit off)"
+                    SellState.READY -> "ready"
+                },
+            )
+            DiagnosticRow("Packages", packageCount.toString())
+            DiagnosticRow("Pro", if (isPro) "yes" else "no")
         }
 
         Section("Build") {

@@ -31,7 +31,29 @@ import kotlinx.coroutines.flow.asStateFlow
  * opt-in annotation or fall back to the listener-based `Purchases.sharedInstance.purchase(...)`
  * overloads. Nothing outside this file needs to change either way.
  */
+/**
+ * Whether Pro can actually be bought on this device, right now.
+ *
+ * The distinction that earns this type is between *we have not looked yet* and *we looked
+ * and the shelf is empty*. Collapsing the two either hands a free commitment to anyone who
+ * taps + before the network answers, or locks a user behind a paywall with nothing on it.
+ * Only the second state lifts the free limit.
+ */
+enum class SellState {
+    /** No answer yet, or the last lookup failed. Assume Pro is buyable and keep the limit. */
+    UNKNOWN,
+
+    /** RevenueCat answered and offered nothing. Nobody can pay, so nobody may be charged. */
+    NOTHING_TO_SELL,
+
+    /** There are packages on the paywall. Normal behaviour. */
+    READY,
+}
+
 class SubscriptionService private constructor() {
+
+    private val _sellState = MutableStateFlow(SellState.UNKNOWN)
+    val sellState: StateFlow<SellState> = _sellState.asStateFlow()
 
     private val _isPro = MutableStateFlow(false)
     val isPro: StateFlow<Boolean> = _isPro.asStateFlow()
@@ -43,12 +65,29 @@ class SubscriptionService private constructor() {
     val isPurchasing: StateFlow<Boolean> = _isPurchasing.asStateFlow()
 
     suspend fun refresh() {
+        if (!isConfigured) {
+            // No key, so there is no shelf to look at and never will be on this build.
+            _sellState.value = SellState.NOTHING_TO_SELL
+            return
+        }
+
         runCatching {
             val info = Purchases.sharedInstance.awaitCustomerInfo()
             _isPro.value = info.entitlements[ENTITLEMENT_ID]?.isActive == true
         }
+
+        // Deliberately not one runCatching with the call above: a network failure must
+        // leave the state UNKNOWN. Only an answer we actually received can say the shelf
+        // is empty, because that answer is what unlocks the free limit.
         runCatching {
-            _offering.value = Purchases.sharedInstance.awaitOfferings().current
+            Purchases.sharedInstance.awaitOfferings().current
+        }.onSuccess { current ->
+            _offering.value = current
+            _sellState.value = if (current?.availablePackages.isNullOrEmpty()) {
+                SellState.NOTHING_TO_SELL
+            } else {
+                SellState.READY
+            }
         }
     }
 
@@ -58,6 +97,7 @@ class SubscriptionService private constructor() {
      * down. That is the single structural difference from the iOS version.
      */
     suspend fun purchase(activity: Activity, packageToPurchase: Package): Boolean {
+        if (!isConfigured) return false
         _isPurchasing.value = true
         try {
             val result = Purchases.sharedInstance.awaitPurchase(
@@ -82,11 +122,14 @@ class SubscriptionService private constructor() {
      * Play does not mandate a restore button the way Apple does, but keep it: it is the
      * only recovery path for a user who changed devices, and it is two lines.
      */
-    suspend fun restore(): Boolean = runCatching {
-        val info = Purchases.sharedInstance.awaitRestore()
-        _isPro.value = info.entitlements[ENTITLEMENT_ID]?.isActive == true
-        _isPro.value
-    }.getOrDefault(false)
+    suspend fun restore(): Boolean {
+        if (!isConfigured) return false
+        return runCatching {
+            val info = Purchases.sharedInstance.awaitRestore()
+            _isPro.value = info.entitlements[ENTITLEMENT_ID]?.isActive == true
+            _isPro.value
+        }.getOrDefault(false)
+    }
 
     companion object {
 
@@ -96,15 +139,37 @@ class SubscriptionService private constructor() {
          */
         const val ENTITLEMENT_ID = "pro"
 
+        /** The value that ships in the repo when no key has been pasted in. */
+        private const val PLACEHOLDER_KEY = "goog_REPLACE_ME"
+
+        /**
+         * False until a real key has been handed to [configure]. Every call that reaches
+         * RevenueCat checks it.
+         *
+         * Configuring with the placeholder does not fail loudly, it fails in a loop — the
+         * iOS side burned battery and buried the system log doing exactly this while we
+         * were reading that log to chase an unrelated bug.
+         */
+        @Volatile
+        var isConfigured = false
+            private set
+
         /**
          * Call once, from [LockinApplication][app.lockin.LockinApplication.onCreate],
          * before any other RevenueCat call.
+         *
+         * Refuses the placeholder rather than passing it through.
          */
         fun configure(context: Context, apiKey: String) {
+            if (apiKey == PLACEHOLDER_KEY || !apiKey.startsWith("goog_")) {
+                isConfigured = false
+                return
+            }
             Purchases.logLevel = LogLevel.WARN
             Purchases.configure(
                 PurchasesConfiguration.Builder(context, apiKey).build(),
             )
+            isConfigured = true
         }
 
         @Volatile

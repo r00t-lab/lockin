@@ -62,6 +62,33 @@ jobs:
           set -o pipefail
           gradle assembleDebug --stacktrace 2>&1 | tee build.log
 
+      # The JVM tests existed for a while without anything running them, which is the
+      # same as not having them: AlarmScheduleTest covers the recurrence maths and
+      # PaywallGateTest covers the + button's decision, and both are exactly the kind of
+      # logic that fails silently on a device weeks later. Appends to build.log so the
+      # annotation step below reports a test failure the same way it reports a compile
+      # failure.
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          gradle test --stacktrace 2>&1 | tee -a build.log
+
+      # Gradle prints "3 tests completed, 1 failed" but not which assertion; the XML has
+      # the message. Without this a red test means opening a browser, which is the thing
+      # this whole workflow is arranged to avoid.
+      - name: Which test failed
+        if: failure()
+        run: |
+          python3 - <<'PYEOF'
+          import glob, xml.etree.ElementTree as ET
+          for path in sorted(glob.glob("android/app/build/test-results/**/*.xml", recursive=True)):
+              for case in ET.parse(path).getroot().iter("testcase"):
+                  for bad in list(case.iter("failure")) + list(case.iter("error")):
+                      name = "%s.%s" % (case.get("classname", "?"), case.get("name", "?"))
+                      first = (bad.get("message") or bad.text or "").strip().splitlines()
+                      print("::error::%s -- %s" % (name, first[0] if first else "failed"))
+          PYEOF
+
       # Same trick as the iOS job: raw logs need a signed-in session, but the
       # annotations API is public. Re-emit the Kotlin diagnostics as annotations so a
       # failure can be read without anyone copying it out of a browser.

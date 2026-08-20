@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.lockin.billing.SellState
 import app.lockin.billing.SubscriptionService
 import app.lockin.ui.theme.EyebrowText
 import app.lockin.ui.theme.Lockin
@@ -70,6 +71,7 @@ fun PaywallScreen(
     val scope = rememberCoroutineScope()
 
     val offering by subscriptions.offering.collectAsStateWithLifecycle()
+    val sellState by subscriptions.sellState.collectAsStateWithLifecycle()
     val isPurchasing by subscriptions.isPurchasing.collectAsStateWithLifecycle()
 
     var selected by remember { mutableStateOf<Package?>(null) }
@@ -118,10 +120,21 @@ fun PaywallScreen(
 
             // An empty paywall is the worst version of this screen: the user taps the
             // button, nothing happens, and they conclude the app is broken rather than
-            // unfinished. Say which it is. On Android this is not hypothetical -- the
-            // RevenueCat key is a placeholder until the Play products exist, so this is
-            // exactly what every tester will see first.
+            // unfinished. Say which it is -- and say the right one, because "we have not
+            // heard back" and "there is nothing for sale" want opposite things from the
+            // reader. Reaching this screen with an empty shelf is now the rare path: when
+            // RevenueCat confirms there is nothing to sell, the + button stops sending
+            // anyone here at all.
             if (packages.isEmpty()) {
+                val (eyebrow, explanation) = if (sellState == SellState.UNKNOWN) {
+                    "CAN'T REACH THE STORE" to
+                        "We couldn't load the subscriptions just now — usually the network. "
+                        + "Everything already on your phone keeps working; try this screen again later."
+                } else {
+                    "NOTHING TO SELL YET" to
+                        "Subscriptions aren't set up on this build, so there's nothing to buy "
+                        + "and nothing to pay for. The two-commitment limit is off until there is."
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -129,10 +142,9 @@ fun PaywallScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("NOTHING TO SELL YET", style = EyebrowText, color = palette.ink3)
+                    Text(eyebrow, style = EyebrowText, color = palette.ink3)
                     Text(
-                        "Subscriptions aren't set up on this build. Everything else works "
-                            + "— you just can't go past two commitments.",
+                        explanation,
                         fontSize = 14.sp,
                         lineHeight = 21.sp,
                         color = palette.ink2,

@@ -114,6 +114,8 @@ private fun LockinApp(
 
     val commitments by store.commitments.collectAsStateWithLifecycle()
     val isPro by subscriptions.isPro.collectAsStateWithLifecycle()
+    val sellState by subscriptions.sellState.collectAsStateWithLifecycle()
+    val offering by subscriptions.offering.collectAsStateWithLifecycle()
 
     var hasOnboarded by remember { mutableStateOf(prefs.hasOnboarded) }
     var screen by remember { mutableStateOf<Screen>(Screen.List) }
@@ -170,7 +172,7 @@ private fun LockinApp(
                 stats = stats,
                 warnings = warnings,
                 onAdd = {
-                    screen = if (store.canAddAnother(isPro)) Screen.New else Screen.Paywall
+                    screen = if (store.canAddAnother(isPro, sellState)) Screen.New else Screen.Paywall
                 },
                 onDelete = { commitment -> scope.launch { store.delete(commitment) } },
                 onOpenProof = { commitment -> screen = Screen.Proof(commitment.id) },
@@ -261,6 +263,9 @@ private fun LockinApp(
 
         Screen.Diagnostics -> DiagnosticsScreen(
             commitments = commitments,
+            isPro = isPro,
+            sellState = sellState,
+            packageCount = offering?.availablePackages?.size ?: 0,
             onClose = { screen = Screen.List },
         )
 
