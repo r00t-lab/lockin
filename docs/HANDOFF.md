@@ -88,10 +88,15 @@ aradığı tek kare bu) → kanıtla sustur → bildirim kaybolsun. YouTube'a **
 linki forma yapıştır. Aynı kayıt [CONTENT.md](CONTENT.md)'deki 3 numaralı TikTok videosunun
 ham malzemesi.
 
-**2. Ödeme profili.** Ayarlar ▸ Ödeme profili, banka + vergi. Bu olmadan abonelik ürünleri
-oluşturulamıyor: API'den denendi, `PERMISSION_DENIED` dönüyor ve bu bir yetki sorunu
-**değil** — Play para uçlarını satıcı hesabı olmadan hiç açmıyor, ama hata mesajı bunu
-söylemiyor. (Ürünleri *listeleme* ucu artık 200 dönüyor; kapalı olan yazma tarafı.)
+**2. ~~Ödeme profili~~ — TAMAM (20 Ağustos).** Para uçlarının gerçekten açıldığı
+doğrulandı: aboneliğe kasten geçersiz bir gövdeyle POST atınca artık `PERMISSION_DENIED`
+değil `INVALID_ARGUMENT: Regions Version must be specified` dönüyor. Yani kapı açık, geriye
+yalnızca ürünleri oluşturmak kaldı. (Bu yoklama zararsız: geçersiz gövde ürün yaratmıyor.)
+
+**Ürün oluştururken dikkat: Play'de abonelik ürünü SİLİNEMEZ**, yalnızca pasifleştirilir.
+Yanlış `productId` kalıcı çöp bırakır. iOS'takiler `com.r00tlab.lockin.pro.monthly` /
+`.annual`; Android paketi `com.r00tlab.nagg` olduğu için isimler birebir aynı olmak zorunda
+değil, ama RevenueCat'te aynı `$rc_monthly` / `$rc_annual` paketlerine bağlanacaklar.
 
 **3. RevenueCat — anahtar tamam, ürünler değil.** `goog_` anahtarı `LockinApplication.kt`'de
 ve 20 Ağustos'ta doğrudan RevenueCat'e sorularak doğrulandı: anahtar geçerli, Android

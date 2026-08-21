@@ -143,6 +143,31 @@ abonelik akışı görünecek. Simülatör kaydı ve montaj kabul edilmiyor.
 Sıra bu, çünkü izinler bir kez sorulur: **uygulamayı önce sil, sonra kur.** İzin
 uyarılarını kaçırırsan kaydı baştan çekersin.
 
+### Kayıttan önce (hepsi bir kerelik)
+
+1. **Ekran Kaydı düğmesini ekle:** Ayarlar ▸ Kontrol Merkezi ▸ *Ekran Kaydı* yanındaki
+   yeşil artı. Zaten ekliyse atla.
+2. **Uygulamayı sil.** Ana ekranda ikona basılı tut ▸ Uygulamayı Kaldır ▸ Uygulamayı Sil.
+   İzin uyarıları yalnızca temiz kurulumda çıkar ve Apple onları kayıtta arıyor.
+3. **Yeniden kur** — 3uTools ile ad-hoc IPA, ya da TestFlight.
+4. **Sandbox hesabını hazırla:** Ayarlar ▸ App Store ▸ en altta *SANDBOX HESABI* ▸ sandbox
+   Apple ID'nle giriş yap. Bu olmadan satın alma akışı gerçek para ister ya da hata verir.
+5. **Rahatsız Etmeyin'i kapat** — kaydın ortasında bildirim düşmesi istemezsin; Focus'u
+   *kayıt sırasında* bilerek açacaksın, o ayrı.
+6. Pili %20'nin üstüne çıkar. Düşük güç modu tam ekran alarmı bastırabiliyor.
+
+### Kaydı almak
+
+Kontrol Merkezi'ni aç ▸ **Ekran Kaydı** düğmesine bas ▸ 3 saniye geri sayım ▸ Kontrol
+Merkezi'ni kapat. Üstte kırmızı çubuk görünür. Bitince kırmızı çubuğa dokun ▸ Durdur.
+Kayıt Fotoğraflar'a düşer.
+
+Dahili ses otomatik kaydedilir; **mikrofona dokunma.** Alarm sesinin kayıtta duyulması
+Apple'ın "sessiz modu deliyor" iddianı doğrulaması için gereken şey.
+
+**Hedef süre 2-3 dakika.** Kesme yok, hızlandırma yok, montaj yok — inceleyici tek çekim
+istiyor ve kesme, alarmın gerçekten geri geldiğini kanıtlayan şeyi yok eder.
+
 | # | Ne görünmeli | Neden |
 |---|---|---|
 | 1 | Ana ekrandan ikona dokunup **soğuk açılış** | "Kayıt açılıştan başlamalı" |
