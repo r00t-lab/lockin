@@ -69,11 +69,11 @@ def call(url, method="GET", body=None, ctype="application/json"):
         sys.exit(1)
 
 
-def promote(code, track):
+def promote(code, track, status="completed"):
     eid = call(API + "applications/%s/edits" % PKG, method="POST")["id"]
     call(API + "applications/%s/edits/%s/tracks/%s" % (PKG, eid, track), method="PUT", body={
         "track": track,
-        "releases": [{"versionCodes": [str(code)], "status": "completed"}],
+        "releases": [{"versionCodes": [str(code)], "status": status}],
     })
     call(API + "applications/%s/edits/%s:commit" % (PKG, eid), method="POST")
     print("track       %s -> %s" % (track, code))
@@ -90,10 +90,14 @@ def main():
             sys.stderr.write("usage: play_upload.py --promote <versionCode> <track>\n")
             sys.exit(2)
         code, track = sys.argv[2], sys.argv[3]
+        # An app that has never been published anywhere is a "draft app", and Play refuses
+        # a completed release on one: the first release out of internal has to be created
+        # as a draft and then published from the console.
+        status = "draft" if "--draft" in sys.argv else "completed"
         if track not in ALLOWED_TRACKS:
             sys.stderr.write("track must be one of %s\n" % ", ".join(ALLOWED_TRACKS))
             sys.exit(2)
-        promote(code, track)
+        promote(code, track, status)
         return
 
     aab = sys.argv[1]
