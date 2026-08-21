@@ -138,6 +138,19 @@ Doğrulamak için (public SDK anahtarı, okuma):
 curl -s -H "Authorization: Bearer goog_VuGmfmntKCuLaSfWpgedvdhlHxE" -H "X-Platform: android"   https://api.revenuecat.com/v1/subscribers/probe/offerings
 ```
 
+**Kapalı testin ilk yayını API'den yapılamıyor.** Hiç yayınlanmamış bir uygulama Play'in
+gözünde "draft app" ve o durumda kapalı test kanalına yalnızca **taslak** sürüm konabiliyor:
+
+```text
+tools/play_upload.py --promote 39 alpha           -> 400 "Only releases with status
+                                                          draft may be created on draft app"
+tools/play_upload.py --promote 39 alpha --draft   -> tamam
+```
+
+internal bunun istisnası — oraya `completed` sürüm gidebiliyor, kapalı teste gidemiyor.
+Taslağı **konsoldan yayınlamak** gerekiyor: Test ▸ Kapalı test ▸ taslak sürüm ▸ incelemeye
+gönder. Uygulama bir kez yayınlandıktan sonra bu kısıt kalkıyor.
+
 Sonra: **12 testçi opt-in → 14 gün kesintisiz → production başvurusu.** Saat testçiler
 opt-in olduğunda başlıyor; o güne kadar geçen her gün doğrudan lansman gününe ekleniyor.
 
