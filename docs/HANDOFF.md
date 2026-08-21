@@ -70,7 +70,10 @@ veriyor, Apple başvuru istiyor; başvuru birkaç dakika.
 | | |
 |---|---|
 | Paket | `com.r00tlab.nagg` |
-| Internal kanal | **canlı**, versionCode **39** (20 Ağustos, çıkışsız kapı düzeltmesi + RevenueCat anahtarı) |
+| Internal kanal | canlı, versionCode 39 |
+| **Kapalı test** | **canlı, versionCode 41** (21 Ağustos) |
+| Abonelik ürünleri | **2, ikisi de ACTIVE**, 173 bölge, 3 gün ücretsiz deneme |
+| RevenueCat | **bağlı** — `default` offering'de 2 paket, ikisi de `pro` entitlement'ında |
 | Mağaza sayfası | ad, açıklamalar, ikon, feature graphic, 5 telefon + 5 tablet ×2 — **App Store'dakilerin aynısı** |
 | App content | 11 formdan **10'u bitti** |
 | Abonelik ürünleri | **yok** — API'den doğrulandı, `subscriptions: 0` |
@@ -137,6 +140,12 @@ Doğrulamak için (public SDK anahtarı, okuma):
 ```bash
 curl -s -H "Authorization: Bearer goog_VuGmfmntKCuLaSfWpgedvdhlHxE" -H "X-Platform: android"   https://api.revenuecat.com/v1/subscribers/probe/offerings
 ```
+
+**Kapalı test kanalı 41'e ihtiyaç duydu, 39'a değil.** internal'da 39 varken kapalı teste de
+39 koymak Play'de şu hatayı veriyor: *"Bu sürüm, mevcut kullanıcıların yeni eklenen uygulama
+paketlerine geçmelerine izin vermediği için kullanıma sunulamaz."* Aynı numara yükseltme
+sayılmıyor — internal'daki testçi kapalı teste geçemiyor. `play-10` etiketi 41 üretti ve
+sorun kapandı. **Kanallar arası taşımada versionCode her zaman artmalı.**
 
 **Kapalı testin ilk yayını API'den yapılamıyor.** Hiç yayınlanmamış bir uygulama Play'in
 gözünde "draft app" ve o durumda kapalı test kanalına yalnızca **taslak** sürüm konabiliyor:
