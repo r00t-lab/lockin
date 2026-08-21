@@ -87,13 +87,11 @@ def main():
 
     if sys.argv[1] == "--promote":
         if len(sys.argv) < 4:
-            sys.stderr.write("usage: play_upload.py --promote <versionCode> <track>
-")
+            sys.stderr.write("usage: play_upload.py --promote <versionCode> <track>\n")
             sys.exit(2)
         code, track = sys.argv[2], sys.argv[3]
         if track not in ALLOWED_TRACKS:
-            sys.stderr.write("track must be one of %s
-" % ", ".join(ALLOWED_TRACKS))
+            sys.stderr.write("track must be one of %s\n" % ", ".join(ALLOWED_TRACKS))
             sys.exit(2)
         promote(code, track)
         return
