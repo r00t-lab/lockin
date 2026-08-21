@@ -16,9 +16,29 @@ arasındaki boşluk Android'de çıkışsız bir kapı yaratıyordu; kapatıldı
 yayında ve site artık iki platformdan bahsediyor. Android'in birim testleri ilk kez CI'da
 koşuyor.
 
-## iOS — gönderildi
+## iOS — REDDEDİLDİ, düzeltildi, yeniden gönderim sende
 
-**19 Ağustos 18:18 UTC, durum `WAITING_FOR_REVIEW`.**
+**20 Ağustos: `REJECTED` — Guideline 2.1, Information Needed.** İşlevsellik reddi değil,
+kod hatası değil: App Review Information ▸ **Notes** alanı incelemenin sorduğu yedi şeyden
+yalnızca birini (nasıl test edilir) cevaplıyordu.
+
+**Yapıldı:** Notes yeniden yazıldı, yedi maddeyi sorulduğu sırayla ve numaralı cevaplıyor
+(3609/4000 karakter), `tools/asc_metadata.py` içinde kalıcı ve ASC'ye yazılıp geri okunarak
+doğrulandı. Metin [STORE.md](STORE.md)'de.
+
+**Sende kalan iki adım:**
+1. **Ekran kaydı** — fiziksel cihaz, açılıştan başlayan, izin uyarıları ve abonelik akışı
+   dahil. Çekim listesi [PRESUBMIT.md](PRESUBMIT.md) sonunda. Prova modunu **kullanma**.
+2. **Resolution Center'a yanıt** — kaydı ekle, "notes güncellendi" de, yeniden gönder.
+   Bu adım API'de yok; `resolutionCenterThreads` uçları 404 veriyor, panel işi.
+
+Red metninin kendisi de API'de yok — bir daha aramaya değmez.
+
+**Yeni build gerekmiyor.** Bağlı build 25 geçerli; reddedilen şey binary değil.
+
+---
+
+**Önceki gönderim: 19 Ağustos 18:18 UTC.**
 
 | | |
 |---|---|

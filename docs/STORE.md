@@ -156,17 +156,82 @@ araçlarından çıkan 300-400 piksellik görseller yüklenmiyor; ölçek tek y�
 
 ## Değerlendirme notu (App Review'a)
 
-```
-Nagg schedules alarms with AlarmKit. To test:
-1. Create a commitment set 2 minutes from now
-2. Put the device in Silent mode and enable a Focus
-3. The alarm will fire full screen
-4. Tapping "Dismiss" without providing proof reschedules the alarm once, after 2 minutes
-   (capped at 5 repeats)
-5. Tapping "I'm starting" opens the proof screen; any photo of a desk clears the alarm
+**1.0.0 bu alan yüzünden reddedildi (20 Ağustos 2026, Guideline 2.1 — Information Needed.)**
+Eski not yalnızca "nasıl test edilir"i anlatıyordu. İnceleme yedi şey soruyor ve altısını
+cevaplayan bir not da geri geliyor. Aşağıdaki metin yedisini de, **sorulduğu sırayla ve
+numaralı** cevaplıyor — 5. maddeyi arayan biri düz yazı okumak zorunda kalmasın diye.
 
-Demo account is not required. All data is stored on device.
+`tools/asc_metadata.py` içindeki `REVIEW_NOTES` ile birebir aynı; oradan yazılıyor,
+elle panele girilmiyor. **App Store Connect bu alanı 4000 karakterle sınırlıyor** (şu an
+3609 karakter).
+
 ```
+Nagg is an alarm you have to prove yourself to. Answering the review questions in order.
+
+1. SCREEN RECORDING
+Attached to this reply in Resolution Center. Recorded on a physical iPhone on the current
+iOS, from launch, covering: creating a commitment; the alarm ringing in Silent mode with a
+Focus on; the alarm returning after Dismiss; clearing it with photo proof; the paywall and
+purchase; and every permission prompt.
+
+2. DEVICES AND OS TESTED
+iPhone 14 Pro Max, iOS 26.6 (physical device). Silent/Focus behaviour, the alarm chain, the
+camera proof flow and a sandbox purchase were all verified on it.
+
+3. WHAT IT DOES, AND FOR WHOM
+For people who miss deadlines they set themselves, students above all. The problem is
+starting, not waking: an ordinary reminder is swiped away in one gesture and nothing
+happens, so the task slides another day. You commit to a task and a time. At that time the
+alarm rings through Silent and Focus, and the only way to silence it for good is to prove
+you started -- a photo of your desk, a 25-minute focus timer, or scanning a QR "desk code"
+you print and tape to your desk. Dismissing without proof reschedules up to five times,
+then stops. The value is a commitment device that asks for evidence, and a streak that only
+counts days you actually began.
+
+4. SETUP AND ACCESS TO EVERY FEATURE
+No account, no login, no demo credentials, no sample files. Nothing is stored off-device.
+
+FASTEST PATH: "Rehearse the alarm" on the main screen replays the whole mechanic in about a
+minute (rings after 20s, nags 30s apart) instead of waiting for a real alarm. It asks which
+proof type to demonstrate. Rehearsals do not affect streaks.
+
+The real thing, if you prefer:
+a. Tap + and create a commitment two minutes out. Pick a proof type.
+b. Put the device in Silent mode and turn on any Focus.
+c. It rings full screen and audible. This is AlarmKit, the framework behind Apple's own
+   Clock app; ringing through Silent and Focus is the system's intended behaviour.
+d. Tap Dismiss WITHOUT proving. It returns in two minutes. This is the feature, not a bug,
+   and it is capped at five returns before stopping on its own.
+e. Tap "I'm starting" for the proof screen. Any photo of a desk clears it; the image is
+   checked on device and discarded immediately.
+f. Diagnostics: press and hold the "nagg" wordmark on the main screen -- permissions, camera
+   availability, and how many alarms are in the chain.
+
+SUBSCRIPTION: free for two commitments. A third opens the paywall -- Nagg Pro Monthly and
+Nagg Pro Annual, each with a 3-day free trial, each showing title, duration and price next
+to links to the Terms and the privacy policy. Apple handles every payment.
+
+PERMISSIONS: Alarms (AlarmKit), so a commitment can ring through Silent and Focus; this is
+the whole product. Camera, only to photograph a desk or scan a desk code as proof. Photo
+library, only as a fallback when no camera is available.
+
+5. EXTERNAL SERVICES
+RevenueCat, for subscription state only: it gets an anonymous identifier generated on the
+device plus the receipt Apple issues, and never a name, email, commitment or photo. Apple
+StoreKit handles payment. There is no backend server, no analytics or advertising SDK, no AI
+service and no third-party sign-in. Commitments, streaks and proof never leave the device.
+
+6. REGIONAL DIFFERENCES
+None. Identical in every storefront; English only. Prices follow Apple's regional pricing.
+
+7. REGULATED INDUSTRY OR PROTECTED CONTENT
+Neither. A personal productivity app with no third-party or licensed material, no medical or
+treatment claims, not directed at children.
+```
+
+**Ekran kaydı ayrı bir iş ve bu notun yerini tutmuyor:** Apple fiziksel cihazda, açılıştan
+başlayan, izin uyarılarını ve abonelik akışını içeren bir kayıt istiyor. Çekim listesi
+[PRESUBMIT.md](PRESUBMIT.md) sonunda.
 
 ## Reddedilme riskleri ve önlemi
 

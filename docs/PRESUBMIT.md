@@ -131,3 +131,39 @@ NAGG intent: perform ...             alarmın butonu intent'i calistirdi
 NAGG handoff: from intent | mid-chain | nothing to prove
 NAGG camera: session configured | shutter | captured
 ```
+
+---
+
+## İnceleme ekran kaydı (Guideline 2.1)
+
+1.0.0 bu kayıt istenerek reddedildi. Apple'ın maddesi net: **fiziksel cihazda**, güncel
+iOS'ta, **uygulamanın açılışıyla başlayan** tek bir kayıt; içinde izin uyarıları ve
+abonelik akışı görünecek. Simülatör kaydı ve montaj kabul edilmiyor.
+
+Sıra bu, çünkü izinler bir kez sorulur: **uygulamayı önce sil, sonra kur.** İzin
+uyarılarını kaçırırsan kaydı baştan çekersin.
+
+| # | Ne görünmeli | Neden |
+|---|---|---|
+| 1 | Ana ekrandan ikona dokunup **soğuk açılış** | "Kayıt açılıştan başlamalı" |
+| 2 | **Alarm izni** uyarısı ve kabulü | "Hassas veri/cihaz özelliği isteyen uyarılar" |
+| 3 | **Bildirim izni** uyarısı | aynı madde |
+| 4 | `+` ▸ taahhüt oluştur, 2 dakika sonrası, kanıt tipi **Desk photo** | "tipik kullanıcı akışı" |
+| 5 | Kontrol merkezinden **sessiz mod** + **Focus** aç, ikonları görünsün | ürünün tüm iddiası |
+| 6 | Alarmın tam ekran ve **sesli** çalması | aynı |
+| 7 | **Dismiss** — kanıt vermeden. Alarmın geri gelmesi | özellik olduğu görülmeli |
+| 8 | "I'm starting" ▸ **kamera izni** uyarısı ▸ masa fotoğrafı ▸ alarmın susması | izin + akışın kapanışı |
+| 9 | `+` ile üçüncü taahhüt ▸ **paywall**: başlık, süre, fiyat, Terms ve Privacy linkleri | "ücretli içeriğe erişim" |
+| 10 | **Satın alma akışı** — sandbox hesabıyla, Apple'ın ödeme sayfası açılana kadar | "satın alma veya abonelik akışları dahil" |
+
+**Süreyi kısaltmak için 4-8 arası yerine "Rehearse the alarm" kullanma.** Prova mekaniği
+doğru gösteriyor ama incelemeci *gerçek* akışı istiyor; prova ayrıca "REHEARSAL" etiketi
+taşıyor ve bu, kaydın gerçek kullanımı göstermediği izlenimi verir. Provayı yalnızca
+TikTok çekimlerinde kullan.
+
+Uygulamada **olmayan** ve bu yüzden kayıtta aranmayacak şeyler: hesap kaydı/oturum açma/
+hesap silme, kullanıcı tarafından oluşturulan içerik, raporlama ve engelleme. Notes bunların
+bulunmadığını zaten söylüyor.
+
+Kaydı **Resolution Center'daki yanıta** ekle. Notes alanı `tools/asc_metadata.py --apply`
+ile zaten güncellendi; yanıtta kısaca "notes güncellendi + kayıt ekte" demek yeterli.
