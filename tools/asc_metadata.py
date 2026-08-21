@@ -174,6 +174,12 @@ AGE_RATING = {
     "ageAssurance": False,
     "messagingAndChat": False,
     "userGeneratedContent": False,
+    # Added by Apple in August 2026 and, per the banner, required immediately for a new app
+    # rather than in September. Both false and not a close call: Nagg has no profiles, no
+    # feed, no way to reach another person, and nothing leaves the device. The commitment
+    # you make is between you and an alarm.
+    "socialMedia": False,
+    "socialMediaAgeRestricted": False,
 }
 
 

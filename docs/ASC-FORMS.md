@@ -58,6 +58,22 @@ App Store Connect ▸ uygulama ▸ **Age Rating ▸ Edit**.
 Beklenen sonuç **4+**. Farklı bir sonuç çıkıyorsa bir soru yanlış cevaplanmıştır — kabul
 etme, geri dön.
 
+### Sosyal medya soruları (Apple, Ağustos 2026'da ekledi)
+
+Panelde mavi bir kutu olarak çıkıyor: *"Answers aren't required until September 7, 2026,
+**unless you are submitting a new app**"*. Nagg yeni bir uygulama gönderimi olduğu için
+cümlenin ikinci yarısı geçerli — yani şimdi zorunlu.
+
+```text
+socialMedia               False
+socialMediaAgeRestricted  False
+```
+
+Yakın bir karar değil: Nagg'da profil yok, akış yok, başka birine ulaşmanın hiçbir yolu yok
+ve hiçbir şey cihazdan çıkmıyor. `tools/asc_metadata.py --apply` ile yazılıyor, panele elle
+girilmiyor. `kidsAgeBand` ve `developerAgeRatingInfoUrl` boş kalıyor — ilki yalnızca Kids
+kategorisi için, ikincisi isteğe bağlı.
+
 ## 2. App Privacy — gizlilik etiketi
 
 App Store Connect ▸ **App Privacy**. Gönderimden önce **zorunlu**, ve hiçbir yerde
