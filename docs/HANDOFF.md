@@ -70,7 +70,7 @@ veriyor, Apple başvuru istiyor; başvuru birkaç dakika.
 | | |
 |---|---|
 | Paket | `com.r00tlab.nagg` |
-| Internal kanal | **canlı**, versionCode 30, imzalı |
+| Internal kanal | **canlı**, versionCode **39** (20 Ağustos, çıkışsız kapı düzeltmesi + RevenueCat anahtarı) |
 | Mağaza sayfası | ad, açıklamalar, ikon, feature graphic, 5 telefon + 5 tablet ×2 — **App Store'dakilerin aynısı** |
 | App content | 11 formdan **10'u bitti** |
 | Abonelik ürünleri | **yok** — API'den doğrulandı, `subscriptions: 0` |
@@ -88,10 +88,30 @@ aradığı tek kare bu) → kanıtla sustur → bildirim kaybolsun. YouTube'a **
 linki forma yapıştır. Aynı kayıt [CONTENT.md](CONTENT.md)'deki 3 numaralı TikTok videosunun
 ham malzemesi.
 
-**2. ~~Ödeme profili~~ — TAMAM (20 Ağustos).** Para uçlarının gerçekten açıldığı
-doğrulandı: aboneliğe kasten geçersiz bir gövdeyle POST atınca artık `PERMISSION_DENIED`
-değil `INVALID_ARGUMENT: Regions Version must be specified` dönüyor. Yani kapı açık, geriye
-yalnızca ürünleri oluşturmak kaldı. (Bu yoklama zararsız: geçersiz gövde ürün yaratmıyor.)
+**2. Ödeme profili kuruldu, ama ürünleri API'den oluşturamıyoruz — yetki eksik.**
+
+Buradaki yoklama iki kez yanlış okundu, doğrusu şu: **Play parametre doğrulamasını yetki
+kontrolünden ÖNCE yapıyor.**
+
+```text
+regionsVersion YOK      -> 400 INVALID_ARGUMENT "Regions Version must be specified"
+regionsVersion VAR      -> 403 PERMISSION_DENIED   <- gerçek cevap bu
+pricing:convertRegionPrices -> 403
+```
+
+İlk satırdaki 400'ü "kapı açıldı" sanmak hatalı; parametreyi tamamlayınca altından 403
+çıkıyor. Service account'ta *test kanalına yayınlama* ve *mağazadaki varlığı yönetme* var,
+**parasal yetki yok** — ve 403 hangi yetkinin eksik olduğunu söylemiyor, bu konsolun
+değişmez huyu.
+
+İki yol:
+- **Konsoldan elle** (önerilen, ~10 dk): bölge fiyatlarını Play otomatik dolduruyor.
+  `convertRegionPrices` de 403 verdiği için API'den yapılsa 175 bölge elle yazılacaktı.
+- **Yetkiyi aç:** Play Console ▸ Kullanıcılar ve izinler ▸ service account ▸ finansal /
+  *manage monetization* yetkisi. Sonra ürünler API'den oluşturulabilir.
+
+**Ürün oluştururken: Play'de abonelik SİLİNEMEZ**, yalnızca pasifleştirilir — yanlış
+`productId` kalıcı. iOS'takiler `com.r00tlab.lockin.pro.monthly` / `.annual`.
 
 **Ürün oluştururken dikkat: Play'de abonelik ürünü SİLİNEMEZ**, yalnızca pasifleştirilir.
 Yanlış `productId` kalıcı çöp bırakır. iOS'takiler `com.r00tlab.lockin.pro.monthly` /
