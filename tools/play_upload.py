@@ -9,6 +9,12 @@ hand.
 ## Use
 
     python tools/play_upload.py <path-to.aab> [track]
+    python tools/play_upload.py --promote <versionCode> <track>
+
+`--promote` moves a bundle that is already on Play to another track without
+uploading anything. Use it to put the build the testers already have onto the
+closed track: Play refuses a version code it has seen before, so re-uploading
+the same .aab fails.
 
 `track` defaults to internal. The signed bundle from any tag is published as a
 release asset, so the usual sequence is:
@@ -63,10 +69,34 @@ def call(url, method="GET", body=None, ctype="application/json"):
         sys.exit(1)
 
 
+def promote(code, track):
+    eid = call(API + "applications/%s/edits" % PKG, method="POST")["id"]
+    call(API + "applications/%s/edits/%s/tracks/%s" % (PKG, eid, track), method="PUT", body={
+        "track": track,
+        "releases": [{"versionCodes": [str(code)], "status": "completed"}],
+    })
+    call(API + "applications/%s/edits/%s:commit" % (PKG, eid), method="POST")
+    print("track       %s -> %s" % (track, code))
+    print("committed   run tools/play_status.py to confirm")
+
+
 def main():
     if len(sys.argv) < 2:
         sys.stderr.write(__doc__)
         sys.exit(2)
+
+    if sys.argv[1] == "--promote":
+        if len(sys.argv) < 4:
+            sys.stderr.write("usage: play_upload.py --promote <versionCode> <track>
+")
+            sys.exit(2)
+        code, track = sys.argv[2], sys.argv[3]
+        if track not in ALLOWED_TRACKS:
+            sys.stderr.write("track must be one of %s
+" % ", ".join(ALLOWED_TRACKS))
+            sys.exit(2)
+        promote(code, track)
+        return
 
     aab = sys.argv[1]
     track = sys.argv[2] if len(sys.argv) > 2 else "internal"
