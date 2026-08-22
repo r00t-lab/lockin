@@ -278,6 +278,22 @@ satırı var — bir Android alarmının sessizce hiç çalmamasının en yaygı
 **Değişmez kural:** çalan alarm ile kanıt arasındaki hiçbir şey bir SwiftUI sunumuna
 bağlı olamaz. Bu üç kez ısırdı.
 
+## Play Billing 8 — 31 Ağustos 2026 duvarı (çözüldü)
+
+Play, 31 Ağustos 2026'dan itibaren Billing Library 7 kullanan uygulamalardan **güncelleme
+kabul etmiyor**. `purchases 8.19.0` tam olarak onu çekiyordu. Sürüm eşlemesi sürüm
+notlarından değil **yayınlanmış POM'lardan** okundu:
+
+```text
+purchases  8.19.0 -> billing 7.1.1   reddediliyor
+purchases  9.29.1 -> billing 8.0.0
+purchases 10.18.1 -> billing 8.3.0   <- seçilen
+```
+
+İki majör sürüm atlandı (8 → 10) ve derleme temiz geçti; `await*` yüzeyi değişmemiş.
+**RevenueCat henüz Billing 9'a geçmedi**, yani bu duvarın arkasında ikinci bir tarih var —
+bir dahaki sefere POM'u tekrar oku.
+
 ## Bekleyen
 
 - **Family Controls entitlement** — odak oturumunda uygulama engelleme (v1.1). Başvuru
