@@ -19,9 +19,17 @@ mlkitBarcode = "17.3.0"
 # Generation only (the printable desk sticker). Scanning is ML Kit's job — zxing's
 # detector is noticeably worse in low light, which is exactly when this app runs.
 zxing = "3.5.3"
-# RevenueCat Android SDK. v8 is the Billing Library 7 line and is the one whose
-# coroutine (`await*`) surface this code is written against.
-revenuecat = "8.19.0"
+# RevenueCat Android SDK. The version here decides which Play Billing Library ships,
+# and Play enforces a floor on that: from 31 August 2026 an app on Billing 7 cannot
+# publish updates at all. Verified from the published POMs rather than release notes:
+#
+#   purchases  8.19.0 -> billing 7.1.1   (rejected as of 31 Aug 2026)
+#   purchases  9.29.1 -> billing 8.0.0
+#   purchases 10.18.1 -> billing 8.3.0
+#
+# Before bumping, check the POM again -- RevenueCat has not moved to Billing 9 yet, and
+# when it does there will be a second deadline behind this one.
+revenuecat = "10.18.1"
 junit = "4.13.2"
 
 [libraries]
