@@ -121,6 +121,12 @@ e. Tap "I'm starting" for the proof screen. Any photo of a desk clears it; the i
 f. Diagnostics: press and hold the "nagg" wordmark on the main screen -- permissions, camera
    availability, and how many alarms are in the chain.
 
+WHERE THE TWO PRO FEATURES ARE (both reported as not found in review 25):
+* Weekly report -- tap the streak / today / excuses strip under the header. It now carries
+  a "report" label and chevron at its right edge.
+* Unlimited commitments -- free limit is two. Create two, tap + again: the paywall opens
+  instead of the editor.
+
 SUBSCRIPTION: free for two commitments. A third opens the paywall -- Nagg Pro Monthly and
 Nagg Pro Annual, each with a 3-day free trial, each showing title, duration and price next
 to links to the Terms and the privacy policy. Apple handles every payment.

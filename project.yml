@@ -104,12 +104,12 @@ targets:
         # symptom was "Redundant Binary Upload" from Apple, one upload too late.
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        NSAlarmKitUsageDescription: "Nagg needs alarm access so your commitments ring through Silent and Focus."
-        NSCameraUsageDescription: "Nagg uses the camera so you can prove you actually started."
+        NSAlarmKitUsageDescription: "Nagg schedules alarms for the commitments you create. For example, a commitment set for 7pm rings through Silent mode and Focus until you prove you started."
+        NSCameraUsageDescription: "Nagg uses the camera to photograph your workspace as proof that you started your task. For example, when your alarm for \"Write the essay intro\" rings, you photograph your open notebook and the alarm stops."
         # The camera picker falls back to the photo library when no camera is
         # available. Reaching that path without this key is an immediate,
         # unexplained termination by the system rather than a warning.
-        NSPhotoLibraryUsageDescription: "Nagg can accept a photo from your library if the camera is unavailable."
+        NSPhotoLibraryUsageDescription: "Nagg can use a photo from your library as proof that you started, for example a picture of your desk, when the camera is unavailable."
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

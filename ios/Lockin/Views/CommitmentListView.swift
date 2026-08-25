@@ -176,9 +176,20 @@ struct CommitmentListView: View {
             figure("\(stats.proved)", "today")
             figure("\(stats.missed)", "excuses")
         }
-        // The whole strip is the way into the report. No button, no chevron — the numbers
-        // are already the thing the user's eye lands on, and anyone who wants more detail
-        // reaches for them first.
+        // The whole strip is the way into the report. It used to carry no affordance at
+        // all -- the theory being that the numbers are what the eye lands on anyway. App
+        // Review couldn't find the weekly report and rejected the build under 2.3 for a
+        // feature the description promised, which is the strongest possible evidence that
+        // a tap target with no label is a tap target nobody finds.
+        .overlay(alignment: .trailing) {
+            HStack(spacing: 3) {
+                Text("report").naggLabel()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .foregroundStyle(Nagg.ink3)
+            .padding(.trailing, 12)
+        }
         .contentShape(.rect)
         .onTapGesture { modal = .report }
         .accessibilityElement(children: .combine)
