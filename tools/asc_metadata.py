@@ -50,7 +50,11 @@ ISSUER = os.environ.get("ASC_ISSUER_ID", "d4d406a9-3332-497e-a260-bd47ac37270d")
 APP_ID = os.environ.get("ASC_APP_ID", "6802195603")
 API = "https://api.appstoreconnect.apple.com/"
 
-VERSION_STRING = "1.0.0"
+# Must match MARKETING_VERSION in project.yml and the version record in ASC. A build
+# whose CFBundleShortVersionString does not match an *open* version cannot be uploaded:
+# once 1.0.0 went READY_FOR_SALE, every build still stamped 1.0.0 was refused, and the
+# failure only shows up after the archive and the signing have both succeeded.
+VERSION_STRING = "1.0.1"
 
 # Productivity, because that is the shelf this competes on and the one docs/LAUNCH.md
 # already priced against. Utilities second: an alarm is a utility, and the obvious

@@ -294,6 +294,23 @@ purchases 10.18.1 -> billing 8.3.0   <- seçilen
 **RevenueCat henüz Billing 9'a geçmedi**, yani bu duvarın arkasında ikinci bir tarih var —
 bir dahaki sefere POM'u tekrar oku.
 
+## Sürüm numarası iki yerde yaşıyor
+
+Yeni bir App Store sürümü açtığında **ikisini birden** güncelle:
+
+```text
+project.yml            MARKETING_VERSION
+tools/asc_metadata.py  VERSION_STRING
+```
+
+Biri unutulursa build eski numarayla derlenir ve ASC onu **açık olmayan** bir sürüme
+bağlayamaz. 1.0.0 `READY_FOR_SALE` olduktan sonra 1.0.0 damgalı her build reddedildi ve
+`Release #27` bu yüzden kırmızıya döndü — hata arşiv ve imzalama başarıyla bittikten
+*sonra* çıkıyor, yani yirmi dakika sonra.
+
+Build numarası (`CURRENT_PROJECT_VERSION`) ayrı: onu workflow `github.run_number`'dan
+kendisi yazıyor, elle dokunma.
+
 ## Bekleyen
 
 - **Family Controls entitlement** — odak oturumunda uygulama engelleme (v1.1). Başvuru
