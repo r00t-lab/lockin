@@ -32,7 +32,7 @@ struct PaywallView: View {
                     .lineSpacing(2)
                     .foregroundStyle(Nagg.ink)
 
-                Text("Unlimited commitments, syllabus import, and the weekly report on every excuse you made.")
+                Text("Unlimited commitments and the weekly report on every excuse you made.")
                     .font(Nagg.sans(15))
                     .lineSpacing(4)
                     .foregroundStyle(Nagg.ink2)

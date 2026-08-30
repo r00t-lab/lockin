@@ -103,7 +103,7 @@ fun PaywallScreen(
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            "Unlimited commitments, syllabus import, and the weekly report on every " +
+            "Unlimited commitments and the weekly report on every " +
                 "excuse you made.",
             fontSize = 14.sp,
             lineHeight = 21.sp,
