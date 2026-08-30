@@ -208,7 +208,6 @@ fun PaywallScreen(
     }
 }
 
-@Composable
 /** " / month" or " / year", read off the package rather than hard-coded per row. */
 private fun periodSuffix(pkg: Package): String = when (pkg.packageType) {
     PackageType.MONTHLY -> " / month"
@@ -221,6 +220,7 @@ private fun periodSuffix(pkg: Package): String = when (pkg.packageType) {
     else -> ""
 }
 
+@Composable
 private fun PackageRow(
     packageToPurchase: Package,
     selected: Boolean,
