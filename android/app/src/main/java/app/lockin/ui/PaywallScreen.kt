@@ -49,6 +49,7 @@ import app.lockin.billing.SubscriptionService
 import app.lockin.ui.theme.EyebrowText
 import app.lockin.ui.theme.Lockin
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
 import kotlinx.coroutines.launch
 
 /**
@@ -208,6 +209,18 @@ fun PaywallScreen(
 }
 
 @Composable
+/** " / month" or " / year", read off the package rather than hard-coded per row. */
+private fun periodSuffix(pkg: Package): String = when (pkg.packageType) {
+    PackageType.MONTHLY -> " / month"
+    PackageType.ANNUAL -> " / year"
+    PackageType.WEEKLY -> " / week"
+    PackageType.SIX_MONTH -> " / 6 months"
+    PackageType.THREE_MONTH -> " / 3 months"
+    PackageType.TWO_MONTH -> " / 2 months"
+    PackageType.LIFETIME -> ""
+    else -> ""
+}
+
 private fun PackageRow(
     packageToPurchase: Package,
     selected: Boolean,
@@ -244,7 +257,11 @@ private fun PackageRow(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = product.price.formatted,
+                // The billing period is printed next to the price rather than left to the
+                // product title. App Review rejected the iOS build under 3.1.2(c) for
+                // exactly this: "Nagg Pro Monthly" reads as a duration to us and as a name
+                // to a reviewer, and Play's policy asks for the same disclosure.
+                text = product.price.formatted + periodSuffix(packageToPurchase),
                 fontSize = 13.sp,
                 color = palette.ink2,
             )

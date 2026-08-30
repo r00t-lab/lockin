@@ -140,6 +140,21 @@ struct PaywallView: View {
         .background(Nagg.surface)
     }
 
+    /// " / month" for a monthly product, " / year" for an annual one. Read off the
+    /// product's own subscription period so a mis-set product cannot print a lie.
+    private static func periodSuffix(_ package: Package) -> String {
+        guard let period = package.storeProduct.subscriptionPeriod else { return "" }
+        let unit: String
+        switch period.unit {
+        case .day:   unit = period.value == 1 ? "day" : "\(period.value) days"
+        case .week:  unit = period.value == 1 ? "week" : "\(period.value) weeks"
+        case .month: unit = period.value == 1 ? "month" : "\(period.value) months"
+        case .year:  unit = period.value == 1 ? "year" : "\(period.value) years"
+        @unknown default: return ""
+        }
+        return " / " + unit
+    }
+
     private func packageRow(_ package: Package) -> some View {
         let isSelected = selected?.identifier == package.identifier
         return Button {
@@ -149,7 +164,12 @@ struct PaywallView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(package.storeProduct.localizedTitle)
                         .font(Nagg.sans(15, .medium))
-                    Text(package.storeProduct.localizedPriceString)
+                    // Guideline 3.1.2(c) wants the billing period spelled out next to the
+                    // price, not implied by a product title. "Nagg Pro Monthly" reads as a
+                    // duration to us and as a name to review -- this is what a rejection
+                    // taught, so the period is printed from the product itself rather than
+                    // hard-coded per row.
+                    Text(package.storeProduct.localizedPriceString + Self.periodSuffix(package))
                         .font(Nagg.mono(13, .regular))
                         .monospacedDigit()
                         .foregroundStyle(isSelected ? Nagg.ground.opacity(0.75) : Nagg.ink2)
