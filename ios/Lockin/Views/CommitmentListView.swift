@@ -95,6 +95,12 @@ struct CommitmentListView: View {
 
             rail
         }
+        // iPad runs this app full screen, and a commitment card stretched across a 13"
+        // display reads as a form, not a list. Capping the content and centring it keeps
+        // the phone layout the layout everywhere; on iPhone the cap is never reached, so
+        // nothing about the phone changes.
+        .frame(maxWidth: 620)
+        .frame(maxWidth: .infinity)
         .naggGround()
         .onReceive(clock) { tick = $0 }
         .animation(.easeOut(duration: 0.22), value: store.commitments)

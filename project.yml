@@ -28,9 +28,12 @@ settings:
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
-    # iPhone only — see LAUNCH.md for why supporting iPad costs screenshots, review
-    # surface, and testing time.
-    TARGETED_DEVICE_FAMILY: "1"
+    # iPhone and iPad. LAUNCH.md argues for phone-only and the reasoning still holds --
+    # iPad costs its own screenshots, its own review surface and its own testing -- but
+    # the app was already being reviewed on an iPad Air (it is in three rejection
+    # notices), and in compatibility mode it renders as a phone-sized window in the
+    # middle of a 13" display. Shipping iPad properly is the smaller of the two costs.
+    TARGETED_DEVICE_FAMILY: "1,2"
   # No `configs:` block pinning CODE_SIGN_IDENTITY here, and this is load-bearing.
   #
   # Setting it alongside CODE_SIGN_STYLE: Automatic is rejected outright — "LockinWidget
@@ -81,7 +84,7 @@ targets:
         # renaming internals would invalidate the registered identifiers for nothing.
         # Only CFBundleDisplayName reaches the user's home screen.
         PRODUCT_NAME: Lockin
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
         # Placeholder icon; replace the 1024px PNG before the store listing goes live.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     # A real Info.plist, not GENERATE_INFOPLIST_FILE.
