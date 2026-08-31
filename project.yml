@@ -52,14 +52,15 @@ packages:
 
 targets:
 
-  # The watch targets are deliberately absent. Builds 17 and 18 uploaded, validated,
-  # showed as Testing, and would not install on a device — and every candidate cause in
-  # the watch bundle was a guess costing a ten-minute round trip. Apple Watch was never
-  # in the v1 scope (see PRODUCT.md); it is not worth blocking the one question that
-  # matters, which is whether the alarm rings through Silent mode.
+  # The watch targets were pulled from v1 after builds 17 and 18 uploaded, validated,
+  # showed as Testing, and refused to install. They are back, with what that note asked
+  # for: a cause rather than another guess.
   #
-  # ios/LockinWatch/ is still in the repo. Re-add these targets once the alarm is proven
-  # on a real phone, and debug the install failure with something to lose.
+  # The complication had no `info:` block, so its NSExtension dictionary was never
+  # written. INFOPLIST_KEY_* can only set flat top-level keys -- the same trap the phone
+  # widget documents below, where it costs upload error 90348. On watchOS it costs the
+  # install instead: the bundle is malformed, Apple's upload validation does not look
+  # that deep, and the device refuses the whole app. That is the symptom 17 and 18 had.
 
   # ── iPhone app ───────────────────────────────────────────────────────────────
   Lockin:
@@ -67,15 +68,10 @@ targets:
     platform: iOS
     sources:
       - path: ios/Lockin
-        excludes:
-          # The watch targets are not built (see the note above), so this is the phone
-          # half of a link to an app that does not exist. It was still activating a
-          # WCSession on every launch and pushing a snapshot on every single save —
-          # sitting directly on the launch path, doing nothing, for a target that does
-          # not ship. The file stays in the repo; it comes back with the watch.
-          - "Services/WatchSyncService.swift"
     dependencies:
       - target: LockinWidget
+        embed: true
+      - target: LockinWatch
         embed: true
       - package: RevenueCat
     settings:
@@ -124,6 +120,70 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.r00tlab.lockin
+
+  # ── Apple Watch app ──────────────────────────────────────────────────────────
+  LockinWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: ios/LockinWatch
+        # Widget/ belongs to the complication target below. Without this exclude the
+        # same file lands in two targets and the build fails on duplicate symbols.
+        excludes:
+          - "Widget/**"
+      - path: ios/Lockin/Models/Commitment.swift
+      - path: ios/Lockin/Models/WatchSyncPayload.swift
+    dependencies:
+      - target: LockinWatchWidget
+        embed: true
+    settings:
+      base:
+        # Apple requires exactly this suffix for a companion watch app. Any other
+        # value and the watch app will not install alongside the phone app.
+        PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.watchkitapp
+        PRODUCT_NAME: Lockin
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Nagg
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.r00tlab.lockin
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        INFOPLIST_KEY_WKApplication: YES
+        TARGETED_DEVICE_FAMILY: "4"
+        # Its own catalog, not the phone's. A single appiconset declaring both ios and
+        # watchos platforms does not satisfy either validator.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    entitlements:
+      path: ios/LockinWatch/LockinWatch.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.r00tlab.lockin
+
+  # ── Watch complication ───────────────────────────────────────────────────────
+  LockinWatchWidget:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: ios/LockinWatch/Widget
+      - path: ios/Lockin/Models/Commitment.swift
+      - path: ios/Lockin/Models/WatchSyncPayload.swift
+      # The complication reads its data straight from the App Group cache rather than
+      # waking the watch app, so it needs the cache type compiled into its own target.
+      - path: ios/LockinWatch/Services/WatchSnapshotCache.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.r00tlab.lockin.watchkitapp.widget
+        PRODUCT_NAME: LockinWatchWidget
+        TARGETED_DEVICE_FAMILY: "4"
+    # This block is what was missing when the watch was pulled. Same reason as the
+    # phone widget: NSExtensionPointIdentifier has to sit inside NSExtension, and
+    # INFOPLIST_KEY_* cannot nest.
+    info:
+      path: ios/LockinWatch/Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Nagg
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
   # ── Live Activity / Dynamic Island ───────────────────────────────────────────
   LockinWidget:
