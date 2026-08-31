@@ -179,8 +179,13 @@ targets:
     # This block is what was missing when the watch was pulled. Same reason as the
     # phone widget: NSExtensionPointIdentifier has to sit inside NSExtension, and
     # INFOPLIST_KEY_* cannot nest.
+    # Deliberately outside ios/LockinWatch/: that directory is the watch *app's* source
+    # root, and a plist sitting inside it ends up merged into the app's own Info.plist.
+    # The first build of this fix shipped a watch application declaring NSExtension,
+    # which is invalid for an app bundle and is exactly the kind of malformed bundle
+    # that made 17 and 18 refuse to install.
     info:
-      path: ios/LockinWatch/Widget/Info.plist
+      path: ios/LockinWatchWidget-Info.plist
       properties:
         CFBundleDisplayName: Nagg
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
