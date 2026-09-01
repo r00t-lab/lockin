@@ -6,11 +6,14 @@
   --surface: #FBFAF7;
   --ink: #17171A;
   --ink-2: #5C5C58;
-  --ink-3: #8E8E88;
+  /* Was #8E8E88, which measured 2.84:1 on the paper ground — below the 4.5:1 needed
+     for the small text it is used on (nav, labels, the requirement line). #6C6C67
+     is the lightest tone that clears it on both ground and surface. */
+  --ink-3: #6C6C67;
   --line: #D5D4CC;
   --alarm: #C7351A;
   --shadow: 0 18px 50px -22px rgba(23,23,26,.38);
-  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
@@ -19,7 +22,7 @@
     --surface: #1C1C1F;
     --ink: #EAEAE6;
     --ink-2: #A3A39D;
-    --ink-3: #6E6E69;
+    --ink-3: #84847F;   /* was #6E6E69 — 3.65:1, also short of 4.5:1 */
     --line: #303035;
     --alarm: #E85236;
     --shadow: 0 18px 50px -22px rgba(0,0,0,.7);
@@ -27,6 +30,9 @@
 }
 
 * { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
   margin: 0;
@@ -36,6 +42,29 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
 }
+
+a, button { touch-action: manipulation; }
+
+/* Never remove the focus ring — just make it belong to the design. */
+:focus-visible {
+  outline: 2px solid var(--alarm);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--ground);
+  border-radius: 8px;
+  font-size: 14px;
+  text-decoration: none;
+}
+.skip:focus { left: 16px; }
 
 .wrap { max-width: 660px; margin: 0 auto; padding: 48px 24px 80px; }
 
@@ -101,44 +130,47 @@ footer {
 
 
 /* ── Home page ─────────────────────────────────────────────────────────────────
-   The store listing sells the app; this page has to make the mechanism obvious in
-   one screen. Layout only — the palette above is untouched, so the page still
-   matches the app and the store screenshots. */
+   Section order follows the App Store landing pattern: hero with a device shot,
+   then the screenshots, then the mechanism, with a download link reachable from
+   every scroll position. Layout only — the palette above is shared with the app. */
 
 body.home .wrap { max-width: 1000px; padding-top: 0; }
 
-/* Sticky bar: the download link stays reachable from any scroll position, which is
-   the whole job of this page. */
 .bar {
   position: sticky;
   top: 0;
   z-index: 10;
   display: block;
   margin: 0;
-  /* Deliberately opaque rather than blurred: a backdrop-filter here painted the whole
-     page blank in one Chromium compositing path, and the blur was worth nothing. */
+  /* Deliberately opaque rather than blurred: a backdrop-filter here painted the
+     whole page blank in one Chromium compositing path, and the blur bought nothing. */
   background: var(--ground);
   border-bottom: 1px solid var(--line);
 }
 .bar-in {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 13px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   gap: 20px;
 }
 .bar nav { margin-left: auto; }
+.bar nav a { display: inline-flex; align-items: center; min-height: 44px; }
 .bar-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--mono);
   font-size: 11px;
+  font-weight: 500;
   letter-spacing: .09em;
   text-transform: uppercase;
   text-decoration: none;
   color: var(--ground);
   background: var(--ink);
-  padding: 7px 13px;
-  border-radius: 8px;
+  padding: 0 15px;
+  border-radius: 9px;
 }
 .bar-cta:hover { opacity: .85; }
 @media (max-width: 620px) {
@@ -147,17 +179,18 @@ body.home .wrap { max-width: 1000px; padding-top: 0; }
   .bar-cta { margin-left: auto; }
 }
 
-.eyebrow {
+/* Scoped under body.home so it outranks `body.home h2` — the gallery heading is an
+   h2 for the document outline but must render as a label, not a headline. */
+body.home .eyebrow {
   font-family: var(--mono);
   font-size: 11px;
+  font-weight: 500;
   letter-spacing: .11em;
   text-transform: uppercase;
   color: var(--ink-3);
   margin: 0 0 12px;
 }
 
-/* Hero: the sentence and a real screen side by side. On a phone the screen drops
-   below, because the sentence is what has to land first. */
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
@@ -178,6 +211,7 @@ body.home h1 {
   font-weight: 500;
   letter-spacing: -.025em;
   line-height: 1.08;
+  text-wrap: balance;
   margin: 0 0 18px;
 }
 .lede { font-size: 17px; line-height: 1.62; max-width: 46ch; margin: 0; }
@@ -192,18 +226,15 @@ body.home h1 {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
-.hero-shot img {
-  display: block;
-  width: 268px;
-  height: auto;
-}
+.hero-shot img { display: block; width: 268px; height: auto; }
 
 .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 30px; }
 .appstore {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 14px 24px;
+  min-height: 48px;
+  padding: 0 24px;
   background: var(--ink);
   color: var(--ground);
   border-radius: 12px;
@@ -214,6 +245,9 @@ body.home h1 {
 }
 .appstore:hover { opacity: .9; transform: translateY(-1px); }
 .ghost {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: .06em;
@@ -231,13 +265,59 @@ body.home h1 {
   margin-top: 14px;
 }
 
+/* ── Screenshot gallery ────────────────────────────────────────────────────── */
+
+.gallery { margin-top: 8px; }
+.gallery-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.gallery-head .eyebrow { margin: 0; }
+.gallery-nav { margin-left: auto; display: flex; gap: 8px; }
+.arrow {
+  width: 44px; height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .15s ease, opacity .15s ease;
+}
+.arrow:hover:not(:disabled) { border-color: var(--ink-3); }
+.arrow:disabled { opacity: .4; cursor: default; }
+
+/* Pairs of these screenshots are one composition split across two panels, so the
+   gap stays hairline-thin: widen it and a phone gets sawn in half. */
+.shots {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+}
+.shots img {
+  width: 214px;
+  height: auto;
+  flex: 0 0 auto;
+  /* start, not center: the arrows step by exactly one image width, so every step
+     lands on a snap point. With center alignment the snap pulled a smooth scroll
+     straight back to where it began and the buttons did nothing. */
+  scroll-snap-align: start;
+}
+.shots img:first-child { border-radius: 14px 0 0 14px; }
+.shots img:last-child { border-radius: 0 14px 14px 0; }
+
 /* Four facts, hairline-separated. The app states facts in mono, so the site does too. */
 .claims {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  margin: 0;
+  margin: 56px 0 0;
   padding: 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -265,6 +345,7 @@ body.home h2 {
   font-weight: 500;
   letter-spacing: -.02em;
   line-height: 1.15;
+  text-wrap: balance;
   margin: 0 0 14px;
 }
 .intro { font-size: 16px; max-width: 60ch; margin: 0; }
@@ -283,13 +364,16 @@ body.home h2 {
   transition: transform .15s ease, border-color .15s ease;
 }
 .way:hover { transform: translateY(-2px); border-color: var(--ink-3); }
-.way .num {
-  display: block;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: .12em;
+.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: var(--ground);
+  border: 1px solid var(--line);
   color: var(--alarm);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .way h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; color: var(--ink); }
 .way p { font-size: 14px; margin: 0; }
@@ -306,6 +390,7 @@ body.home h2 {
 .fig .n {
   display: block;
   font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
   font-size: 40px;
   font-weight: 600;
   line-height: 1;
@@ -322,26 +407,6 @@ body.home h2 {
   text-transform: uppercase;
   color: var(--ink-3);
 }
-
-/* The five App Store screens, in store order. Pairs of them are one composition
-   split across two panels, so the gap stays hairline-thin: widen it and a phone
-   gets sawn in half. They scroll sideways rather than shrinking to nothing. */
-.shots {
-  display: flex;
-  gap: 3px;
-  overflow-x: auto;
-  padding: 8px 0 14px;
-  margin-top: 70px;
-  scroll-snap-type: x proximity;
-}
-.shots img {
-  width: 214px;
-  height: auto;
-  flex: 0 0 auto;
-  scroll-snap-align: center;
-}
-.shots img:first-child { border-radius: 14px 0 0 14px; }
-.shots img:last-child { border-radius: 0 14px 14px 0; }
 
 .tail {
   margin-top: 76px;
@@ -372,6 +437,7 @@ body.home footer nav { gap: 16px; }
   .hero-shot { justify-self: start; }
   .hero-shot img { width: 224px; }
   .block { padding-top: 60px; }
+  .claims { margin-top: 48px; }
 }
 @media (max-width: 480px) {
   body.home .wrap { padding-left: 20px; padding-right: 20px; }
