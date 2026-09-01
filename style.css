@@ -95,3 +95,86 @@ footer {
   font-size: 13px;
   color: var(--ink-3);
 }
+
+
+/* ── Home page ─────────────────────────────────────────────────────────────────
+   Added when the app went live: the site had no way to download the thing it was
+   describing. Everything here is layout only — the palette above is unchanged, so
+   the page still matches the app and the store screenshots. */
+
+.hero { margin-bottom: 44px; }
+
+.appicon {
+  display: block;
+  width: 88px; height: 88px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+
+.lede { font-size: 17px; line-height: 1.6; }
+
+/* The one thing the page exists for. Full-width on a phone so it cannot be missed. */
+.appstore {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 26px;
+  padding: 13px 22px;
+  background: var(--ink);
+  color: var(--ground);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.appstore:hover { opacity: .88; }
+
+.req {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--ink-3);
+  margin-top: 12px;
+}
+
+/* Screenshots scroll sideways rather than shrinking to nothing on a phone. */
+.shots {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin: 40px 0 8px;
+  scroll-snap-type: x mandatory;
+}
+.shots img {
+  width: 208px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  scroll-snap-align: start;
+}
+
+.ways {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin: 22px 0 8px;
+}
+.way {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.way h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.way p { font-size: 14px; margin: 0; }
+
+@media (max-width: 480px) {
+  .appstore { width: 100%; justify-content: center; }
+}
