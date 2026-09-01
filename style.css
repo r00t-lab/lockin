@@ -9,6 +9,7 @@
   --ink-3: #8E8E88;
   --line: #D5D4CC;
   --alarm: #C7351A;
+  --shadow: 0 18px 50px -22px rgba(23,23,26,.38);
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -21,6 +22,7 @@
     --ink-3: #6E6E69;
     --line: #303035;
     --alarm: #E85236;
+    --shadow: 0 18px 50px -22px rgba(0,0,0,.7);
   }
 }
 
@@ -37,6 +39,7 @@ body {
 
 .wrap { max-width: 660px; margin: 0 auto; padding: 48px 24px 80px; }
 
+/* Legal and support pages keep the plain document header. */
 header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 44px; }
 .wordmark {
   font-family: var(--mono);
@@ -98,83 +101,286 @@ footer {
 
 
 /* ── Home page ─────────────────────────────────────────────────────────────────
-   Added when the app went live: the site had no way to download the thing it was
-   describing. Everything here is layout only — the palette above is unchanged, so
-   the page still matches the app and the store screenshots. */
+   The store listing sells the app; this page has to make the mechanism obvious in
+   one screen. Layout only — the palette above is untouched, so the page still
+   matches the app and the store screenshots. */
 
-.hero { margin-bottom: 44px; }
+body.home .wrap { max-width: 1000px; padding-top: 0; }
 
+/* Sticky bar: the download link stays reachable from any scroll position, which is
+   the whole job of this page. */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: block;
+  margin: 0;
+  /* Deliberately opaque rather than blurred: a backdrop-filter here painted the whole
+     page blank in one Chromium compositing path, and the blur was worth nothing. */
+  background: var(--ground);
+  border-bottom: 1px solid var(--line);
+}
+.bar-in {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 13px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.bar nav { margin-left: auto; }
+.bar-cta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ground);
+  background: var(--ink);
+  padding: 7px 13px;
+  border-radius: 8px;
+}
+.bar-cta:hover { opacity: .85; }
+@media (max-width: 620px) {
+  .bar nav { display: none; }
+  .bar-in { gap: 12px; }
+  .bar-cta { margin-left: auto; }
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 12px;
+}
+
+/* Hero: the sentence and a real screen side by side. On a phone the screen drops
+   below, because the sentence is what has to land first. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  gap: 56px;
+  align-items: center;
+  padding: 72px 0 64px;
+}
+.hero-copy { min-width: 0; }
 .appicon {
   display: block;
-  width: 88px; height: 88px;
-  border-radius: 20px;
+  width: 72px; height: 72px;
+  border-radius: 17px;
   border: 1px solid var(--line);
   margin-bottom: 22px;
 }
+body.home h1 {
+  font-size: clamp(32px, 4.6vw, 50px);
+  font-weight: 500;
+  letter-spacing: -.025em;
+  line-height: 1.08;
+  margin: 0 0 18px;
+}
+.lede { font-size: 17px; line-height: 1.62; max-width: 46ch; margin: 0; }
 
-.lede { font-size: 17px; line-height: 1.6; }
+/* The store screenshots already carry their own frame and background, so this is a
+   plain rounded card — a second device frame around them just looks like a mistake. */
+.hero-shot {
+  justify-self: center;
+  line-height: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.hero-shot img {
+  display: block;
+  width: 268px;
+  height: auto;
+}
 
-/* The one thing the page exists for. Full-width on a phone so it cannot be missed. */
+.cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 30px; }
 .appstore {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  margin-top: 26px;
-  padding: 13px 22px;
+  padding: 14px 24px;
   background: var(--ink);
   color: var(--ground);
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
+  transition: transform .15s ease, opacity .15s ease;
 }
-.appstore:hover { opacity: .88; }
+.appstore:hover { opacity: .9; transform: translateY(-1px); }
+.ghost {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+.ghost:hover { color: var(--alarm); }
 
 .req {
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: .04em;
   color: var(--ink-3);
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
-/* Screenshots scroll sideways rather than shrinking to nothing on a phone. */
-.shots {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  margin: 40px 0 8px;
-  scroll-snap-type: x mandatory;
+/* Four facts, hairline-separated. The app states facts in mono, so the site does too. */
+.claims {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
-.shots img {
-  width: 208px;
-  flex: 0 0 auto;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  scroll-snap-align: start;
+.claims li {
+  margin: 0;
+  padding: 18px 20px;
+  border-left: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
+.claims li:first-child { border-left: 0; }
+@media (max-width: 720px) {
+  .claims { grid-template-columns: repeat(2, 1fr); }
+  .claims li:nth-child(3) { border-left: 0; }
+  .claims li:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+
+.block { padding: 76px 0 0; }
+body.home h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 500;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+  margin: 0 0 14px;
+}
+.intro { font-size: 16px; max-width: 60ch; margin: 0; }
 
 .ways {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  margin: 22px 0 8px;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 34px;
 }
 .way {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 16px 18px;
+  padding: 22px;
+  transition: transform .15s ease, border-color .15s ease;
 }
-.way h3 {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0 0 6px;
-  color: var(--ink);
+.way:hover { transform: translateY(-2px); border-color: var(--ink-3); }
+.way .num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--alarm);
+  margin-bottom: 12px;
 }
+.way h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; color: var(--ink); }
 .way p { font-size: 14px; margin: 0; }
 
+/* The two counters, the way the app puts them: side by side, one of them unflattering. */
+.score { display: flex; gap: 16px; margin-top: 34px; }
+.fig {
+  flex: 0 1 190px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px;
+}
+.fig .n {
+  display: block;
+  font-family: var(--mono);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -.03em;
+  color: var(--ink);
+}
+.fig.bad .n { color: var(--alarm); }
+.fig .l {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* The five App Store screens, in store order. Pairs of them are one composition
+   split across two panels, so the gap stays hairline-thin: widen it and a phone
+   gets sawn in half. They scroll sideways rather than shrinking to nothing. */
+.shots {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  padding: 8px 0 14px;
+  margin-top: 70px;
+  scroll-snap-type: x proximity;
+}
+.shots img {
+  width: 214px;
+  height: auto;
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+}
+.shots img:first-child { border-radius: 14px 0 0 14px; }
+.shots img:last-child { border-radius: 0 14px 14px 0; }
+
+.tail {
+  margin-top: 76px;
+  padding: 52px 24px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+.tail h2 { margin: 0 0 24px; }
+.tail .req { margin-bottom: 0; }
+
+body.home footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 64px;
+}
+body.home footer nav { gap: 16px; }
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 44px;
+    padding: 52px 0 56px;
+  }
+  .hero-shot { justify-self: start; }
+  .hero-shot img { width: 224px; }
+  .block { padding-top: 60px; }
+}
 @media (max-width: 480px) {
+  body.home .wrap { padding-left: 20px; padding-right: 20px; }
   .appstore { width: 100%; justify-content: center; }
+  .cta-row { gap: 10px; }
+  .score { flex-direction: column; }
+  .fig { flex: 1 1 auto; }
+  .tail { padding: 40px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
 }
