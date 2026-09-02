@@ -177,24 +177,20 @@ struct CommitmentListView: View {
     /// good day, which is the point of putting "excuses" next to it.
     private var figures: some View {
         let stats = store.weeklyStats
-        return HStack(spacing: 1) {
-            figure("\(stats.bestStreak)", "streak")
-            figure("\(stats.proved)", "today")
-            figure("\(stats.missed)", "excuses")
-        }
         // The whole strip is the way into the report. It used to carry no affordance at
         // all -- the theory being that the numbers are what the eye lands on anyway. App
         // Review couldn't find the weekly report and rejected the build under 2.3 for a
         // feature the description promised, which is the strongest possible evidence that
         // a tap target with no label is a tap target nobody finds.
-        .overlay(alignment: .trailing) {
-            HStack(spacing: 3) {
-                Text("report").naggLabel()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
-            }
-            .foregroundStyle(Nagg.ink3)
-            .padding(.trailing, 12)
+        //
+        // The cue is a cell of its own rather than an overlay. Floated over the trailing
+        // edge it reserved no width, so it printed straight through the third figure --
+        // "REPORT" across the excuses count. Here the three figures divide what is left.
+        return HStack(spacing: 1) {
+            figure("\(stats.bestStreak)", "streak")
+            figure("\(stats.proved)", "today")
+            figure("\(stats.missed)", "excuses")
+            reportCue
         }
         .contentShape(.rect)
         .onTapGesture { modal = .report }
@@ -215,6 +211,20 @@ struct CommitmentListView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
+        .background(Nagg.ground)
+    }
+
+    /// The affordance that says the strip opens something. Intrinsic width on purpose:
+    /// it takes its own space instead of being painted over a number.
+    private var reportCue: some View {
+        HStack(spacing: 3) {
+            Text("report").naggLabel()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 9, weight: .semibold))
+        }
+        .foregroundStyle(Nagg.ink3)
+        .padding(.horizontal, 12)
+        .frame(maxHeight: .infinity)
         .background(Nagg.ground)
     }
 
