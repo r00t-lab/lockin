@@ -16,7 +16,9 @@ import SwiftUI
 /// proof id sitting in the App Group, is the shared container reachable at all.
 ///
 /// Reached by long-pressing the wordmark — no button, because this is not a feature and
-/// nobody should find it by accident. It ships in release builds on purpose: the device
+/// nobody should find it by accident. That gesture is written down on nagg.pro/support,
+/// which is the only place it needs to be discoverable: it is also where the alarm test
+/// now lives, and "does it ring at all" is the first thing support has to establish. It ships in release builds on purpose: the device
 /// that matters is not one I can attach anything to, and a diagnostic that only exists in
 /// a debug build is a diagnostic that exists nowhere.
 struct DiagnosticsView: View {
@@ -26,6 +28,7 @@ struct DiagnosticsView: View {
 
     @State private var cameraStatus = "checking…"
     @State private var sessionStatus = "checking…"
+    @State private var testError: String?
 
     var body: some View {
         ScrollView {
@@ -59,6 +62,38 @@ struct DiagnosticsView: View {
                     }
                 }
 
+                // The rehearsal leaves the main screen the moment a real commitment
+                // exists, so for most users this is the only way back to it. It belongs
+                // here: "does it actually ring" is the same question every other row on
+                // this screen exists to answer, and it is the one a support reply needs
+                // to be able to point at.
+                section("Prove it rings") {
+                    Menu {
+                        ForEach(Commitment.ProofKind.allCases, id: \.self) { kind in
+                            Button {
+                                Task { await test(kind) }
+                            } label: {
+                                Label(kind.label, systemImage: kind.systemImageName)
+                            }
+                        }
+                    } label: {
+                        Text("Test the alarm now")
+                            .font(Nagg.sans(15, .medium))
+                            .foregroundStyle(Nagg.ground)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .background { RoundedRectangle(cornerRadius: 11).fill(Nagg.ink) }
+                    }
+                    .disabled(store.rehearsal != nil)
+                    .opacity(store.rehearsal == nil ? 1 : 0.4)
+
+                    Text(testError ?? "Rings in 20 seconds, then every 30, five times over. This screen closes so nothing covers it.")
+                        .font(Nagg.sans(12))
+                        .lineSpacing(3)
+                        .foregroundStyle(testError == nil ? Nagg.ink3 : Nagg.alarm)
+                        .padding(.top, 6)
+                }
+
                 Button("Close", action: onClose)
                     .buttonStyle(NaggGhostButton())
                     .padding(.top, 26)
@@ -68,6 +103,24 @@ struct DiagnosticsView: View {
         }
         .naggGround()
         .task { await probe() }
+    }
+
+    // MARK: - Actions
+
+    /// Arm a rehearsal, then get out of the way. Leaving this sheet up would put a wall
+    /// of diagnostics between the user and the thing they asked to look at.
+    private func test(_ proofKind: Commitment.ProofKind) async {
+        guard await AlarmService.shared.ensureAuthorized() else {
+            testError = "Nagg needs alarm permission before it can ring. Allow it in Settings."
+            return
+        }
+        do {
+            testError = nil
+            try await store.startRehearsal(proofKind: proofKind)
+            onClose()
+        } catch {
+            testError = "Couldn't schedule the test: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - Rows
