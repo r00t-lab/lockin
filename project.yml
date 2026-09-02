@@ -74,8 +74,12 @@ targets:
     dependencies:
       - target: LockinWidget
         embed: true
-      - target: LockinWatch
-        embed: true
+      # LockinWatch is defined below but deliberately not embedded. An app that ships a
+      # watchOS app cannot be submitted without Apple Watch screenshots, and those cannot
+      # be produced without a Watch or a Mac — neither of which exists here. Embedding it
+      # does not risk a rejection; it makes the version unsubmittable, which held a live
+      # bug fix hostage to a feature that has never shipped. Re-add these two lines the
+      # day the screenshots exist.
       - package: RevenueCat
     settings:
       base:
