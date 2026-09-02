@@ -87,19 +87,18 @@ CONTACT_EMAIL = os.environ.get("ASC_CONTACT_EMAIL", "info@kivanckarahasan.pro")
 REVIEW_NOTES = """Nagg is an alarm you have to prove yourself to. Answering the review questions in order.
 
 1. SCREEN RECORDING
-Attached to this reply in Resolution Center. Recorded on a physical iPhone on the current
-iOS, from launch, covering: creating a commitment; the alarm ringing in Silent mode with a
-Focus on; the alarm returning after Dismiss; clearing it with photo proof; the paywall and
-purchase; and every permission prompt.
+A full recording is available on request. The rehearsal in section 4 reproduces the whole
+mechanic on the device in under a minute -- ringing in Silent, returning after Dismiss, and
+clearing on proof.
 
 2. DEVICES AND OS TESTED
 iPhone 14 Pro Max, iOS 26.6 (physical device). Silent/Focus behaviour, the alarm chain, the
-camera proof flow and a sandbox purchase were all verified on it.
+camera proof and a sandbox purchase were verified on it.
 
 3. WHAT IT DOES, AND FOR WHOM
 For people who miss deadlines they set themselves, students above all. The problem is
-starting, not waking: an ordinary reminder is swiped away in one gesture and nothing
-happens, so the task slides another day. You commit to a task and a time. At that time the
+starting, not waking: an ordinary reminder is swiped away in one gesture, so the task
+slides another day. You commit to a task and a time. At that time the
 alarm rings through Silent and Focus, and the only way to silence it for good is to prove
 you started -- a photo of your desk, a 25-minute focus timer, or scanning a QR "desk code"
 you print and tape to your desk. Dismissing without proof reschedules up to five times,
@@ -109,9 +108,14 @@ counts days you actually began.
 4. SETUP AND ACCESS TO EVERY FEATURE
 No account, no login, no demo credentials, no sample files. Nothing is stored off-device.
 
-FASTEST PATH: "Rehearse the alarm" on the main screen replays the whole mechanic in about a
-minute (rings after 20s, nags 30s apart) instead of waiting for a real alarm. It asks which
-proof type to demonstrate. Rehearsals do not affect streaks.
+FASTEST PATH: a built-in rehearsal replays the whole mechanic in about a minute (rings
+after 20s, nags 30s apart) instead of waiting for a real alarm. It asks which proof type to
+demonstrate. Rehearsals do not affect streaks or the excuse count.
+
+It moves once the list is no longer empty, so it is in two places:
+* No commitments yet: the button at the bottom of the main screen, "Try it now".
+* Always, including after creating one: press and hold the "nagg" wordmark, then
+  "Test the alarm now". Use this route if the button is not on screen.
 
 The real thing, if you prefer:
 a. Tap + and create a commitment two minutes out. Pick a proof type.
@@ -122,8 +126,8 @@ d. Tap Dismiss WITHOUT proving. It returns in two minutes. This is the feature, 
    and it is capped at five returns before stopping on its own.
 e. Tap "I'm starting" for the proof screen. Any photo of a desk clears it; the image is
    checked on device and discarded immediately.
-f. Diagnostics: press and hold the "nagg" wordmark on the main screen -- permissions, camera
-   availability, and how many alarms are in the chain.
+f. Diagnostics: the same wordmark long-press also shows permissions, camera availability
+   and how many alarms are in the chain.
 
 WHERE THE TWO PRO FEATURES ARE (both reported as not found in review 25):
 * Weekly report -- tap the streak / today / excuses strip under the header. It now carries
@@ -131,26 +135,26 @@ WHERE THE TWO PRO FEATURES ARE (both reported as not found in review 25):
 * Unlimited commitments -- free limit is two. Create two, tap + again: the paywall opens
   instead of the editor.
 
-SUBSCRIPTION: free for two commitments. A third opens the paywall -- Nagg Pro Monthly and
-Nagg Pro Annual, each with a 3-day free trial, each showing title, duration and price next
-to links to the Terms and the privacy policy. Apple handles every payment.
+SUBSCRIPTION: free for two commitments; a third opens the paywall. Nagg Pro Monthly and
+Nagg Pro Annual, each with a 3-day free trial, each showing title, duration and price beside
+links to the Terms and privacy policy. Apple handles payment.
 
 PERMISSIONS: Alarms (AlarmKit), so a commitment can ring through Silent and Focus; this is
 the whole product. Camera, only to photograph a desk or scan a desk code as proof. Photo
 library, only as a fallback when no camera is available.
 
 5. EXTERNAL SERVICES
-RevenueCat, for subscription state only: it gets an anonymous identifier generated on the
-device plus the receipt Apple issues, and never a name, email, commitment or photo. Apple
-StoreKit handles payment. There is no backend server, no analytics or advertising SDK, no AI
-service and no third-party sign-in. Commitments, streaks and proof never leave the device.
+RevenueCat, for subscription state only: an anonymous device-generated identifier plus the
+receipt Apple issues -- never a name, email, commitment or photo. StoreKit handles payment.
+No backend, no analytics or advertising SDK, no AI service, no third-party sign-in.
+Commitments, streaks and proof never leave the device.
 
 6. REGIONAL DIFFERENCES
-None. Identical in every storefront; English only. Prices follow Apple's regional pricing.
+None. Identical in every storefront, English only, Apple's regional pricing.
 
-7. REGULATED INDUSTRY OR PROTECTED CONTENT
-Neither. A personal productivity app with no third-party or licensed material, no medical or
-treatment claims, not directed at children."""
+7. REGULATED INDUSTRY
+Neither. A personal productivity app with no third-party or licensed material, no medical
+claims, not directed at children."""
 
 # Every answer here is "none" or "no", which is the whole point: the ones worth reading are
 # the three that are decisions rather than observations, and each is argued in
