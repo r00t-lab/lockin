@@ -6,7 +6,8 @@ import SwiftUI
 /// in the alarm" and the wrong call for a product whose distribution is screen recordings
 /// — a system list is the one visual that guarantees nobody can tell this app from the
 /// other twelve. The layout below is the prototype's, one-to-one: wordmark, a three-up
-/// figure strip, hairline cards, and the rehearse rail pinned at the bottom.
+/// figure strip, hairline cards, and the rehearse rail pinned at the bottom until
+/// the first commitment exists.
 ///
 /// Everything visual comes from `Nagg`. If you find yourself typing a colour or a font
 /// size literal in this file, it belongs in `NaggStyle.swift` instead.
@@ -93,7 +94,12 @@ struct CommitmentListView: View {
                 .padding(.bottom, 24)
             }
 
-            rail
+            // Only before the first commitment. Its whole job is to prove the alarm is
+            // not a bluff to someone who has not committed to anything yet; once there
+            // is a real row on the list, that question is answered and the rail is just
+            // a button competing with the user's own commitments. It returns if the
+            // list is ever emptied again.
+            if isFirstRun { rail }
         }
         // iPad runs this app full screen, and a commitment card stretched across a 13"
         // display reads as a form, not a list. Capping the content and centring it keeps
@@ -242,27 +248,20 @@ struct CommitmentListView: View {
                     }
                 }
             } label: {
-                // Loud on an empty app, quiet once there is something real on the list.
-                // Before the first commitment this is the only way to find out the alarm
-                // is not a bluff, and that is the whole conversion moment; afterwards it
-                // is a utility and should not outrank the user's own commitments.
-                Text("Rehearse the alarm")
+                // Names the cost instead of the concept. "Rehearse the alarm" asks the
+                // reader to work out what a rehearsal is and how long it takes before
+                // they can decide; twenty seconds is the answer to both.
+                Text("Try it now — rings in 20 seconds")
                     .font(Nagg.sans(15, .medium))
-                    .foregroundStyle(isFirstRun ? Nagg.ground : Nagg.ink)
+                    .foregroundStyle(Nagg.ground)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, isFirstRun ? 15 : 13)
-                    .background {
-                        if isFirstRun {
-                            RoundedRectangle(cornerRadius: 11).fill(Nagg.ink)
-                        } else {
-                            RoundedRectangle(cornerRadius: 11).stroke(Nagg.line, lineWidth: 1)
-                        }
-                    }
+                    .padding(.vertical, 15)
+                    .background { RoundedRectangle(cornerRadius: 11).fill(Nagg.ink) }
             }
             .disabled(store.rehearsal != nil)
             .opacity(store.rehearsal == nil ? 1 : 0.4)
 
-            Text(rehearsalError ?? "Rings in 20 seconds, then every 30 — the real thing on fast-forward. Put the phone down and prove nothing; that's the part worth watching.")
+            Text(rehearsalError ?? "Then again every 30 seconds, five times over — the real thing on fast-forward. Put the phone down and prove nothing; that's the part worth watching.")
                 .font(Nagg.sans(12))
                 .lineSpacing(3)
                 .multilineTextAlignment(.center)
