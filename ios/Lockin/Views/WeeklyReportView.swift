@@ -92,7 +92,7 @@ struct WeeklyReportView: View {
     private var subhead: String {
         if totalExcuses == 0 {
             return bestStreak > 0
-                ? "Best run so far: \(bestStreak) days. Nagg has nothing on you."
+                ? "Best run so far: \(bestStreak) day\(bestStreak == 1 ? "" : "s"). Nagg has nothing on you."
                 : "Nothing missed yet. The first week is the easy one."
         }
         return "Every one of these is an alarm that rang and a thing that did not get started."

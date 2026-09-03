@@ -54,7 +54,7 @@ API = "https://api.appstoreconnect.apple.com/"
 # whose CFBundleShortVersionString does not match an *open* version cannot be uploaded:
 # once 1.0.0 went READY_FOR_SALE, every build still stamped 1.0.0 was refused, and the
 # failure only shows up after the archive and the signing have both succeeded.
-VERSION_STRING = "1.0.3"
+VERSION_STRING = "1.0.4"
 
 # Productivity, because that is the shelf this competes on and the one docs/LAUNCH.md
 # already priced against. Utilities second: an alarm is a utility, and the obvious
