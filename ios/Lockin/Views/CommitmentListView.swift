@@ -198,6 +198,11 @@ struct CommitmentListView: View {
             figure("\(stats.missed)", "excuses")
             reportCue
         }
+        // The cue is the only child that accepts any height, so without this the row
+        // takes every point the parent offers and the strip's own hairline colour shows
+        // as slabs above and below the numbers. fixedSize pins the row to the figures'
+        // height; the cue then stretches to that instead of the other way round.
+        .fixedSize(horizontal: false, vertical: true)
         .contentShape(.rect)
         .onTapGesture { modal = .report }
         .accessibilityElement(children: .combine)
