@@ -32,7 +32,11 @@ struct PaywallView: View {
                     .lineSpacing(2)
                     .foregroundStyle(Nagg.ink)
 
-                Text("Unlimited commitments and the weekly report on every excuse you made.")
+                // Sells only what is actually behind the gate. The weekly report used to be
+                // named here too, and it has never been locked -- `modal = .report` has no
+                // Pro check. Advertising a thing the free tier already hands over is how a
+                // subscriber decides the whole page was written carelessly.
+                Text("Every commitment you are avoiding, not just two. Two is enough to test Nagg; it is not enough to run a week on.")
                     .font(Nagg.sans(15))
                     .lineSpacing(4)
                     .foregroundStyle(Nagg.ink2)

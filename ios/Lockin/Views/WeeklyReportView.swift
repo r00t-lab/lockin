@@ -55,6 +55,8 @@ struct WeeklyReportView: View {
                         .foregroundStyle(Nagg.ink2)
                         .padding(.top, 10)
 
+                    calendar.padding(.top, 24)
+
                     VStack(spacing: 8) {
                         ForEach(commitments) { commitment in
                             row(commitment)
@@ -94,6 +96,81 @@ struct WeeklyReportView: View {
                 : "Nothing missed yet. The first week is the easy one."
         }
         return "Every one of these is an alarm that rang and a thing that did not get started."
+    }
+
+    // MARK: - The record
+
+    /// Five weeks of squares, oldest first, today in the bottom right.
+    ///
+    /// Deliberately not aligned to weekday columns: that needs the locale's first weekday
+    /// and a leading run of blanks, and every one of those is a way to be off by one on
+    /// somebody else's calendar. Thirty-five days in rows of seven says the same thing.
+    ///
+    /// Sizes are fixed rather than flexible. 7 x 26 plus the gaps is 218pt, which fits the
+    /// narrowest iPhone with room to spare, and a grid that cannot stretch cannot swallow
+    /// the page the way the stats strip did.
+    private var calendar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("last five weeks").naggLabel()
+
+            VStack(spacing: 6) {
+                ForEach(0..<5, id: \.self) { week in
+                    HStack(spacing: 6) {
+                        ForEach(0..<7, id: \.self) { day in
+                            square(lastDays[week * 7 + day])
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 14) {
+                key(Nagg.go, "started")
+                key(Nagg.alarm, "excuse")
+                key(Nagg.line, "nothing due")
+            }
+            .padding(.top, 2)
+
+            if provedSet.isEmpty && missedSet.isEmpty && (bestStreak > 0 || totalExcuses > 0) {
+                // Upgraders have counters but no day history: the app only started writing
+                // days down in this version. Saying so beats an empty grid next to a
+                // streak of nine, which just reads as a bug.
+                Text("The day-by-day record starts with this update. The counts above go further back.")
+                    .font(Nagg.sans(12))
+                    .lineSpacing(3)
+                    .foregroundStyle(Nagg.ink3)
+                    .padding(.top, 4)
+            }
+        }
+    }
+
+    private var provedSet: Set<String> { Set(commitments.flatMap { $0.provedDays ?? [] }) }
+    private var missedSet: Set<String> { Set(commitments.flatMap { $0.missedDays ?? [] }) }
+
+    /// 35 day stamps ending today. Padded rather than trimmed so the grid is never ragged.
+    private var lastDays: [String] {
+        let cal = Foundation.Calendar.current
+        let today = Date()
+        let stamps = (0..<35).reversed().compactMap { offset in
+            cal.date(byAdding: .day, value: -offset, to: today).map(Commitment.dayStamp)
+        }
+        return stamps.count == 35 ? stamps : stamps + Array(repeating: "", count: 35 - stamps.count)
+    }
+
+    private func square(_ stamp: String) -> some View {
+        let started = provedSet.contains(stamp)
+        // Starting wins over bailing on the same day: you may have let one alarm run out
+        // and still got to the desk for another, and the square should say the better one.
+        let excuse = !started && missedSet.contains(stamp)
+        return RoundedRectangle(cornerRadius: 4)
+            .fill(started ? Nagg.go : (excuse ? Nagg.alarm : Nagg.line))
+            .frame(width: 26, height: 26)
+    }
+
+    private func key(_ colour: Color, _ label: String) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2).fill(colour).frame(width: 9, height: 9)
+            Text(label).naggLabel()
+        }
     }
 
     // MARK: - Rows
