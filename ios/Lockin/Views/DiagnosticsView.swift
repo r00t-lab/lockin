@@ -50,6 +50,7 @@ struct DiagnosticsView: View {
                     row("Pending proof id", PendingProof.shared.peek() ?? "none")
                     row("Owed right now", store.commitmentAwaitingProof?.title ?? "nothing")
                     row("App Group", AppGroup.isReachable ? "reachable" : "MISSING")
+                    row("Saved file", store.loadFailed ? "UNREADABLE -- do not reinstall" : "read ok")
                 }
 
                 section("Commitments (\(store.commitments.count))") {
@@ -144,6 +145,7 @@ struct DiagnosticsView: View {
             row("chain ends", chain.map { Self.clock.string(from: $0.expiresAt) } ?? "—")
             row("ringing now", store.needsProof(commitment) ? "YES" : "no")
             row("streak / misses", "\(commitment.currentStreak) / \(commitment.missCount)")
+            row("days recorded", "\(commitment.provedDays?.count ?? 0) proved / \(commitment.missedDays?.count ?? 0) missed")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 10)

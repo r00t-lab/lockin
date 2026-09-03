@@ -69,6 +69,17 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
     /// they open it for the rest of the chain. The nagging is the alarm's job; a modal
     /// that will not stay closed is just a broken app.
     var bailedAt: Date?
+    /// Every day proof landed, and every day an alarm ran out — one stamp per day.
+    ///
+    /// The counters above cannot be un-collapsed. `recordProof` bumps a streak and throws
+    /// the date away, so a week later nothing can say *which* days those were: no
+    /// calendar, no trend, no artefact worth showing anyone. This is the only field here
+    /// that is lossy to omit rather than merely absent, which is why it goes in before
+    /// there is anything built on top of it. Days before the field existed are gone.
+    ///
+    /// Optional for the same reason as `reconciledUpTo`.
+    var provedDays: [String]?
+    var missedDays: [String]?
 
     init(
         id: UUID = UUID(),
@@ -83,7 +94,9 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         isEnabled: Bool = true,
         createdAt: Date = .now,
         reconciledUpTo: Date? = nil,
-        bailedAt: Date? = nil
+        bailedAt: Date? = nil,
+        provedDays: [String]? = nil,
+        missedDays: [String]? = nil
     ) {
         self.id = id
         self.title = title
@@ -98,6 +111,8 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         self.createdAt = createdAt
         self.reconciledUpTo = reconciledUpTo
         self.bailedAt = bailedAt
+        self.provedDays = provedDays
+        self.missedDays = missedDays
     }
 
     var hour: Int { Calendar.current.component(.hour, from: fireDate) }
@@ -210,6 +225,24 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         return nil
     }
 
+    // MARK: - Day stamps
+
+    /// A calendar day, as a sortable stamp.
+    ///
+    /// Deliberately not a `Date`: a stored instant lands on a different day the moment the
+    /// user crosses a timezone, and these are only ever compared with each other. Built
+    /// from `Calendar.current` so a day here means the same day the rest of the app means.
+    static func dayStamp(_ date: Date = .now) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    private mutating func stamp(_ date: Date, into days: inout [String]?) {
+        let today = Self.dayStamp(date)
+        guard days?.contains(today) != true else { return }
+        days = (days ?? []) + [today]
+    }
+
     // MARK: - Outcomes
 
     /// Proof landed.
@@ -218,6 +251,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
     /// re-proved after the row is already ticked would otherwise inflate the streak by
     /// one per tap.
     mutating func recordProof(at date: Date = .now) {
+        stamp(date, into: &provedDays)
         defer {
             lastCompletedAt = date
             reconciledUpTo = date
@@ -245,6 +279,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
 
     /// The user said out loud they were not doing it.
     mutating func recordMiss(at date: Date = .now) {
+        stamp(date, into: &missedDays)
         currentStreak = 0
         missCount += 1
         // Claim the window so `reconcile` does not count this same occurrence again.

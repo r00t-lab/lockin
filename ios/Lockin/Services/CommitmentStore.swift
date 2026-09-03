@@ -254,12 +254,30 @@ final class CommitmentStore {
 
     // MARK: - Persistence
 
+    /// True when a file exists that could not be read. Everything downstream must treat
+    /// this as "unknown", never as "empty".
+    private(set) var loadFailed = false
+
     private func load() {
         guard let data = try? Data(contentsOf: fileURL) else { return }
-        commitments = (try? JSONDecoder().decode([Commitment].self, from: data)) ?? []
+        do {
+            commitments = try JSONDecoder().decode([Commitment].self, from: data)
+            loadFailed = false
+        } catch {
+            // The old line here was `(try? decode) ?? []`, which turned any decode error
+            // into an empty list -- and the next save wrote that emptiness over the file.
+            // One added non-Optional field, or one corrupt byte, and every commitment,
+            // streak and excuse count a user had was gone with nothing on screen to say
+            // so. Silence is the wrong answer to "I could not read your data".
+            loadFailed = true
+            commitments = []
+        }
     }
 
     private func save() {
+        // Refuse to overwrite a file we failed to read. Better a stuck app the user can
+        // report than a quietly erased one they cannot.
+        guard !loadFailed else { return }
         guard let data = try? JSONEncoder().encode(commitments) else { return }
         try? data.write(to: fileURL, options: .atomic)
 
