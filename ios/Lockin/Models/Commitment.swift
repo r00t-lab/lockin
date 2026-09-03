@@ -237,10 +237,13 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
-    private mutating func stamp(_ date: Date, into days: inout [String]?) {
-        let today = Self.dayStamp(date)
-        guard days?.contains(today) != true else { return }
-        days = (days ?? []) + [today]
+    /// Static, and returning rather than mutating, on purpose: a `mutating` helper taking
+    /// `&self.provedDays` is two overlapping exclusive accesses to `self` and does not
+    /// compile. Swift is right -- the caller owns the assignment.
+    private static func stamped(_ days: [String]?, on date: Date) -> [String] {
+        let today = dayStamp(date)
+        guard let days else { return [today] }
+        return days.contains(today) ? days : days + [today]
     }
 
     // MARK: - Outcomes
@@ -251,7 +254,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
     /// re-proved after the row is already ticked would otherwise inflate the streak by
     /// one per tap.
     mutating func recordProof(at date: Date = .now) {
-        stamp(date, into: &provedDays)
+        provedDays = Self.stamped(provedDays, on: date)
         defer {
             lastCompletedAt = date
             reconciledUpTo = date
@@ -279,7 +282,7 @@ struct Commitment: Identifiable, Codable, Hashable, Sendable {
 
     /// The user said out loud they were not doing it.
     mutating func recordMiss(at date: Date = .now) {
-        stamp(date, into: &missedDays)
+        missedDays = Self.stamped(missedDays, on: date)
         currentStreak = 0
         missCount += 1
         // Claim the window so `reconcile` does not count this same occurrence again.
