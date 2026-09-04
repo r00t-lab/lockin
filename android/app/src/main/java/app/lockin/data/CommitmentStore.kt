@@ -196,11 +196,33 @@ class CommitmentStore private constructor(context: Context) {
 
     // MARK: - Persistence
 
-    private fun loadFromDisk(): List<Commitment> = runCatching {
-        if (!file.exists()) emptyList() else json.decodeFromString<List<Commitment>>(file.readText())
-    }.getOrElse { emptyList() }
+    /**
+     * True when a file exists that could not be read. Everything downstream has to treat
+     * that as "unknown", never as "empty".
+     */
+    @Volatile
+    var loadFailed: Boolean = false
+        private set
+
+    private fun loadFromDisk(): List<Commitment> {
+        if (!file.exists()) return emptyList()
+        return runCatching {
+            json.decodeFromString<List<Commitment>>(file.readText()).also { loadFailed = false }
+        }.getOrElse {
+            // This used to be `.getOrElse { emptyList() }`, which turned any decode error
+            // into an empty list -- and the next save wrote that emptiness over the file.
+            // The rename dance below protects against a truncated write; it does nothing
+            // about a file that parses badly for any other reason. Silence is the wrong
+            // answer to "I could not read your data".
+            loadFailed = true
+            emptyList()
+        }
+    }
 
     private fun saveToDisk(commitments: List<Commitment>) {
+        // Never overwrite a file we failed to read. Better a stuck app the user can
+        // report than a quietly erased one they cannot.
+        if (loadFailed) return
         runCatching {
             // Write-then-rename, so a kill mid-write cannot leave a truncated file that
             // decodes to nothing and silently wipes every commitment the user has.

@@ -40,6 +40,25 @@ data class Commitment(
     val missCount: Int = 0,
     val isEnabled: Boolean = true,
     val createdAtMillis: Long = System.currentTimeMillis(),
+    /**
+     * Every day proof landed, and every day an alarm ran out — one stamp per day.
+     *
+     * The counters above cannot be un-collapsed. [recordingProof] bumps a streak and
+     * throws the date away, so a week later nothing can say *which* days those were:
+     * no calendar, no trend, nothing worth showing anyone. A feature can be added
+     * later; a day that was never written down cannot.
+     *
+     * ISO-8601 calendar days, the same shape `Commitment.swift` writes, because the
+     * two platforms have to agree on a wire format eventually. Deliberately not epoch
+     * millis like the other timestamps here: an instant lands on a different day the
+     * moment the user crosses a timezone, and these are only compared with each other.
+     *
+     * Defaults, so old saved data decodes without a migration — kotlinx.serialization
+     * treats a property with a default as optional, which is the one place Android has
+     * it easier than iOS.
+     */
+    val provedDays: List<String> = emptyList(),
+    val missedDays: List<String> = emptyList(),
 ) {
 
     enum class ProofKind {
@@ -119,16 +138,35 @@ data class Commitment(
 
     fun recordingProof(atMillis: Long = System.currentTimeMillis()): Commitment {
         val streak = currentStreak + 1
+        val day = dayStamp(atMillis)
         return copy(
             lastCompletedAtMillis = atMillis,
             currentStreak = streak,
             bestStreak = maxOf(bestStreak, streak),
+            provedDays = if (day in provedDays) provedDays else provedDays + day,
         )
     }
 
-    fun recordingMiss(): Commitment = copy(currentStreak = 0, missCount = missCount + 1)
+    fun recordingMiss(atMillis: Long = System.currentTimeMillis()): Commitment {
+        val day = dayStamp(atMillis)
+        return copy(
+            currentStreak = 0,
+            missCount = missCount + 1,
+            missedDays = if (day in missedDays) missedDays else missedDays + day,
+        )
+    }
 
     companion object {
+
+        /**
+         * A calendar day, in the device's own zone, as the ISO string iOS also writes.
+         *
+         * Built from the system zone rather than UTC so that "today" here means the same
+         * today the rest of the app means — [isDoneToday] resolves in the system zone too,
+         * and a stamp that disagreed with it would put a proof on the wrong square.
+         */
+        fun dayStamp(atMillis: Long = System.currentTimeMillis()): String =
+            Instant.ofEpochMilli(atMillis).atZone(ZoneId.systemDefault()).toLocalDate().toString()
 
         /** Deterministic, so [isRehearsal] needs no extra field on disk. */
         val REHEARSAL_ID: UUID = UUID.fromString("00000000-0000-0000-0000-00000000beef")
