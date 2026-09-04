@@ -12,6 +12,8 @@ Reads the same key as asc_metadata.py.
 """
 
 import argparse
+import base64
+import collections
 import importlib.util
 import json
 import os
@@ -81,11 +83,45 @@ def reviews(unanswered_only=False):
     return got
 
 
+def territories():
+    """Which storefronts actually list the app, and why the rest do not.
+
+    Worth a line of its own because a blocked territory is invisible from the outside:
+    the app still reads as "available" in App Store Connect, it simply is not in the
+    store. That is how all 27 EU storefronts went missing without a single error.
+    """
+    d = asc.call("v1/apps/%s/appAvailabilityV2?include=territoryAvailabilities"
+                 "&limit[territoryAvailabilities]=50" % asc.APP_ID)
+    buckets, cursor = collections.defaultdict(list), None
+    while True:
+        path = "v2/appAvailabilities/%s/territoryAvailabilities?limit=50" % d["data"]["id"]
+        if cursor:
+            path += "&cursor=" + cursor
+        page = asc.call(path)
+        for x in page["data"]:
+            try:
+                where = json.loads(base64.b64decode(x["id"] + "=="))["t"]
+            except Exception:
+                where = x["id"][:8]
+            buckets[",".join(x["attributes"].get("contentStatuses") or ["?"])].append(where)
+        nxt = page.get("links", {}).get("next")
+        if not nxt:
+            break
+        cursor = nxt.split("cursor=")[-1].split("&")[0]
+    return buckets
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--unanswered", action="store_true", help="only reviews with no reply")
     args = p.parse_args()
 
+    print("=== bolgeler ===")
+    for status, places in sorted(territories().items(), key=lambda kv: -len(kv[1])):
+        print("  %-38s %3d" % (status, len(places)))
+        if status != "AVAILABLE":
+            print("      " + " ".join(sorted(places)))
+    print()
     print("=== magazada gorunen puan ===")
     for cc, line in public_ratings():
         print("  %-3s %s" % (cc.upper(), line))
