@@ -233,7 +233,35 @@ final class CommitmentStore {
         if commitments[index].repeats.isRecurring {
             try? await AlarmService.shared.schedule(commitments[index])
         }
+
+        considerAskingForReview()
     }
+
+    // MARK: - Asking for a review
+
+    /// Raised once, when the user has made this thing work three separate days.
+    ///
+    /// The view clears it and does the asking — only a `View` can reach `requestReview`.
+    private(set) var askForReview = false
+
+    private static let askedKey = "nagg.reviewAsked"
+
+    /// Ask after the third day proof landed, and never again.
+    ///
+    /// Not the first: someone who has proved once installed the app an hour ago and has no
+    /// opinion worth collecting. Not during the alarm either — this runs after proof, when
+    /// the thing the user was avoiding has just been started, which is the only moment
+    /// this app is ever pleasant. Rehearsals cannot reach here; `recordProof(for:)`
+    /// returns above for those, and a demo is not evidence of anything.
+    private func considerAskingForReview() {
+        guard !UserDefaults.standard.bool(forKey: Self.askedKey) else { return }
+        let daysProved = visibleCommitments.reduce(0) { $0 + ($1.provedDays?.count ?? 0) }
+        guard daysProved >= 3 else { return }
+        UserDefaults.standard.set(true, forKey: Self.askedKey)
+        askForReview = true
+    }
+
+    func reviewAsked() { askForReview = false }
 
     /// User walked away from the proof screen without proving.
     ///

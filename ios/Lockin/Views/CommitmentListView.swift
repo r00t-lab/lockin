@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 /// Home screen.
@@ -18,6 +19,8 @@ struct CommitmentListView: View {
     /// Hands the commitment up to the root view, which swaps the screen for proof. The
     /// list never presents it — see the note at the top of `LockinApp`.
     let onProve: (Commitment) -> Void
+
+    @Environment(\.requestReview) private var requestReview
 
     /// Every modal this screen can present, as one value.
     ///
@@ -100,6 +103,16 @@ struct CommitmentListView: View {
             // a button competing with the user's own commitments. It returns if the
             // list is ever emptied again.
             if isFirstRun { rail }
+        }
+        // Asked here rather than the moment proof lands: the proof sheet is still
+        // dismissing then, and a rating prompt sliding up over a closing sheet earns
+        // exactly the review it deserves.
+        .task(id: store.askForReview) {
+            guard store.askForReview else { return }
+            try? await Task.sleep(for: .seconds(1.2))
+            guard !Task.isCancelled else { return }
+            store.reviewAsked()
+            requestReview()
         }
         // iPad runs this app full screen, and a commitment card stretched across a 13"
         // display reads as a form, not a list. Capping the content and centring it keeps
