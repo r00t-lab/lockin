@@ -39,22 +39,40 @@ def icon():
 
 
 def feature():
-    """1024 x 500. Read at the size of a postage stamp in search results, so it carries the
-    wordmark and one line -- a screenshot shrunk into this space is a smudge."""
-    img = Image.new("RGB", (1024, 500), ALARM)
-    draw = ImageDraw.Draw(img)
+    """1024 x 500, and it has to survive being read at the size of a postage stamp.
 
-    mark = ImageFont.truetype(SANS, 132)
-    line = ImageFont.truetype(SANS_BOOK, 40)
+    It used to be the wordmark and one line on flat red, on the reasoning that a
+    screenshot shrunk into this space becomes a smudge. That reasoning was right about
+    shrinking and wrong about cropping: the panel from shot-01 holds a phone whose clock
+    fills half the screen, and cropping to that keeps it legible at any size while
+    actually showing the product. Flat colour and a slogan showed nothing.
+
+    The phone runs off the bottom of the source screenshot, so it runs off the bottom
+    here too -- placed against the canvas edge, which reads as deliberate, rather than
+    floated with a sliver cut off, which reads as a mistake.
+    """
+    img = Image.new("RGB", (1024, 500), ALARM)
+
+    shot = Image.open(f"{OUT}/shot-01.png").convert("RGB")
+    # Device body measured at x 57..1023, y 564..1962; the crop adds the red button below
+    # it and a hair of margin either side.
+    phone = shot.crop((48, 548, 1032, 2160))
+    height = 462
+    phone = phone.resize((round(phone.width * height / phone.height), height), Image.LANCZOS)
+    img.paste(phone, (1024 - phone.width - 96, 500 - height))
+
+    draw = ImageDraw.Draw(img)
+    mark = ImageFont.truetype(SANS, 118)
+    line = ImageFont.truetype(SANS_BOOK, 33)
 
     # The wordmark in two colours, same split as the app: "na" in paper, "gg" in the pale
     # tint, because the whole identity is one word that will not leave you alone.
-    x, y = 84, 150
+    x, y = 82, 168
     draw.text((x, y), "na", font=mark, fill=WHITE)
     x += draw.textlength("na", font=mark)
     draw.text((x, y), "gg", font=mark, fill=ALARM_PALE)
 
-    draw.text((88, 322), "It comes back until you start.", font=line, fill=ALARM_PALE)
+    draw.text((84, 316), "It comes back until you start.", font=line, fill=ALARM_PALE)
 
     img.save(f"{OUT}/feature-1024x500.png", "PNG")
     print("feature-1024x500.png")
