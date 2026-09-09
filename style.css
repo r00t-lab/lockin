@@ -419,6 +419,16 @@ body.home h2 {
 .tail h2 { margin: 0 0 24px; }
 .tail .req { margin-bottom: 0; }
 
+/* Two stores, equal weight — neither platform is the afterthought now. They sit side by
+   side on a desktop and stack full-width on a phone, where whichever one the reader
+   cannot use is simply the wrong button rather than a cramped one. */
+.stores {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
 body.home footer {
   display: flex;
   flex-wrap: wrap;
@@ -442,6 +452,7 @@ body.home footer nav { gap: 16px; }
 @media (max-width: 480px) {
   body.home .wrap { padding-left: 20px; padding-right: 20px; }
   .appstore { width: 100%; justify-content: center; }
+  .stores { width: 100%; }
   .cta-row { gap: 10px; }
   .score { flex-direction: column; }
   .fig { flex: 1 1 auto; }
