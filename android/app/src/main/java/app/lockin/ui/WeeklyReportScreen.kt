@@ -34,7 +34,6 @@ import app.lockin.ui.theme.MetaText
 import app.lockin.ui.theme.StatNumber
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
