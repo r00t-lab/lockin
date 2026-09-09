@@ -27,7 +27,11 @@ android {
         versionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInt()
         // Matches iOS. Two stores showing different numbers for the same release is a
         // support question nobody should have to answer.
-        versionName = "1.0.0"
+        // Android keeps its own line. iOS is at 1.0.4, but these are separate stores
+        // with separate histories, and matching the numbers would suggest the two
+        // builds are the same thing. 1.1.0 because this release reworks the home
+        // screen and adds the day-by-day record view.
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
