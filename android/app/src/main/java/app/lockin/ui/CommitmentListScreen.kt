@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -156,10 +160,16 @@ fun CommitmentListScreen(
             }
         }
 
-        RehearsalFooter(
-            armed = commitments.any { it.isRehearsal },
-            onRehearse = onRehearse,
-        )
+        // Only before the first commitment, matching iOS. Its whole job is to prove the
+        // alarm is not a bluff to someone who has not committed to anything yet; once a
+        // real row exists that question is answered and the rail is just a button
+        // competing with the user's own commitments. It returns if the list is emptied.
+        if (commitments.none { !it.isRehearsal }) {
+            RehearsalFooter(
+                armed = commitments.any { it.isRehearsal },
+                onRehearse = onRehearse,
+            )
+        }
     }
 }
 
@@ -187,7 +197,9 @@ private fun RehearsalFooter(armed: Boolean, onRehearse: () -> Unit) {
             shape = RoundedCornerShape(11.dp),
         ) {
             Text(
-                if (armed) "Rehearsal armed" else "Rehearse the alarm",
+                // Names the cost instead of the concept, as on iOS: "rehearse" asks the
+                // reader to work out what that is and how long it takes before deciding.
+                if (armed) "Rehearsal armed" else "Try it now — rings in 20 seconds",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = if (armed) palette.go else palette.ink,
@@ -195,8 +207,8 @@ private fun RehearsalFooter(armed: Boolean, onRehearse: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            "Rings in 20 seconds, then every 30 — the real thing on fast-forward. Put the "
-                + "phone down and prove nothing; that's the part worth watching.",
+            "Then again every 30 seconds, five times over — the real thing on fast-forward. "
+                + "Put the phone down and prove nothing; that's the part worth watching.",
             fontSize = 12.sp,
             lineHeight = 18.sp,
             color = palette.ink3,
@@ -211,6 +223,7 @@ private fun StatsRow(stats: CommitmentStore.Stats, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .background(palette.line)
             .clickable(onClick = onClick)
             .padding(vertical = 1.dp),
@@ -219,6 +232,36 @@ private fun StatsRow(stats: CommitmentStore.Stats, onClick: () -> Unit) {
         Stat(stats.bestStreak.toString(), "STREAK", Modifier.weight(1f))
         Stat(stats.proved.toString(), "TODAY", Modifier.weight(1f))
         Stat(stats.missed.toString(), "EXCUSES", Modifier.weight(1f))
+        ReportCue()
+    }
+}
+
+/**
+ * The affordance that says the strip opens something.
+ *
+ * The strip was tappable with nothing to say so, and App Review rejected the iOS build
+ * under 2.3 for a weekly report it could not find. A tap target with no label is a tap
+ * target nobody finds, on either platform. Intrinsic width, not an overlay: it takes its
+ * own space instead of being painted over the excuses count.
+ */
+@Composable
+private fun ReportCue() {
+    val palette = Lockin.palette
+    Row(
+        modifier = Modifier
+            .fillMaxHeight()
+            .background(palette.ground)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("REPORT", style = EyebrowText, color = palette.ink3)
+        Spacer(Modifier.width(3.dp))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = palette.ink3,
+            modifier = Modifier.size(14.dp),
+        )
     }
 }
 

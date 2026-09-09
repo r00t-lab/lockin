@@ -4,5 +4,8 @@
     <color name="ground">#EFEEE9</color>
     <color name="ground_dark">#121214</color>
     <color name="alarm">#C7351A</color>
-    <color name="ic_launcher_background">#17171A</color>
+    <!-- Paper, not ink: the adaptive foreground is the iOS artwork with its own
+         ground knocked out, so this layer has to supply the same paper the icon
+         has on the App Store. Dark here put a black square behind a red clock. -->
+    <color name="ic_launcher_background">#EFEEE9</color>
 </resources>

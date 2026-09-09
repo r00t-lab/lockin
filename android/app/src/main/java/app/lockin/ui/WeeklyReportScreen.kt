@@ -3,6 +3,7 @@ package app.lockin.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +22,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +33,7 @@ import app.lockin.ui.theme.Lockin
 import app.lockin.ui.theme.MetaText
 import app.lockin.ui.theme.StatNumber
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -95,6 +101,9 @@ fun WeeklyReportScreen(
 
         if (real.isNotEmpty()) {
             Spacer(Modifier.height(24.dp))
+            RecordGrid(real, totalExcuses, bestStreak)
+
+            Spacer(Modifier.height(24.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 real.forEach { ReportRow(it) }
             }
@@ -104,6 +113,96 @@ fun WeeklyReportScreen(
         TextButton(onClick = onFinish, modifier = Modifier.fillMaxWidth()) {
             Text("Close", fontSize = 15.sp, color = palette.ink2)
         }
+    }
+}
+
+/**
+ * Five weeks of squares, oldest first, today in the bottom right.
+ *
+ * Deliberately not aligned to weekday columns: that needs the locale's first weekday and
+ * a leading run of blanks, and each of those is a way to be off by one on somebody else's
+ * calendar. Thirty-five days in rows of seven says the same thing.
+ *
+ * Sizes are fixed rather than flexible, matching iOS. A grid that cannot stretch cannot
+ * swallow the page, which is exactly what the iOS stats strip did when one child was
+ * allowed to accept any height it was offered.
+ */
+@Composable
+private fun RecordGrid(commitments: List<Commitment>, excuses: Int, bestStreak: Int) {
+    val palette = Lockin.palette
+    val proved = commitments.flatMap { it.provedDays }.toSet()
+    val missed = commitments.flatMap { it.missedDays }.toSet()
+    val today = LocalDate.now()
+    val days = (34 downTo 0).map { today.minusDays(it.toLong()).toString() }
+
+    Column {
+        Text("LAST FIVE WEEKS", style = EyebrowText, color = palette.ink3)
+        Spacer(Modifier.height(10.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(5) { week ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(7) { day ->
+                        val stamp = days[week * 7 + day]
+                        val started = stamp in proved
+                        // Starting wins over bailing on the same day: you may have let one
+                        // alarm run out and still got to the desk for another, and the
+                        // square should say the better one.
+                        val excuse = !started && stamp in missed
+                        Box(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(
+                                    when {
+                                        started -> palette.go
+                                        excuse -> palette.alarm
+                                        else -> palette.line
+                                    }
+                                )
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Key(palette.go, "STARTED")
+            Key(palette.alarm, "EXCUSE")
+            Key(palette.line, "NOTHING DUE")
+        }
+
+        if (proved.isEmpty() && missed.isEmpty() && (bestStreak > 0 || excuses > 0)) {
+            // Upgraders have counters but no day history: the app only started writing
+            // days down in this version. Saying so beats an empty grid next to a streak
+            // of nine, which just reads as a bug.
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "The day-by-day record starts with this update. The counts above go "
+                    + "further back.",
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+                color = palette.ink3,
+            )
+        }
+    }
+}
+
+@Composable
+private fun Key(colour: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(colour)
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(label, style = EyebrowText, color = Lockin.palette.ink3)
     }
 }
 
@@ -119,7 +218,9 @@ private fun headline(isEmpty: Boolean, excuses: Int): String = when {
 private fun subhead(excuses: Int, bestStreak: Int): String = when {
     excuses > 0 ->
         "Every one of these is an alarm that rang and a thing that did not get started."
-    bestStreak > 0 -> "Best run so far: $bestStreak days. Nagg has nothing on you."
+    bestStreak > 0 ->
+        "Best run so far: $bestStreak day${if (bestStreak == 1) "" else "s"}. " +
+            "Nagg has nothing on you."
     else -> "Nothing missed yet. The first week is the easy one."
 }
 

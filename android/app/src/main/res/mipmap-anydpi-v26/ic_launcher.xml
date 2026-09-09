@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Foreground is now the same artwork iOS ships, generated from the same 1024 PNG by
+  tools/make_android_icons.py, inset to the 66/108dp safe zone so OEM masks cannot
+  crop the bells off. The hand-drawn vector it replaced was a different picture
+  entirely: one product with two icons is two products as far as anyone scrolling
+  a home screen is concerned.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
     <monochrome android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>
